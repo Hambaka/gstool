@@ -36,7 +36,7 @@ jobs:
     # For linux
     - name: Install necessary dependencies for linux
       if: contains(matrix.TARGET, 'linux')
-      run: sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev libglib2.0-dev
+      run: sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev libglib2.0-dev libgtk-3-0
 
     # For linux, it's necessary to use cross from the git repository to avoid glibc problems
     # Ref: https://github.com/cross-rs/cross/issues/1510
