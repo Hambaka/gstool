@@ -1,3 +1,4 @@
+# https://github.com/emilk/eframe_template/blob/main/.github/workflows/rust.yml
 name: Rust
 
 on: [push, pull_request, workflow_dispatch]
@@ -31,6 +32,11 @@ jobs:
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain stable --profile default --target ${{ matrix.TARGET }} -y
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    # For linux
+    - name: Install necessary dependencies for linux
+      if: contains(matrix.TARGET, 'linux')
+      run: sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
 
     # For linux, it's necessary to use cross from the git repository to avoid glibc problems
     # Ref: https://github.com/cross-rs/cross/issues/1510
