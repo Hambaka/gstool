@@ -1,109 +1,109 @@
+use super::enums::{GameType, GameVersion, NameType, PasswordGrade};
 use std::collections::HashMap;
-use crate::util::enums::{BuildDateType, GameType, NameType, PasswordGrade};
 
 /* Links to other Golden Sun reference guide (save editing):
-   https://gamefaqs.gamespot.com/gba/468548-golden-sun/faqs/43776
-   https://gamefaqs.gamespot.com/gba/561356-golden-sun-the-lost-age/faqs/30811
-   ----------------------------------------------------------------------------------
-   More reference info/comment about GBA Golden Sun series save file from Dyrati (in "Obababot")
+https://gamefaqs.gamespot.com/gba/468548-golden-sun/faqs/43776
+https://gamefaqs.gamespot.com/gba/561356-golden-sun-the-lost-age/faqs/30811
+----------------------------------------------------------------------------------
+More reference info/comment about GBA Golden Sun series save file from Dyrati (in "Obababot")
 
-   https://github.com/Dyrati/obababot/blob/main/obababot/gsfuncs.py
-   At line 579, the "get_save_data" function takes raw binary .sav data and returns individual save slots with all of the info from each valid save.
-   The function checks the file at 0x1000 byte intervals.
+https://github.com/Dyrati/obababot/blob/main/obababot/gsfuncs.py
+At line 579, the "get_save_data" function takes raw binary .sav data and returns individual save slots with all of the info from each valid save.
+The function checks the file at 0x1000 byte intervals.
 
-   The first 16 bytes of each interval (the header) are organized as follows:
-   - 7 bytes for the ASCII string "CAMELOT"
-   - 1 byte for the slot number
-   - 2 bytes for a checksum
-   - 2 bytes for a priority number
-   - 4 bytes of garbage data
+The first 16 bytes of each interval (the header) are organized as follows:
+- 7 bytes for the ASCII string "CAMELOT"
+- 1 byte for the slot number
+- 2 bytes for a checksum
+- 2 bytes for a priority number
+- 4 bytes of garbage data
 
-   A header is valid if the first 7 bytes spell "CAMELOT", and the slot number is less than 16.
-   In the case where multiple headers have the same slot number, use the header with the highest priority number.
-   That should leave you with up to 3 valid headers.
-   The next 0x2FF0 bytes after the header constitute the save data for that file. (Note: GS2 only)
-   ----------------------------------------------------------------------------------
-   Additional reference info/comment about the first Golden Sun save file from Dyrati
+A header is valid if the first 7 bytes spell "CAMELOT", and the slot number is less than 16.
+In the case where multiple headers have the same slot number, use the header with the highest priority number.
+That should leave you with up to 3 valid headers.
+The next 0x2FF0 bytes after the header constitute the save data for that file. (Note: GS2 only)
+----------------------------------------------------------------------------------
+Additional reference info/comment about the first Golden Sun save file from Dyrati
 
-   For GS1, each save splits into two parts.
-   In the .sav file, each section is 0x1000 bytes long.
-   However two separate sections are joined together to create one save file.
-   Some sections have slot numbers of 3, 4, or 5,
-   those sections are the second half of slots 0, 1, and 2 respectively.
-   But seems the second half of the save doesn't store the data for generating password.
-   ----------------------------------------------------------------------------------
-   Golden Sun password generating explanation document by Dyrati
-   Source: https://www.reddit.com/r/GoldenSun/comments/jon3h7/golden_sun_password_tools/
-           https://docs.google.com/spreadsheets/d/1jQ2Zj2F57Fb4hs0pDYLCaZL-qry7gcVxNbhpq0BJDUs/
+For GS1, each save splits into two parts.
+In the .sav file, each section is 0x1000 bytes long.
+However two separate sections are joined together to create one save file.
+Some sections have slot numbers of 3, 4, or 5,
+those sections are the second half of slots 0, 1, and 2 respectively.
+But seems the second half of the save doesn't store the data for generating password.
+----------------------------------------------------------------------------------
+Golden Sun password generating explanation document by Dyrati
+Source: https://www.reddit.com/r/GoldenSun/comments/jon3h7/golden_sun_password_tools/
+        https://docs.google.com/spreadsheets/d/1jQ2Zj2F57Fb4hs0pDYLCaZL-qry7gcVxNbhpq0BJDUs/
 
-   Step 1: Convert relevant data into fixed point binary
+Step 1: Convert relevant data into fixed point binary
 
-   Levels: 7 bits for Isaac, Garet, Ivan, Mia
-   Djinn: 7 bits for Venus, Mercury, Mars, Jupiter
-   Events: 1 bit for Hammet, Colosso, Hsu, Deadbeard, Vale, Vault
-   Psy Items: 1 bit for each item in the "PsyItems" list (1 if in party inventory, 0 if not)
-   Coins: 24 bits
-   Stats: 60 bits per character, arranged as follows:
-     11 bits HP, 11 bits PP, 10 bits ATK, 10 bits DEF, 10 bits AGI, 8 bits LCK
-   Item IDs: 9 bits per item, 15 items per character
-   Item Amounts: 5 bits for every item in the "Stackables" list (whether or not item is in inventory), for each character. Subtract 1 from in-game amount
+Levels: 7 bits for Isaac, Garet, Ivan, Mia
+Djinn: 7 bits for Venus, Mercury, Mars, Jupiter
+Events: 1 bit for Hammet, Colosso, Hsu, Deadbeard, Vale, Vault
+Psy Items: 1 bit for each item in the "PsyItems" list (1 if in party inventory, 0 if not)
+Coins: 24 bits
+Stats: 60 bits per character, arranged as follows:
+  11 bits HP, 11 bits PP, 10 bits ATK, 10 bits DEF, 10 bits AGI, 8 bits LCK
+Item IDs: 9 bits per item, 15 items per character
+Item Amounts: 5 bits for every item in the "Stackables" list (whether or not item is in inventory), for each character. Subtract 1 from in-game amount
 
-   Step 2: Arrange bits
+Step 2: Arrange bits
 
-   Syntax
-     name = value (assign value to name)
-     & (concatenate)
-     name[a:b] (bits of name, from left to right, inclusive, starts at 1)
-     rep(name, x) (name repeated x times)
+Syntax
+  name = value (assign value to name)
+  & (concatenate)
+  name[a:b] (bits of name, from left to right, inclusive, starts at 1)
+  rep(name, x) (name repeated x times)
 
-   Arrangement
-     levelbits = mia_level & ivan_level & garet_level & isaac_level
-     levelbits = levelbits[21:28] & levelbits[13:20] & levelbits[5:12] & levelbits[1:4]
-     djinnbits = jupiter_djinn & mars_djinn & mercury_djinn & venus_djinn
-     djinnbits = djinnbits[25:28] & djinnbits[17:24] & djinnbits[9:16] & djinnbits[1:8]
-     eventbits = 0 & 0 & vault_bit & vale_bit & deadbeard_bit & hsu_bit & colosso_bit & hammet_bit
-     psyitems = catch_beads & carry_stone & cloak_ball & halt_gem & lifting_gem & frost_jewel & douse_drop & orb_of_force
-     [character]_stats = hp & pp & atk & def & agi & lck
-     stats = isaac_stats & garet_stats & ivan_stats & mia_stats
-     [character]_item_ids = item1_id & item2_id & … & item15_id
-     item_ids = isaac_item_ids & garet_item_ids & ivan_item_ids & mia_item_ids
-     Every 63 bits (7 items), insert a 0 into item_ids
-     [character]_item_amounts = herb_count & nut_count & vial_count & … & crystalpowder_count
-     item_amounts = isaac_item_amounts & garet_item_amounts & ivan_item_amounts & mia_item_amounts
+Arrangement
+  levelbits = mia_level & ivan_level & garet_level & isaac_level
+  levelbits = levelbits[21:28] & levelbits[13:20] & levelbits[5:12] & levelbits[1:4]
+  djinnbits = jupiter_djinn & mars_djinn & mercury_djinn & venus_djinn
+  djinnbits = djinnbits[25:28] & djinnbits[17:24] & djinnbits[9:16] & djinnbits[1:8]
+  eventbits = 0 & 0 & vault_bit & vale_bit & deadbeard_bit & hsu_bit & colosso_bit & hammet_bit
+  psyitems = catch_beads & carry_stone & cloak_ball & halt_gem & lifting_gem & frost_jewel & douse_drop & orb_of_force
+  [character]_stats = hp & pp & atk & def & agi & lck
+  stats = isaac_stats & garet_stats & ivan_stats & mia_stats
+  [character]_item_ids = item1_id & item2_id & … & item15_id
+  item_ids = isaac_item_ids & garet_item_ids & ivan_item_ids & mia_item_ids
+  Every 63 bits (7 items), insert a 0 into item_ids
+  [character]_item_amounts = herb_count & nut_count & vial_count & … & crystalpowder_count
+  item_amounts = isaac_item_amounts & garet_item_amounts & ivan_item_amounts & mia_item_amounts
 
-     gold_bits = levelbits & djinnbits & eventbits & stats & rep(0,8) & item_ids & item_amounts & coins & rep(0,40)
-     silver_bits = levelbits & djinnbits & eventbits & psyitems & stats
-     bronze_bits = levelbits & djinnbits & eventbits & psyitems
+  gold_bits = levelbits & djinnbits & eventbits & stats & rep(0,8) & item_ids & item_amounts & coins & rep(0,40)
+  silver_bits = levelbits & djinnbits & eventbits & psyitems & stats
+  bronze_bits = levelbits & djinnbits & eventbits & psyitems
 
-   Step 3: Generate key from bits
+Step 3: Generate key from bits
 
-     key = 0xFFFF (16 bit register, meaning that bits exceeding bit 15 are dropped)
-     for byte in bits:
-       key = byte*256 xor key
-       for bit in key:
-           key = key << 1 (bitshift left)
-           if previous operation carried out a 1: key = key + 0xEFDF
+  key = 0xFFFF (16 bit register, meaning that bits exceeding bit 15 are dropped)
+  for byte in bits:
+    key = byte*256 xor key
+    for bit in key:
+        key = key << 1 (bitshift left)
+        if previous operation carried out a 1: key = key + 0xEFDF
 
-     key = not(key)
+  key = not(key)
 
-   Step 4: XOR bits with key
-     byte1 = key[1:8]
-     byte2 = key[9:16]
-     append byte1 to bits
-     xor every byte in bits with byte2
-     append byte2 to bits
+Step 4: XOR bits with key
+  byte1 = key[1:8]
+  byte2 = key[9:16]
+  append byte1 to bits
+  xor every byte in bits with byte2
+  append byte2 to bits
 
-   Step 5: Divide bits into 6 bit groups.  After every 9 groups, insert a group which is their sum modulo 2^6
+Step 5: Divide bits into 6 bit groups.  After every 9 groups, insert a group which is their sum modulo 2^6
 
-   Step 6: Add each group's position to itself, and take result modulo 2^6
-     group_0 = (group_0 + 0) mod 2^6
-     group_1 = (group_1 + 1) mod 2^6
-     …
-     group_n = (group_n + n) mod 2^6
+Step 6: Add each group's position to itself, and take result modulo 2^6
+  group_0 = (group_0 + 0) mod 2^6
+  group_1 = (group_1 + 1) mod 2^6
+  …
+  group_n = (group_n + n) mod 2^6
 
-   Step 7: Substitute groups for characters in the "Chars" list
+Step 7: Substitute groups for characters in the "Chars" list
 
-   See the code at https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/main/password.lua */
+See the code at https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/main/password.lua */
 
 /// 7 bytes for the ASCII string "CAMELOT" in each save's header.
 const HEADER_CAMELOT_ASCII_STRING: &str = "CAMELOT";
@@ -127,9 +127,10 @@ const HEADER_CAMELOT_ASCII_STRING: &str = "CAMELOT";
 /// GS2 (S) = 0x1DC7 -> 2003/07/07
 /// GS2 (F) = 0x1D98 -> 2003/06/24
 /// GS2 (I) = 0x1DC8 -> 2003/07/08
+#[rustfmt::skip]
 const GS_BUILD_DATE: [[u16; 6]; 2] = [
   [0x159C, 0x1652, 0x1849, 0x1885, 0x1713, 0x1886],
-  [0x198A, 0x1C85, 0x1D97, 0x1DC7, 0x1D98, 0x1DC8]
+  [0x198A, 0x1C85, 0x1D97, 0x1DC7, 0x1D98, 0x1DC8],
 ];
 
 /// Main characters' default names in different languages.
@@ -145,6 +146,7 @@ const GS_BUILD_DATE: [[u16; 6]; 2] = [
 /// └── Traditional Chinese:                    "羅賓",   "傑拉德",     "伊萬",   "米雅莉",   "加西亞",   "加斯敏",     "西芭",  "皮卡德"
 /// Chinese fan translation by 2023 Team for GS1
 /// └── Simplified Chinese:                     "罗宾",   "杰拉德",     "伊万",   "梅雅莉",   "加西亚",   "加斯敏",     "西芭",  "皮卡德"
+#[rustfmt::skip]
 const PC_NAME: [[[u8; 7]; 8]; 8] = [
   [[0xDB, 0xCB, 0xDE, 0xDD, 0x00, 0x00, 0x00], [0xBC, 0xDE, 0xAA, 0xD7, 0xD9, 0xC4, 0xDE], [0xB2, 0xDC, 0xDD, 0x00, 0x00, 0x00, 0x00], [0xD2, 0xB1, 0xD8, 0xA8, 0x00, 0x00, 0x00], [0xB6, 0xDE, 0xD9, 0xBC, 0xB1, 0x00, 0x00], [0xBC, 0xDE, 0xAC, 0xBD, 0xD0, 0xDD, 0x00], [0xBC, 0xCA, 0xDE, 0x00, 0x00, 0x00, 0x00], [0xCB, 0xDF, 0xB6, 0xB0, 0xC4, 0xDE, 0x00]],
   [[0x49, 0x73, 0x61, 0x61, 0x63, 0x00, 0x00], [0x47, 0x61, 0x72, 0x65, 0x74, 0x00, 0x00], [0x49, 0x76, 0x61, 0x6E, 0x00, 0x00, 0x00], [0x4D, 0x69, 0x61, 0x00, 0x00, 0x00, 0x00], [0x46, 0x65, 0x6C, 0x69, 0x78, 0x00, 0x00], [0x4A, 0x65, 0x6E, 0x6E, 0x61, 0x00, 0x00], [0x53, 0x68, 0x65, 0x62, 0x61, 0x00, 0x00], [0x50, 0x69, 0x65, 0x72, 0x73, 0x00, 0x00]],
@@ -170,16 +172,16 @@ const FIRST_BUILD_DATE_LOCATION_INDEX: [usize; 2] = [0x36, 0x37];
 
 /* Unused, since now we have a much better way to check if the save data is clear data.
 
-   All save map(location) locations  :0x410 to 0x413, 0x418 to 0x41B
-   Save map data -> Main:Minor
-   All stored values are same.
-   const FIRST_SAVE_MAP_MAIN_LOCATION_INDEX: [usize; 2] = [0x410, 0x411];
-   const FIRST_SAVE_MAP_MINOR_LOCATION_INDEX: [usize; 2] = [0x412, 0x413];  */
+All save map(location) locations  :0x410 to 0x413, 0x418 to 0x41B
+Save map data -> Main:Minor
+All stored values are same.
+const FIRST_SAVE_MAP_MAIN_LOCATION_INDEX: [usize; 2] = [0x410, 0x411];
+const FIRST_SAVE_MAP_MINOR_LOCATION_INDEX: [usize; 2] = [0x412, 0x413];  */
 
 /* Unused, since now we have a much better way to check if the save data is clear data.
 
-   Clear data's save location value is -> 1:2
-   const CLEAR_DATA_SAVE_MAP_VALUE: [u16; 2] = [0x01, 0x02]; */
+Clear data's save location value is -> 1:2
+const CLEAR_DATA_SAVE_MAP_VALUE: [u16; 2] = [0x01, 0x02]; */
 
 /// For clear data, its value is 1.
 /// If the save data is not a clear data, its value is 0.
@@ -236,7 +238,10 @@ const PSYNERGY_ITEMS: [u16; 8] = [0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF
 /// EF: Weasel's Claw
 /// F0: Bramble Seed
 /// F1: Crystal Powder
-const STACKABLE_ITEMS: [u16; 23] = [0xB4, 0xB5, 0xB6, 0xB7, 0xBA, 0xBB, 0xBC, 0xBD, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xE2, 0xE3, 0xE4, 0xE5, 0xEC, 0xEE, 0xEF, 0xF0, 0xF1];
+const STACKABLE_ITEMS: [u16; 23] = [
+  0xB4, 0xB5, 0xB6, 0xB7, 0xBA, 0xBB, 0xBC, 0xBD, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xE2, 0xE3,
+  0xE4, 0xE5, 0xEC, 0xEE, 0xEF, 0xF0, 0xF1,
+];
 
 /// Bronze: 9
 /// Silver: 9, 19, 29, 39, 49, 59
@@ -249,31 +254,41 @@ const STACKABLE_ITEMS: [u16; 23] = [0xB4, 0xB5, 0xB6, 0xB7, 0xBA, 0xBB, 0xBC, 0x
 /// 159 - 15, 169 - 16, 179 - 17, 189 - 18, 199 - 19,
 /// 209 - 20, 219 - 21, 229 - 22, 239 - 23, 249 - 24,
 /// 259 - 25
-const CHECKSUM_INDEX: [usize; 26] = [9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99, 108, 117, 126, 135, 144, 153, 162, 171, 180, 189, 198, 207, 216, 225, 234];
+const CHECKSUM_INDEX: [usize; 26] = [
+  9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99, 108, 117, 126, 135, 144, 153, 162, 171, 180, 189, 198,
+  207, 216, 225, 234,
+];
 
 /// All Venus djinn in Golden Sun.
-const VENUS_DJINN_NAMES: [&str; 7] = ["Flint", "Granite", "Quartz", "Vine", "Sap", "Ground", "Bane"];
+const VENUS_DJINN_NAMES: [&str; 7] = [
+  "Flint", "Granite", "Quartz", "Vine", "Sap", "Ground", "Bane",
+];
 
 /// All Mercury djinn in Golden Sun.
 const MERCURY_DJINN_NAMES: [&str; 7] = ["Fizz", "Sleet", "Mist", "Spritz", "Hail", "Tonic", "Dew"];
 
 /// All Mars djinn in Golden Sun.
-const MARS_DJINN_NAMES: [&str; 7] = ["Forge", "Fever", "Corona", "Scorch", "Ember", "Flash", "Torch"];
+const MARS_DJINN_NAMES: [&str; 7] = [
+  "Forge", "Fever", "Corona", "Scorch", "Ember", "Flash", "Torch",
+];
 
 /// All Jupiter djinn in Golden Sun.
-const JUPITER_DJINN_NAMES: [&str; 7] = ["Gust", "Breeze", "Zephyr", "Smog", "Kite", "Squall", "Luff"];
+const JUPITER_DJINN_NAMES: [&str; 7] =
+  ["Gust", "Breeze", "Zephyr", "Smog", "Kite", "Squall", "Luff"];
 
 /// These default classes are:
 /// Squire (Isaac), Guard (Garet), Wind Seer (Ivan), Water Seer (Mia)
+#[rustfmt::skip]
 const DEFAULT_CLASS_MULTIPLIERS: [[f64; 6]; 4] = [
   [1.1, 0.8, 1.1, 1.0, 1.1, 1.0],
   [1.1, 0.8, 1.0, 1.1, 0.7, 1.0],
   [0.8, 1.4, 0.8, 0.9, 1.3, 1.1],
-  [0.9, 1.3, 0.9, 1.0, 0.8, 1.3]
+  [0.9, 1.3, 0.9, 1.0, 0.8, 1.3],
 ];
 
 /// All items in Golden Sun and Golden Sun: The Lost Age.
 /// Though this long array looks not good...
+#[rustfmt::skip]
 const ALL_ITEM_NAMES: [&str; 460] = [
   "Long Sword", "Broad Sword", "Claymore", "Great Sword", "Shamshir", "Silver Blade", "Fire Brand", "Arctic Blade", "Gaia Blade", "Sol Blade",
   "Muramasa", "?", "?", "?", "Machete", "Short Sword", "Hunter's Sword", "Battle Rapier", "Master Rapier", "Ninja Blade",
@@ -334,7 +349,7 @@ const PARTY_MEMBERS_COUNT: [usize; 2] = [7, 8];
 const PC_NAME_LOCATION_INDEX: [usize; 2] = [0x510, 0x530];
 const BUILD_DATE_LOCATION_INDEX: [[[usize; 2]; 3]; 2] = [
   [[0x36, 0x37], [0x250, 0x251], [0x508, 0x509]],
-  [[0x36, 0x37], [0x250, 0x251], [0x528, 0x529]]
+  [[0x36, 0x37], [0x250, 0x251], [0x528, 0x529]],
 ];
 
 /// Save slot size - header size
@@ -404,6 +419,20 @@ pub struct BitArray {
 
 // Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
 impl BitArray {
+  pub fn new() -> Self {
+    BitArray { bits: Vec::new() }
+  }
+
+  pub fn from(value: &[u8]) -> Self {
+    BitArray {
+      bits: Vec::from(value),
+    }
+  }
+
+  pub fn get_bits(&self) -> Vec<u8> {
+    self.bits.clone()
+  }
+
   // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L16
   fn push_bit(&mut self, value: u32) {
     self.bits.push((value & 1) as u8);
@@ -470,12 +499,20 @@ impl BitArray {
 // password
 pub fn get_loop_start_index_option(raw_save_file: &[u8]) -> Option<usize> {
   for i in 0..MAX_LOOP_COUNT[0] {
-    let Ok(header_string) = std::str::from_utf8(&raw_save_file[(i * SAVE_SLOT_SIZE[0])..(i * SAVE_SLOT_SIZE[0] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX)]) else { continue; };
+    let Ok(header_string) = std::str::from_utf8(
+      &raw_save_file
+        [(i * SAVE_SLOT_SIZE[0])..(i * SAVE_SLOT_SIZE[0] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX)],
+    ) else {
+      continue;
+    };
     if !header_string.eq(HEADER_CAMELOT_ASCII_STRING) {
       continue;
     }
 
-    let build_date_from_raw_save = u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE[0] + FIRST_BUILD_DATE_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE[0] + FIRST_BUILD_DATE_LOCATION_INDEX[1]]]);
+    let build_date_from_raw_save = u16::from_le_bytes([
+      raw_save_file[i * SAVE_SLOT_SIZE[0] + FIRST_BUILD_DATE_LOCATION_INDEX[0]],
+      raw_save_file[i * SAVE_SLOT_SIZE[0] + FIRST_BUILD_DATE_LOCATION_INDEX[1]],
+    ]);
     if GS_BUILD_DATE[0].contains(&build_date_from_raw_save) {
       return Some(i);
     }
@@ -484,18 +521,31 @@ pub fn get_loop_start_index_option(raw_save_file: &[u8]) -> Option<usize> {
 }
 
 // convert save
-pub fn get_game_type_with_loop_start_index_option(raw_save_file: &[u8]) -> (Option<GameType>, Option<usize>) {
+pub fn get_game_type_with_loop_start_index_option(
+  raw_save_file: &[u8],
+) -> (Option<GameType>, Option<usize>) {
   for i in 0..MAX_LOOP_COUNT[0] {
-    let Ok(header_string) = std::str::from_utf8(&raw_save_file[(i * SAVE_SLOT_SIZE[0])..(i * SAVE_SLOT_SIZE[0] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX)]) else { continue; };
+    let Ok(header_string) = std::str::from_utf8(
+      &raw_save_file
+        [(i * SAVE_SLOT_SIZE[0])..(i * SAVE_SLOT_SIZE[0] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX)],
+    ) else {
+      continue;
+    };
     if !header_string.eq(HEADER_CAMELOT_ASCII_STRING) {
       continue;
     }
 
-    let build_date_from_raw_save_as_tbs = u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][0]], raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][1]]]);
+    let build_date_from_raw_save_as_tbs = u16::from_le_bytes([
+      raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][0]],
+      raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][1]],
+    ]);
     if GS_BUILD_DATE[0].contains(&build_date_from_raw_save_as_tbs) {
       return (Some(GameType::TheBrokenSeal), Some(i));
     }
-    let build_date_from_raw_save_as_tla = u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][0]], raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][1]]]);
+    let build_date_from_raw_save_as_tla = u16::from_le_bytes([
+      raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][0]],
+      raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][1]],
+    ]);
     if GS_BUILD_DATE[1].contains(&build_date_from_raw_save_as_tla) {
       return (Some(GameType::TheLostAge), Some(i / 3));
     }
@@ -504,20 +554,35 @@ pub fn get_game_type_with_loop_start_index_option(raw_save_file: &[u8]) -> (Opti
   (None, None)
 }
 
-pub fn get_raw_save_data_map(to_export_all_data: bool, raw_save_file: &[u8], loop_start_index: usize) -> HashMap<u8, RawSaveData> {
+pub fn get_raw_save_data_map(
+  to_export_all_data: bool,
+  raw_save_file: &[u8],
+  loop_start_index: usize,
+) -> HashMap<u8, RawSaveData> {
   let mut all_possible_headers = Vec::new();
   // "u8" is slot number. (Start from 0)
   let mut save_data_map: HashMap<u8, RawSaveData> = HashMap::new();
   for i in loop_start_index..MAX_LOOP_COUNT[0] {
-    if raw_save_file[i * SAVE_SLOT_SIZE[0] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX] > MAX_VALID_SLOT_NUMBER {
+    if raw_save_file[i * SAVE_SLOT_SIZE[0] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX]
+      > MAX_VALID_SLOT_NUMBER
+    {
       continue;
     }
-    let is_clear_save = raw_save_file[i * SAVE_SLOT_SIZE[0] + CLEAR_DATA_IDENTIFIER_INDEX] == CLEAR_DATA_IDENTIFIER_VALUE;
+    let is_clear_save = raw_save_file[i * SAVE_SLOT_SIZE[0] + CLEAR_DATA_IDENTIFIER_INDEX]
+      == CLEAR_DATA_IDENTIFIER_VALUE;
     if !is_clear_save && !to_export_all_data {
       continue;
     }
     // Get all possible valid save headers first.
-    all_possible_headers.push(HeaderInfo { index: i, priority: u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE[0] + HEADER_PRIORITY_LOCATION_INDEX[0]], raw_save_file[i * SAVE_SLOT_SIZE[0] + HEADER_PRIORITY_LOCATION_INDEX[1]]]), slot_number: raw_save_file[i * SAVE_SLOT_SIZE[0] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX], is_clear_data: is_clear_save });
+    all_possible_headers.push(HeaderInfo {
+      index: i,
+      priority: u16::from_le_bytes([
+        raw_save_file[i * SAVE_SLOT_SIZE[0] + HEADER_PRIORITY_LOCATION_INDEX[0]],
+        raw_save_file[i * SAVE_SLOT_SIZE[0] + HEADER_PRIORITY_LOCATION_INDEX[1]],
+      ]),
+      slot_number: raw_save_file[i * SAVE_SLOT_SIZE[0] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX],
+      is_clear_data: is_clear_save,
+    });
   }
 
   // Get all valid save data.
@@ -532,10 +597,18 @@ pub fn get_raw_save_data_map(to_export_all_data: bool, raw_save_file: &[u8], loo
       }
     }
     /* Does not include first 16 bytes header.
-       The data from 0xA40 (Felix, Jenna, Sheba, PC07) is useless for password generating.
-       0xA40 - 0x10 = 0xA30 */
-    let mut save_data = RawSaveData { priority: 0, is_clear_data: false, data: vec![0; 0xA30] };
-    save_data.set_data(raw_save_file.get(header.index * SAVE_SLOT_SIZE[0] + 0x10..header.index * SAVE_SLOT_SIZE[0] + 0xA40).unwrap());
+    The data from 0xA40 (Felix, Jenna, Sheba, PC07) is useless for password generating.
+    0xA40 - 0x10 = 0xA30 */
+    let mut save_data = RawSaveData {
+      priority: 0,
+      is_clear_data: false,
+      data: vec![0; 0xA30],
+    };
+    save_data.set_data(
+      raw_save_file
+        .get(header.index * SAVE_SLOT_SIZE[0] + 0x10..header.index * SAVE_SLOT_SIZE[0] + 0xA40)
+        .unwrap(),
+    );
     save_data.set_is_clear(header.is_clear_data);
     save_data.set_priority(header.priority);
     // Key is save slot number: 0, 1, 2
@@ -546,7 +619,7 @@ pub fn get_raw_save_data_map(to_export_all_data: bool, raw_save_file: &[u8], loo
 }
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-   Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L8 */
+Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L8 */
 fn get_event_flag(raw_save: &[u8], flag: u32) -> u8 {
   let byte_pos = (flag >> 3) as usize;
   let bit_pos = flag & 7;
@@ -554,7 +627,7 @@ fn get_event_flag(raw_save: &[u8], flag: u32) -> u8 {
 }
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-   Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L35 */
+Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L35 */
 fn gen_save_data_with_raw_save_bytes(raw_save: &[u8]) -> SaveData {
   // [u8; 4]
   let mut levels = [0; 4];
@@ -574,7 +647,12 @@ fn gen_save_data_with_raw_save_bytes(raw_save: &[u8]) -> SaveData {
     levels[i] = raw_save[base + 0xF];
 
     for j in 0..4 {
-      djinn[j] |= u32::from_le_bytes([raw_save[base + 0xF8 + 4 * j], raw_save[base + 0xF9 + 4 * j], raw_save[base + 0xFA + 4 * j], raw_save[base + 0xFB + 4 * j]]);
+      djinn[j] |= u32::from_le_bytes([
+        raw_save[base + 0xF8 + 4 * j],
+        raw_save[base + 0xF9 + 4 * j],
+        raw_save[base + 0xFA + 4 * j],
+        raw_save[base + 0xFB + 4 * j],
+      ]);
     }
 
     // HP
@@ -591,7 +669,8 @@ fn gen_save_data_with_raw_save_bytes(raw_save: &[u8]) -> SaveData {
     stats[i][5] = u16::from(raw_save[base + 0x1E]);
 
     for j in 0..15 {
-      items[i][j] = u16::from_le_bytes([raw_save[base + 0xD8 + 2 * j], raw_save[base + 0xD9 + 2 * j]]);
+      items[i][j] =
+        u16::from_le_bytes([raw_save[base + 0xD8 + 2 * j], raw_save[base + 0xD9 + 2 * j]]);
     }
   }
   // Saved Hametto/Hammet
@@ -608,18 +687,30 @@ fn gen_save_data_with_raw_save_bytes(raw_save: &[u8]) -> SaveData {
   events[5] = get_event_flag(raw_save, 0x868);
 
   // u32
-  let coins = u32::from_le_bytes([raw_save[0x250], raw_save[0x251], raw_save[0x252], raw_save[0x253]]);
-  SaveData { levels, djinn, events, stats, items, coins }
+  let coins = u32::from_le_bytes([
+    raw_save[0x250],
+    raw_save[0x251],
+    raw_save[0x252],
+    raw_save[0x253],
+  ]);
+  SaveData {
+    levels,
+    djinn,
+    events,
+    stats,
+    items,
+    coins,
+  }
 }
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-   Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L79 */
+Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L79 */
 fn gen_password_bytes_with_save_data(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
-  let mut bits = BitArray { bits: Vec::new() };
+  let mut bits = BitArray::new();
 
   // Insert 7 bits per level, 7 bits per jinn element
-  let mut level_bits = BitArray { bits: Vec::new() };
-  let mut djinn_bits = BitArray { bits: Vec::new() };
+  let mut level_bits = BitArray::new();
+  let mut djinn_bits = BitArray::new();
   for i in (0..=3).rev() {
     level_bits.push_bits(u32::from(save_data.levels[i]), 7);
   }
@@ -791,7 +882,10 @@ pub fn get_password_bytes_with_raw_save_bytes(raw_save: &[u8], grade: PasswordGr
   gen_password_bytes_with_save_data(grade, &save_data)
 }
 
-pub fn get_valid_password_bits_option(password_bytes: &[u8], check_validity: bool) -> Option<BitArray> {
+pub fn get_valid_password_bits_option(
+  password_bytes: &[u8],
+  check_validity: bool,
+) -> Option<BitArray> {
   let password_grade = match password_bytes.len() {
     260 => PasswordGrade::Gold,
     61 => PasswordGrade::Silver,
@@ -801,26 +895,26 @@ pub fn get_valid_password_bits_option(password_bytes: &[u8], check_validity: boo
 
   let mut bytes_data = vec![0; password_bytes.len()];
   /* Remove each byte's position data by minus its index.
-     I'm not sure if it's the correct way to do that, but "+ 0x200" works.
-     Maybe there is a better way for this...
+  I'm not sure if it's the correct way to do that, but "+ 0x200" works.
+  Maybe there is a better way for this...
 
-     Notes about Hex to Bin:
-     63  -> 0x3F  ->     11 1111
+  Notes about Hex to Bin:
+  63  -> 0x3F  ->     11 1111
 
-     64  -> 0x40  ->    100 0000
-     128 -> 0x80  ->   1000 0000
-     256 -> 0x100 -> 1 0000 0000
+  64  -> 0x40  ->    100 0000
+  128 -> 0x80  ->   1000 0000
+  256 -> 0x100 -> 1 0000 0000
 
-     Max len
-     16  -> 0x10  ->      1 0000
-     61  -> 0x3D  ->     11 1101
-     260 -> 0x104 -> 1 0000 0100 */
+  Max len
+  16  -> 0x10  ->      1 0000
+  61  -> 0x3D  ->     11 1101
+  260 -> 0x104 -> 1 0000 0100 */
   for (i, data) in password_bytes.iter().enumerate() {
     bytes_data[i] = ((u16::from(*data) + 0x200 - u16::try_from(i).unwrap()) & 0x3F) as u8;
   }
 
   /* Remove all checksum bytes.
-     Those checksum bytes are useless for getting game data. */
+  Those checksum bytes are useless for getting game data. */
   match password_grade {
     PasswordGrade::Gold => {
       // Or you can use: for i in 9..260.step_by(9)
@@ -848,7 +942,7 @@ pub fn get_valid_password_bits_option(password_bytes: &[u8], check_validity: boo
     // Bronze: 16 - 1 = 15 => 9
     PasswordGrade::Bronze => 9,
   };
-  let mut bits = BitArray { bits: Vec::new() };
+  let mut bits = BitArray::new();
   let max_size = (size + 2) * 8;
 
   for (j, i) in (0..max_size).step_by(6).enumerate() {
@@ -869,7 +963,11 @@ pub fn get_valid_password_bits_option(password_bytes: &[u8], check_validity: boo
   // Decrypt bits
   for i in 0..=size {
     let byte = u32::from(bits.sub_bits_u8(8 * i, 8 * i + 7));
-    bits.replace_bits(byte ^ u32::from(key_second_half_from_source_bytes), 8, 8 * i);
+    bits.replace_bits(
+      byte ^ u32::from(key_second_half_from_source_bytes),
+      8,
+      8 * i,
+    );
   }
 
   if check_validity {
@@ -894,8 +992,12 @@ pub fn get_valid_password_bits_option(password_bytes: &[u8], check_validity: boo
     let xor_value = x_sum & 0xFF;
 
     // Let's see if the values of the two keys are equal.
-    let key_from_source_bytes = u16::from_be_bytes([key_first_half_from_source_bytes, key_second_half_from_source_bytes]);
-    let key_from_result_bits = u16::from_be_bytes([u8::try_from(x_sum >> 8).unwrap(), xor_value as u8]);
+    let key_from_source_bytes = u16::from_be_bytes([
+      key_first_half_from_source_bytes,
+      key_second_half_from_source_bytes,
+    ]);
+    let key_from_result_bits =
+      u16::from_be_bytes([u8::try_from(x_sum >> 8).unwrap(), xor_value as u8]);
     if key_from_result_bits == key_from_source_bytes {
       Some(bits)
     } else {
@@ -906,49 +1008,60 @@ pub fn get_valid_password_bits_option(password_bytes: &[u8], check_validity: boo
   }
 }
 
-fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade: PasswordGrade) -> SaveData {
+fn gen_save_data_with_password_bits(
+  password_bits: &mut BitArray,
+  password_grade: PasswordGrade,
+) -> SaveData {
   /* [u8; 4]
-     TEMP Default Values
-     Order: Isaac, Garet, Ivan, Mia */
+  TEMP Default Values
+  Order: Isaac, Garet, Ivan, Mia */
   let mut levels = [28, 28, 28, 28];
 
   /* [u32; 4]
-     TEMP Default Values
-     Venus:   0101101 (Order: Bane, Ground, Sap, Vine, Quartz, Granite, Flint)
-     Mercury: 0001111 (Order: Dew, Tonic, Hail, Spritz, Mist, Sleet, Fizz)
-     Mars:    1101110 (Order: Torch, Flash, Ember, Scorch, Corona, Fever, Forge)
-     Jupiter: 1001111 (Order: Luff, Squall, Kite, Smog, Zephyr, Breeze, Gust) */
+  TEMP Default Values
+  Venus:   0101101 (Order: Bane, Ground, Sap, Vine, Quartz, Granite, Flint)
+  Mercury: 0001111 (Order: Dew, Tonic, Hail, Spritz, Mist, Sleet, Fizz)
+  Mars:    1101110 (Order: Torch, Flash, Ember, Scorch, Corona, Fever, Forge)
+  Jupiter: 1001111 (Order: Luff, Squall, Kite, Smog, Zephyr, Breeze, Gust) */
   let mut djinn = [0x2D, 0x0F, 0x6E, 0x4F];
 
   /* [u8; 6]
-     TEMP Default values
-     Order is: Hammet, Colosso, Hsu, Deadbeard, Vale, Vault*/
+  TEMP Default values
+  Order is: Hammet, Colosso, Hsu, Deadbeard, Vale, Vault*/
   let mut events = [0, 0, 1, 0, 0, 0];
 
   /* [[u16; 6]; 4]
-     TEMP Default values
-     Isaac: HP, EP, Attack, Defense, Agility, Luck
-     Garet: HP, EP, Attack, Defense, Agility, Luck
-     Ivan:  HP, EP, Attack, Defense, Agility, Luck
-     Mia:   HP, EP, Attack, Defense, Agility, Luck */
+  TEMP Default values
+  Isaac: HP, EP, Attack, Defense, Agility, Luck
+  Garet: HP, EP, Attack, Defense, Agility, Luck
+  Ivan:  HP, EP, Attack, Defense, Agility, Luck
+  Mia:   HP, EP, Attack, Defense, Agility, Luck */
   let mut stats = [
     [241, 101, 116, 53, 117, 3],
     [257, 97, 112, 53, 103, 2],
     [220, 117, 100, 51, 124, 4],
-    [230, 115, 102, 49, 109, 5]
+    [230, 115, 102, 49, 109, 5],
   ];
 
   /* [[u16; 15]; 4]
-     TEMP Default Values
-     Isaac: Great Sword, Steel Armor, Knight's Shield, Knight's Helm
-     Garet: Great Axe, Steel Armor, Knight's Shield, Knight's Helm
-     Ivan:  Master Rapier, Silver Vest, Silver Armlet, Platinum Circlet
-     Mia:   War Mace, Silver Vest, Silver Armlet, Platinum Circlet */
+  TEMP Default Values
+  Isaac: Great Sword, Steel Armor, Knight's Shield, Knight's Helm
+  Garet: Great Axe, Steel Armor, Knight's Shield, Knight's Helm
+  Ivan:  Master Rapier, Silver Vest, Silver Armlet, Platinum Circlet
+  Mia:   War Mace, Silver Vest, Silver Armlet, Platinum Circlet */
   let mut items = [
-    [0x04, 0x50, 0x79, 0x96, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-    [0x21, 0x50, 0x79, 0x96, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-    [0x13, 0x5E, 0x8B, 0xA9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
-    [0x2E, 0x5E, 0x8B, 0xA9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+    [
+      0x04, 0x50, 0x79, 0x96, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ],
+    [
+      0x21, 0x50, 0x79, 0x96, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ],
+    [
+      0x13, 0x5E, 0x8B, 0xA9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ],
+    [
+      0x2E, 0x5E, 0x8B, 0xA9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ],
   ];
 
   // u32
@@ -956,51 +1069,51 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
   let mut coins = 0;
 
   /* Remove all useless bits.
-     Gold grade:
-     Step 1: Remove 16 bits of the key for encryption/decryption, and those 40 useless "blank" bits before the key bits.
-     Step 2: Remove 8 useless bits in item bits, since the password already appended a 0 bit every 7 items. (each item take 9 bits, so that means, it append a 0 bit every 63 bits)
-     Step 3: Remove 8 useless "blank" bits ("00000000") between stats bits and item bits.
-     Step 4: Remove 2 useless "blank" bits ("00") before events' bits.
+  Gold grade:
+  Step 1: Remove 16 bits of the key for encryption/decryption, and those 40 useless "blank" bits before the key bits.
+  Step 2: Remove 8 useless bits in item bits, since the password already appended a 0 bit every 7 items. (each item take 9 bits, so that means, it append a 0 bit every 63 bits)
+  Step 3: Remove 8 useless "blank" bits ("00000000") between stats bits and item bits.
+  Step 4: Remove 2 useless "blank" bits ("00") before events' bits.
 
-     Silver and bronze grades:
-     Step 1: Remove 16 bits of the key for encryption/decryption.
-     Step 2: Remove two useless bits "00" before events' bits. */
+  Silver and bronze grades:
+  Step 1: Remove 16 bits of the key for encryption/decryption.
+  Step 2: Remove two useless bits "00" before events' bits. */
   match password_grade {
     PasswordGrade::Gold => {
       /* (2 * 8) + 40
-         -> 16 + 40
-         -> 56 */
+      -> 16 + 40
+      -> 56 */
       for _i in 0..56 {
         password_bits.bits.remove(password_bits.get_len() - 1);
       }
       /* (4 * 7) + (4 * 7) + (2 + 6) + (4 * (11 + 11 + 10 + 10 + 10 + 8)) + 8 - 1
-         -> 28 + 28 + 8 + 240 + 8 - 1
-         -> 311 */
+      -> 28 + 28 + 8 + 240 + 8 - 1
+      -> 311 */
       for i in (1..=8).rev() {
         password_bits.bits.remove(311 + i * 64);
       }
       /* (4 * 7) + (4 * 7) + (2 + 6) + (4 * (11 + 11 + 10 + 10 + 10 + 8))
-         -> 28 + 28 + 8 + 240
-         -> 304 */
+      -> 28 + 28 + 8 + 240
+      -> 304 */
       for _i in 0..8 {
         password_bits.bits.remove(304);
       }
       /* (4 * 7) + (4 * 7)
-         -> 28 + 28
-         -> 56 */
+      -> 28 + 28
+      -> 56 */
       for _i in 0..2 {
         password_bits.bits.remove(56);
       }
     }
     PasswordGrade::Silver | PasswordGrade::Bronze => {
       /* (2 * 8)
-         -> 16 */
+      -> 16 */
       for _i in 0..16 {
         password_bits.bits.remove(password_bits.get_len() - 1);
       }
       /* (4 * 7) + (4 * 7)
-         -> 28 + 28
-         -> 56 */
+      -> 28 + 28
+      -> 56 */
       for _i in 0..2 {
         password_bits.bits.remove(56);
       }
@@ -1008,9 +1121,9 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
   }
 
   /* Get level bits, rearrange it to normal order.
-     Each level value has 7 bits.
-     Order is: Mia, Ivan, Garet, Isaac */
-  let mut level_bits = BitArray { bits: Vec::new() };
+  Each level value has 7 bits.
+  Order is: Mia, Ivan, Garet, Isaac */
+  let mut level_bits = BitArray::new();
   level_bits.push_bits(u32::from(password_bits.sub_bits_u8(24, 27)), 4);
   for i in (7..=23).rev().step_by(8) {
     level_bits.push_bits(u32::from(password_bits.sub_bits_u8(i - 7, i)), 8);
@@ -1020,9 +1133,9 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
   }
 
   /* Get djinn bits, rearrange it to normal order.
-     Each element has 7 bits.
-     Order is: Jupiter, Mars, Mercury, Venus */
-  let mut djinn_bits = BitArray { bits: Vec::new() };
+  Each element has 7 bits.
+  Order is: Jupiter, Mars, Mercury, Venus */
+  let mut djinn_bits = BitArray::new();
   for i in (39..=55).rev().step_by(8) {
     djinn_bits.push_bits(u32::from(password_bits.sub_bits_u8(i - 7, i)), 8);
   }
@@ -1032,16 +1145,16 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
   }
 
   /* Get all event bits.
-     Order is: Vault, Vale, Deadbeard, Hsu, Colosso, Hammet */
+  Order is: Vault, Vale, Deadbeard, Hsu, Colosso, Hammet */
   for (i, event) in events.iter_mut().enumerate() {
     *event = password_bits.bits[61 - i];
   }
 
   /* If password grade is silver or bronze, check 8 psynergy items.
-     if it does has one, insert it back to Isaac's inventory */
+  if it does has one, insert it back to Isaac's inventory */
   if password_grade.is_silver() || password_grade.is_bronze() {
     /* Isaac's inventory: Great Sword, Steel Armor, Knight's Shield, Knight's Helm
-       So the start index is 4 */
+    So the start index is 4 */
     let mut isaac_inventory_start_index = 4;
     for (i, psynergy_item) in PSYNERGY_ITEMS.iter().enumerate() {
       // Reversed order
@@ -1056,45 +1169,57 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
   if password_grade.is_gold() || password_grade.is_silver() {
     let start_index = if password_grade.is_gold() {
       /* (4 * 7) + (4 * 7) + 6
-         -> 28 + 28 + 6
-         -> 62 */
+      -> 28 + 28 + 6
+      -> 62 */
       62
     } else {
       /* (4 * 7) + (4 * 7) + 6 + 8
-         -> 28 + 28 + 6 + 8
-         -> 70 */
+      -> 28 + 28 + 6 + 8
+      -> 70 */
       70
     };
     for (i, stats_per_person) in stats.iter_mut().enumerate() {
       // HP
-      stats_per_person[0] = password_bits.sub_bits_u16(start_index + i * 60, start_index + 10 + i * 60);
+      stats_per_person[0] =
+        password_bits.sub_bits_u16(start_index + i * 60, start_index + 10 + i * 60);
       // EP
-      stats_per_person[1] = password_bits.sub_bits_u16(start_index + 11 + i * 60, start_index + 21 + i * 60);
+      stats_per_person[1] =
+        password_bits.sub_bits_u16(start_index + 11 + i * 60, start_index + 21 + i * 60);
       // Attack
-      stats_per_person[2] = password_bits.sub_bits_u16(start_index + 22 + i * 60, start_index + 31 + i * 60);
+      stats_per_person[2] =
+        password_bits.sub_bits_u16(start_index + 22 + i * 60, start_index + 31 + i * 60);
       // Defense
-      stats_per_person[3] = password_bits.sub_bits_u16(start_index + 32 + i * 60, start_index + 41 + i * 60);
+      stats_per_person[3] =
+        password_bits.sub_bits_u16(start_index + 32 + i * 60, start_index + 41 + i * 60);
       // Agility
-      stats_per_person[4] = password_bits.sub_bits_u16(start_index + 42 + i * 60, start_index + 51 + i * 60);
+      stats_per_person[4] =
+        password_bits.sub_bits_u16(start_index + 42 + i * 60, start_index + 51 + i * 60);
       // Luck
-      stats_per_person[5] = password_bits.sub_bits_u16(start_index + 52 + i * 60, start_index + 59 + i * 60);
+      stats_per_person[5] =
+        password_bits.sub_bits_u16(start_index + 52 + i * 60, start_index + 59 + i * 60);
     }
   }
 
   if password_grade.is_gold() {
     /* (4 * 7) + (4 * 7) + 6 + (4 * (11 + 11 + 10 + 10 + 10 + 8))
-       -> 28 + 28 + 6 + 240
-       -> 302 */
+    -> 28 + 28 + 6 + 240
+    -> 302 */
     let item_id_start_index = 302;
     /* (4 * 7) + (4 * 7) + 6 + (4 * (11 + 11 + 10 + 10 + 10 + 8)) + (4 * (9 * 15))
-       -> 28 + 28 + 6 + 240 + 540
-       -> 842 */
+    -> 28 + 28 + 6 + 240 + 540
+    -> 842 */
     let stackable_item_quantity_start_index = 842;
     for (i, items_per_person) in items.iter_mut().enumerate() {
       for (j, item) in items_per_person.iter_mut().enumerate() {
-        let item_id = password_bits.sub_bits_u16(item_id_start_index + i * 135 + j * 9, item_id_start_index + 8 + i * 135 + j * 9);
+        let item_id = password_bits.sub_bits_u16(
+          item_id_start_index + i * 135 + j * 9,
+          item_id_start_index + 8 + i * 135 + j * 9,
+        );
         if let Some(stackable_item_index) = STACKABLE_ITEMS.iter().position(|&x| x == item_id) {
-          let item_quantity = password_bits.sub_bits_u8(stackable_item_quantity_start_index + i * 115 + stackable_item_index * 5, stackable_item_quantity_start_index + 4 + i * 115 + stackable_item_index * 5);
+          let item_quantity = password_bits.sub_bits_u8(
+            stackable_item_quantity_start_index + i * 115 + stackable_item_index * 5,
+            stackable_item_quantity_start_index + 4 + i * 115 + stackable_item_index * 5,
+          );
           if item_quantity > 0 {
             let quantity_part = u16::from(item_quantity) << 11;
             *item = quantity_part + item_id;
@@ -1107,52 +1232,27 @@ fn gen_save_data_with_password_bits(password_bits: &mut BitArray, password_grade
     coins = password_bits.sub_bits_u32(password_bits.get_len() - 24, password_bits.get_len() - 1);
   }
 
-  SaveData { levels, djinn, events, stats, items, coins }
-}
-
-/// Returns `true` if `source_grade` >= `target_grade`.
-pub fn can_downgrade(source_grade: PasswordGrade, target_grade: PasswordGrade) -> bool {
-  match source_grade {
-    PasswordGrade::Gold => true,
-    PasswordGrade::Silver => {
-      match target_grade {
-        PasswordGrade::Gold => false,
-        PasswordGrade::Silver | PasswordGrade::Bronze => true,
-      }
-    }
-    PasswordGrade::Bronze => {
-      match target_grade {
-        PasswordGrade::Gold | PasswordGrade::Silver => false,
-        PasswordGrade::Bronze => true,
-      }
-    }
+  SaveData {
+    levels,
+    djinn,
+    events,
+    stats,
+    items,
+    coins,
   }
 }
 
-/// Returns `true` if `source_grade` <= `target_grade`.
-pub fn no_need_to_downgrade(source_grade: PasswordGrade, target_grade: PasswordGrade) -> bool {
-  match source_grade {
-    PasswordGrade::Gold => {
-      match target_grade {
-        PasswordGrade::Gold => true,
-        PasswordGrade::Silver | PasswordGrade::Bronze => false,
-      }
-    }
-    PasswordGrade::Silver => {
-      match target_grade {
-        PasswordGrade::Gold | PasswordGrade::Silver => true,
-        PasswordGrade::Bronze => false,
-      }
-    }
-    PasswordGrade::Bronze => true,
-  }
-}
-
-pub fn get_save_data_with_password_bits(password_bits: &mut BitArray, source_grade: PasswordGrade) -> SaveData {
+pub fn get_save_data_with_password_bits(
+  password_bits: &mut BitArray,
+  source_grade: PasswordGrade,
+) -> SaveData {
   gen_save_data_with_password_bits(password_bits, source_grade)
 }
 
-pub fn get_password_bytes_with_save_data(save_data: &SaveData, target_grade: PasswordGrade) -> Vec<u8> {
+pub fn get_password_bytes_with_save_data(
+  save_data: &SaveData,
+  target_grade: PasswordGrade,
+) -> Vec<u8> {
   gen_password_bytes_with_save_data(target_grade, save_data)
 }
 
@@ -1160,10 +1260,14 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   let mut exported_text = String::new();
   // Text start
   exported_text.push_str("用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件\n");
-  exported_text.push_str("来源出处：https://www.reddit.com/r/GoldenSun/comments/jon3h7/golden_sun_password_tools/\n");
+  exported_text.push_str(
+    "来源出处：https://www.reddit.com/r/GoldenSun/comments/jon3h7/golden_sun_password_tools/\n",
+  );
   exported_text.push_str("在线版表格：https://docs.google.com/spreadsheets/d/1jQ2Zj2F57Fb4hs0pDYLCaZL-qry7gcVxNbhpq0BJDUs/\n");
   exported_text.push_str("对于 Windows 系统用户，推荐直接使用系统自带的记事本打开该文本文件。\n");
-  exported_text.push_str("复制“===开始===”和“===结束===”之间的所有内容，并粘贴到表格对应的单元格范围。\n\n\n\n");
+  exported_text.push_str(
+    "复制“===开始===”和“===结束===”之间的所有内容，并粘贴到表格对应的单元格范围。\n\n\n\n",
+  );
 
   // Levels
   exported_text.push_str("等级\n罗宾，杰拉德，伊万，梅雅莉\n表格中的范围 -> C8:F8\n");
@@ -1180,10 +1284,10 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   // Djinn
   exported_text.push_str("精灵\n维纳斯（地/金星），玛尔斯（火/火星），朱庇特（风/木星），墨丘利（水/水星）\n表格中的范围 -> C12:F18\n");
   exported_text.push_str("====================开始====================\n");
-  let mut venus_djinn_bits = BitArray { bits: Vec::new() };
-  let mut mercury_djinn_bits = BitArray { bits: Vec::new() };
-  let mut mars_djinn_bits = BitArray { bits: Vec::new() };
-  let mut jupiter_djinn_bits = BitArray { bits: Vec::new() };
+  let mut venus_djinn_bits = BitArray::new();
+  let mut mercury_djinn_bits = BitArray::new();
+  let mut mars_djinn_bits = BitArray::new();
+  let mut jupiter_djinn_bits = BitArray::new();
 
   venus_djinn_bits.push_bits(save_data.djinn[0], 7);
   mercury_djinn_bits.push_bits(save_data.djinn[1], 7);
@@ -1232,10 +1336,14 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("基础能力状态属性\n罗宾，杰拉德，伊万，梅雅莉\n");
   exported_text.push_str("从上至下的顺序为：\nHP, EP, 攻击, 防御, 敏捷, 幸运\n\n");
   exported_text.push_str("注：“基础能力状态属性”即\"Base stats\"，是不装备任何物品，没有附身任何精灵，也没有乘上角色默认职业的各属性倍率进行修正的角色能力属性值。\n");
-  exported_text.push_str("　　每个角色都拥有默认的基础职业，并且在游戏中基础属性值会乘上职业对应的属性倍率,\n");
+  exported_text.push_str(
+    "　　每个角色都拥有默认的基础职业，并且在游戏中基础属性值会乘上职业对应的属性倍率,\n",
+  );
   exported_text.push_str("　　也就是说，这些是角色最本质的基础值，是无法在游戏里查看确认到的。\n");
-  exported_text.push_str("　　如果要使用“基础能力状态属性”来生成密码，记得把 J3 单元格选为\"Base stats\"。\n");
-  exported_text.push_str("　　（“基础能力状态属性”使用起来可能不太方便，不过不会出现数值误差）\n\n");
+  exported_text
+    .push_str("　　如果要使用“基础能力状态属性”来生成密码，记得把 J3 单元格选为\"Base stats\"。\n");
+  exported_text
+    .push_str("　　（“基础能力状态属性”使用起来可能不太方便，不过不会出现数值误差）\n\n");
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
   for i in 0..6 {
@@ -1251,23 +1359,51 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("从上至下的顺序为：\nHP, EP, 攻击, 防御, 敏捷, 幸运\n\n");
   exported_text.push_str("注：“能力状态属性”即\"Stats\"，是不装备任何物品，没有附身任何精灵，但是有乘上角色默认职业的各属性倍率进行修正的角色能力属性值。\n");
   exported_text.push_str("　　换句话说，这些属性值是可以在游戏里亲自确认到的，只要卸下所有装备，待命所有精灵就能看到。\n");
-  exported_text.push_str("　　如果要使用“能力状态属性”来生成密码，记得把 J3 单元格选为\"Stats\"。\n");
-  exported_text.push_str("　　（使用起来方便，但是在一些情况下会产生极其微小的数值误差，导致密码发生变化。");
+  exported_text
+    .push_str("　　如果要使用“能力状态属性”来生成密码，记得把 J3 单元格选为\"Stats\"。\n");
+  exported_text
+    .push_str("　　（使用起来方便，但是在一些情况下会产生极其微小的数值误差，导致密码发生变化。");
   exported_text.push_str("这是因为在游戏中，几个不同的值有可能在经过计算后得到相同的结果，所以表格在逆向除以职业属性倍率获得真实的基础属性值时会假定该数值为多个可能的数值中的最大值。");
   exported_text.push_str("如果你非常在意这个误差问题的话，请使用“基础能力状态属性”吧）\n\n");
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
   for i in 0..6 {
-    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as u32).as_str());
-    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as u32).as_str());
-    exported_text.push_str(format!("{}\t", (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as u32).as_str());
-    exported_text.push_str(format!("{}\n", (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as u32).as_str());
+    exported_text.push_str(
+      format!(
+        "{}\t",
+        (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as u32
+      )
+      .as_str(),
+    );
+    exported_text.push_str(
+      format!(
+        "{}\t",
+        (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as u32
+      )
+      .as_str(),
+    );
+    exported_text.push_str(
+      format!(
+        "{}\t",
+        (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as u32
+      )
+      .as_str(),
+    );
+    exported_text.push_str(
+      format!(
+        "{}\n",
+        (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as u32
+      )
+      .as_str(),
+    );
   }
   exported_text.push_str("============结束============\n\n\n\n");
 
   // Items
   exported_text.push_str("物品\n罗宾，杰拉德，伊万，梅雅莉\n表格中的范围 -> J14:M28\n");
-  exported_text.push_str("========================================开始========================================\n");
+  exported_text.push_str(
+    "========================================开始========================================\n",
+  );
   for i in 0..15 {
     let isaac_item = save_data.items[0][i];
     let isaac_item_id = isaac_item & 0x1FF;
@@ -1313,7 +1449,9 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
     }
     exported_text.push('\n');
   }
-  exported_text.push_str("========================================结束========================================\n\n\n\n");
+  exported_text.push_str(
+    "========================================结束========================================\n\n\n\n",
+  );
   // Coins
   exported_text.push_str("金币\n表格中的范围 -> D28\n");
   exported_text.push_str("====开始====\n");
@@ -1332,13 +1470,22 @@ pub fn get_exported_data_for_dyrati_sheet_by_save_data(save_data: &SaveData) -> 
   gen_exported_data_for_dyrati_sheet_with_save_data(save_data)
 }
 
-pub fn get_exported_data_for_dyrati_sheet_by_bytes(password_bytes: &[u8], target_grade: PasswordGrade) -> String {
+pub fn get_exported_data_for_dyrati_sheet_by_bytes(
+  password_bytes: &[u8],
+  target_grade: PasswordGrade,
+) -> String {
   let mut password_bits = get_valid_password_bits_option(password_bytes, false).unwrap();
   let save_data = gen_save_data_with_password_bits(&mut password_bits, target_grade);
   gen_exported_data_for_dyrati_sheet_with_save_data(&save_data)
 }
 
-pub fn convert_save_file(raw_save_file: &mut [u8], game_type_option: Option<GameType>, loop_start_index: usize, pc_name_type_option: Option<NameType>, build_date_type_option: Option<BuildDateType>) {
+pub fn convert_save_file(
+  raw_save_file: &mut [u8],
+  game_type_option: Option<GameType>,
+  loop_start_index: usize,
+  pc_name_type_option: Option<NameType>,
+  build_date_type_option: Option<GameVersion>,
+) {
   let game_type_index = match game_type_option.unwrap() {
     GameType::TheBrokenSeal => 0,
     GameType::TheLostAge => 1,
@@ -1346,11 +1493,18 @@ pub fn convert_save_file(raw_save_file: &mut [u8], game_type_option: Option<Game
 
   for i in loop_start_index..MAX_LOOP_COUNT[game_type_index] {
     // Skip "invalid" save data.
-    if raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX] > MAX_VALID_SLOT_NUMBER {
+    if raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX]
+      > MAX_VALID_SLOT_NUMBER
+    {
       continue;
     }
     // Skip "invalid" save data.
-    let build_date_from_raw_save = u16::from_le_bytes([raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + BUILD_DATE_LOCATION_INDEX[game_type_index][0][0]], raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + BUILD_DATE_LOCATION_INDEX[game_type_index][0][1]]]);
+    let build_date_from_raw_save = u16::from_le_bytes([
+      raw_save_file
+        [i * SAVE_SLOT_SIZE[game_type_index] + BUILD_DATE_LOCATION_INDEX[game_type_index][0][0]],
+      raw_save_file
+        [i * SAVE_SLOT_SIZE[game_type_index] + BUILD_DATE_LOCATION_INDEX[game_type_index][0][1]],
+    ]);
     if !GS_BUILD_DATE[game_type_index].contains(&build_date_from_raw_save) {
       continue;
     }
@@ -1369,16 +1523,21 @@ pub fn convert_save_file(raw_save_file: &mut [u8], game_type_option: Option<Game
 
       let mut is_main_leader = true;
       /* The party leader name.
-         This name only shows in save select menu, it's different from the actual names for party members.
-         The max size for this name is 12 bytes, though normally the max size we can use for character name is 10 bytes (Like those Kana in Japanese version)
+      This name only shows in save select menu, it's different from the actual names for party members.
+      The max size for this name is 12 bytes, though normally the max size we can use for character name is 10 bytes (Like those Kana in Japanese version)
 
-         Robin (Isaac) is the only possible party leader in Golden Sun.
-         But in Golden Sun: The Lost Age, there are two possible party leaders: Garcia (Felix) and Jasmine (Jenna).
-         Garcia is the main leader in TLA. */
+      Robin (Isaac) is the only possible party leader in Golden Sun.
+      But in Golden Sun: The Lost Age, there are two possible party leaders: Garcia (Felix) and Jasmine (Jenna).
+      Garcia is the main leader in TLA. */
       if game_type_index == 1 {
         for j in 0..12 {
           // Compare the name to Garcia's name, to see if this name is same as main leader Garcia's name.
-          if raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] != raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + PC_NAME_LOCATION_INDEX[game_type_index] + PARTY_MAIN_LEADER_INDEX[game_type_index] * 0x14C + j] {
+          if raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j]
+            != raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
+              + PC_NAME_LOCATION_INDEX[game_type_index]
+              + PARTY_MAIN_LEADER_INDEX[game_type_index] * 0x14C
+              + j]
+          {
             is_main_leader = false;
             break;
           }
@@ -1387,10 +1546,11 @@ pub fn convert_save_file(raw_save_file: &mut [u8], game_type_option: Option<Game
 
       if is_main_leader {
         /* Golden Sun + is_main_leader(always true) -> Robin
-           Golden Sun: The Lost Age + is_main_leader -> Garcia */
+        Golden Sun: The Lost Age + is_main_leader -> Garcia */
         for j in 0..12 {
           if j < 7 {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] = PC_NAME[pc_name_type_index][PARTY_MAIN_LEADER_INDEX[game_type_index]][j];
+            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] =
+              PC_NAME[pc_name_type_index][PARTY_MAIN_LEADER_INDEX[game_type_index]][j];
           } else {
             raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] = 0x00;
           }
@@ -1399,7 +1559,8 @@ pub fn convert_save_file(raw_save_file: &mut [u8], game_type_option: Option<Game
         // Golden Sun: The Lost Age + !is_main_leader -> Jasmine
         for j in 0..12 {
           if j < 7 {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] = PC_NAME[pc_name_type_index][PARTY_MAIN_LEADER_INDEX[game_type_index] + 1][j];
+            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] =
+              PC_NAME[pc_name_type_index][PARTY_MAIN_LEADER_INDEX[game_type_index] + 1][j];
           } else {
             raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] = 0x00;
           }
@@ -1410,47 +1571,57 @@ pub fn convert_save_file(raw_save_file: &mut [u8], game_type_option: Option<Game
       for j in 0..PARTY_MEMBERS_COUNT[game_type_index] {
         for k in 0..15 {
           if k < 7 {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + PC_NAME_LOCATION_INDEX[game_type_index] + j * 0x14C + k] = PC_NAME[pc_name_type_index][j][k];
+            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
+              + PC_NAME_LOCATION_INDEX[game_type_index]
+              + j * 0x14C
+              + k] = PC_NAME[pc_name_type_index][j][k];
           } else {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + PC_NAME_LOCATION_INDEX[game_type_index] + j * 0x14C + k] = 0x00;
+            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
+              + PC_NAME_LOCATION_INDEX[game_type_index]
+              + j * 0x14C
+              + k] = 0x00;
           }
         }
       }
     }
 
     /* Change build date (to "convert" save data "version")
-       If the build date in save data doesn't match the one in game,
-       the game will force player to start from sanctum after loading save.
-       Every language version has a different build date. */
+    If the build date in save data doesn't match the one in game,
+    the game will force player to start from sanctum after loading save.
+    Every language version has a different build date. */
     if let Some(build_date_type) = build_date_type_option {
       let build_date_type_index = match build_date_type {
-        BuildDateType::Japan => 0,
-        BuildDateType::USA => 1,
-        BuildDateType::Germany => 2,
-        BuildDateType::Spain => 3,
-        BuildDateType::France => 4,
-        BuildDateType::Italy => 5,
+        GameVersion::Japan => 0,
+        GameVersion::USA => 1,
+        GameVersion::Germany => 2,
+        GameVersion::Spain => 3,
+        GameVersion::France => 4,
+        GameVersion::Italy => 5,
       };
 
       let build_date = GS_BUILD_DATE[game_type_index][build_date_type_index].to_le_bytes();
       for j in 0..2 {
-        raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + BUILD_DATE_LOCATION_INDEX[game_type_index][0][j]] = build_date[j];
-        raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + BUILD_DATE_LOCATION_INDEX[game_type_index][1][j]] = build_date[j];
-        raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + BUILD_DATE_LOCATION_INDEX[game_type_index][2][j]] = build_date[j];
+        raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
+          + BUILD_DATE_LOCATION_INDEX[game_type_index][0][j]] = build_date[j];
+        raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
+          + BUILD_DATE_LOCATION_INDEX[game_type_index][1][j]] = build_date[j];
+        raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
+          + BUILD_DATE_LOCATION_INDEX[game_type_index][2][j]] = build_date[j];
       }
     }
 
     /* Calculate save's checksum (16 bit, doesn't need to calculate each save's first 0x10 header),
-       if the checksum of save data doesn't match the one in header,
-       the game will not consider it as a valid save.
-       If the checksum exceeds 4 digits(Hexadecimal, not decimal), just discard extra digits. */
+    if the checksum of save data doesn't match the one in header,
+    the game will not consider it as a valid save.
+    If the checksum exceeds 4 digits(Hexadecimal, not decimal), just discard extra digits. */
     let mut checksum = 0;
     for j in 0..CHECKSUM_RANGE[game_type_index] {
       checksum += u32::from(raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j]);
     }
     let checksum_bytes = checksum.to_le_bytes();
     for j in 0..2 {
-      raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + HEADER_CHECKSUM_LOCATION_INDEX[j]] = checksum_bytes[j];
+      raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + HEADER_CHECKSUM_LOCATION_INDEX[j]] =
+        checksum_bytes[j];
     }
   }
 }

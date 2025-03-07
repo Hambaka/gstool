@@ -4,6 +4,7 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+#[rustfmt::skip]
 const VALID_PASSWORD_CHARS_JP_EN:[(char, char); 64] = [
   ('あ', 'A'), ('い', 'B'), ('う', 'C'), ('え', 'D'), ('お', 'E'),
   ('か', 'F'), ('き', 'G'), ('く', 'H'), ('け', 'J'), ('こ', 'K'),
@@ -21,6 +22,7 @@ const VALID_PASSWORD_CHARS_JP_EN:[(char, char); 64] = [
   ('ば', '&'), ('び', '$'), ('ぶ', '%'), ('べ', '+'), ('ぼ', '=')
 ];
 
+#[rustfmt::skip]
 const VALID_PASSWORD_CHARS_EN_JP: [(char, char); 64] = [
   ('A', 'あ'), ('B', 'い'), ('C', 'う'), ('D', 'え'), ('E', 'お'),
   ('F', 'か'), ('G', 'き'), ('H', 'く'), ('J', 'け'), ('K', 'こ'),
@@ -40,6 +42,7 @@ const VALID_PASSWORD_CHARS_EN_JP: [(char, char); 64] = [
   ('=', 'ぼ')
 ];
 
+#[rustfmt::skip]
 const VALID_PASSWORD_CHARS_JP_BYTE:[(char, u8); 64] = [
   ('あ', 0x00), ('い', 0x01), ('う', 0x02), ('え', 0x03), ('お', 0x04),
   ('か', 0x05), ('き', 0x06), ('く', 0x07), ('け', 0x08), ('こ', 0x09),
@@ -57,6 +60,7 @@ const VALID_PASSWORD_CHARS_JP_BYTE:[(char, u8); 64] = [
   ('ば', 0x3B), ('び', 0x3C), ('ぶ', 0x3D), ('べ', 0x3E), ('ぼ', 0x3F)
 ];
 
+#[rustfmt::skip]
 const VALID_PASSWORD_CHARS_EN_BYTE: [(char, u8); 64] = [
   ('A', 0x00), ('B', 0x01), ('C', 0x02), ('D', 0x03), ('E', 0x04),
   ('F', 0x05), ('G', 0x06), ('H', 0x07), ('J', 0x08), ('K', 0x09),
@@ -76,53 +80,81 @@ const VALID_PASSWORD_CHARS_EN_BYTE: [(char, u8); 64] = [
   ('=', 0x3F)
 ];
 
-fn main(){
+fn main() {
   gen_pwd_tables();
   gen_name_tables();
 }
 
-fn gen_pwd_tables(){
+fn gen_pwd_tables() {
   let path = Path::new(&env::var("OUT_DIR").unwrap()).join("codegen_pwd.rs");
   let mut file = BufWriter::new(File::create(&path).unwrap());
 
   writeln!(&mut file, "use phf::phf_map;\n").unwrap();
 
   // VALID_PASSWORD_CHARS_JP_EN_MAP
-  writeln!(&mut file, "static VALID_PASSWORD_CHARS_JP_EN_MAP: phf::Map<char, char> = phf_map! {{").unwrap();
+  writeln!(
+    &mut file,
+    "static VALID_PASSWORD_CHARS_JP_EN_MAP: phf::Map<char, char> = phf_map! {{"
+  )
+  .unwrap();
   for (key, value) in VALID_PASSWORD_CHARS_JP_EN {
     writeln!(&mut file, "  '{key}' => '{value}',").unwrap();
   }
   writeln!(&mut file, "}};\n").unwrap();
 
   // VALID_PASSWORD_CHARS_EN_JP_MAP
-  writeln!(&mut file, "static VALID_PASSWORD_CHARS_EN_JP_MAP: phf::Map<char, char> = phf_map! {{").unwrap();
-  for (key, value) in VALID_PASSWORD_CHARS_EN_JP{
+  writeln!(
+    &mut file,
+    "static VALID_PASSWORD_CHARS_EN_JP_MAP: phf::Map<char, char> = phf_map! {{"
+  )
+  .unwrap();
+  for (key, value) in VALID_PASSWORD_CHARS_EN_JP {
     writeln!(&mut file, "  '{key}' => '{value}',").unwrap();
   }
   writeln!(&mut file, "}};\n").unwrap();
 
   // VALID_PASSWORD_CHARS_JP_BYTE_MAP
-  writeln!(&mut file, "static VALID_PASSWORD_CHARS_JP_BYTE_MAP: phf::Map<char, u8> = phf_map! {{").unwrap();
-  for (key, value) in VALID_PASSWORD_CHARS_JP_BYTE{
+  writeln!(
+    &mut file,
+    "static VALID_PASSWORD_CHARS_JP_BYTE_MAP: phf::Map<char, u8> = phf_map! {{"
+  )
+  .unwrap();
+  for (key, value) in VALID_PASSWORD_CHARS_JP_BYTE {
     writeln!(&mut file, "  '{key}' => 0x{value:02X},").unwrap();
   }
   writeln!(&mut file, "}};\n").unwrap();
 
   // VALID_PASSWORD_CHARS_EN_BYTE_MAP
-  writeln!(&mut file, "static VALID_PASSWORD_CHARS_EN_BYTE_MAP: phf::Map<char, u8> = phf_map! {{").unwrap();
-  for (key, value) in VALID_PASSWORD_CHARS_EN_BYTE{
+  writeln!(
+    &mut file,
+    "static VALID_PASSWORD_CHARS_EN_BYTE_MAP: phf::Map<char, u8> = phf_map! {{"
+  )
+  .unwrap();
+  for (key, value) in VALID_PASSWORD_CHARS_EN_BYTE {
     writeln!(&mut file, "  '{key}' => 0x{value:02X},").unwrap();
   }
   writeln!(&mut file, "}};").unwrap();
 }
 
-fn gen_name_tables(){
+fn gen_name_tables() {
   // val -> u8
-  let base_characters = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(r"src/json/base_characters.json")).unwrap();
+  let base_characters = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
+    r"src/json/base_characters.json"
+  ))
+  .unwrap();
   // val -> u16
-  let special_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(r"src/json/special_hanzi.json")).unwrap();
-  let common_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(r"src/json/common_hanzi.json")).unwrap();
-  let dakuten_kana = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(r"src/json/dakuten_kana.json")).unwrap();
+  let special_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
+    r"src/json/special_hanzi.json"
+  ))
+  .unwrap();
+  let common_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
+    r"src/json/common_hanzi.json"
+  ))
+  .unwrap();
+  let dakuten_kana = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
+    r"src/json/dakuten_kana.json"
+  ))
+  .unwrap();
 
   let path = Path::new(&env::var("OUT_DIR").unwrap()).join("codegen_name.rs");
   let mut file = BufWriter::new(File::create(&path).unwrap());
@@ -130,31 +162,49 @@ fn gen_name_tables(){
   writeln!(&mut file, "use phf::phf_map;\n").unwrap();
 
   // BASE_CHARACTERS_MAP
-  writeln!(&mut file, "static BASE_CHARACTERS_MAP: phf::Map<char, u8> = phf_map! {{").unwrap();
+  writeln!(
+    &mut file,
+    "static BASE_CHARACTERS_MAP: phf::Map<char, u8> = phf_map! {{"
+  )
+  .unwrap();
   for (key, value) in base_characters {
     if "'".eq(key.as_str()) {
       writeln!(&mut file, "  '\\{key}' => 0x{value},").unwrap();
-    } else{
+    } else {
       writeln!(&mut file, "  '{key}' => 0x{value},").unwrap();
     }
   }
   writeln!(&mut file, "}};\n").unwrap();
 
   // SPECIAL_HANZI_MAP
-  writeln!(&mut file, "static SPECIAL_HANZI_MAP: phf::Map<char, u16> = phf_map! {{").unwrap();
+  writeln!(
+    &mut file,
+    "static SPECIAL_HANZI_MAP: phf::Map<char, u16> = phf_map! {{"
+  )
+  .unwrap();
   for (key, value) in special_hanzi {
     writeln!(&mut file, "  '{key}' => 0x{value},").unwrap();
   }
   writeln!(&mut file, "}};\n").unwrap();
 
   // COMMON_HANZI_MAP
-  writeln!(&mut file, "static COMMON_HANZI_MAP: phf::Map<char, &'static str> = phf_map! {{").unwrap();
+  writeln!(
+    &mut file,
+    "static COMMON_HANZI_MAP: phf::Map<char, &'static str> = phf_map! {{"
+  )
+  .unwrap();
   for (key, value) in common_hanzi {
     if value.contains('"') {
       if '"'.eq(&value.chars().next().unwrap()) {
         writeln!(&mut file, "  '{key}' => \"\\{value}\",").unwrap();
       } else {
-        writeln!(&mut file, "  '{key}' => \"{}\\{}\",", value.chars().next().unwrap(), value.chars().nth(1).unwrap()).unwrap();
+        writeln!(
+          &mut file,
+          "  '{key}' => \"{}\\{}\",",
+          value.chars().next().unwrap(),
+          value.chars().nth(1).unwrap()
+        )
+        .unwrap();
       }
     } else {
       writeln!(&mut file, "  '{key}' => \"{value}\",").unwrap();
@@ -163,7 +213,11 @@ fn gen_name_tables(){
   writeln!(&mut file, "}};\n").unwrap();
 
   // DAKUTEN_KANA_MAP
-  writeln!(&mut file, "static DAKUTEN_KANA_MAP: phf::Map<char, &'static str> = phf_map! {{").unwrap();
+  writeln!(
+    &mut file,
+    "static DAKUTEN_KANA_MAP: phf::Map<char, &'static str> = phf_map! {{"
+  )
+  .unwrap();
   for (key, value) in dakuten_kana {
     writeln!(&mut file, "  '{key}' => \"{value}\",").unwrap();
   }
