@@ -82,12 +82,12 @@ pub fn write_converted_password_text_file(
   }
 
   let output_path = Path::new(output_dir_str).join("密码文本.txt");
-  let mut output_file = match File::create(output_path) {
-    Ok(o) => o,
-    Err(_) => return Err("创建密码文本文件失败！"),
+  let Ok(mut output_file) = File::create(output_path) else {
+    return Err("创建密码文本文件失败！");
   };
+
   match output_file.write_all(password_text.as_bytes()) {
-    Ok(_) => Ok(()),
+    Ok(()) => Ok(()),
     Err(_) => Err("写入密码文本文件失败！"),
   }
 }
@@ -101,13 +101,12 @@ pub fn write_memory_dump_file(
 ) -> Result<(), &'static str> {
   let output_path = Path::new(sub_dir_str).join("密码内存转储.dmp");
   let output_file_result = File::create(output_path);
-  let mut output_file = match output_file_result {
-    Ok(o) => o,
-    Err(_) => return Err("创建密码内存转储二进制文件失败！"),
+  let Ok(mut output_file) = output_file_result else {
+    return Err("创建密码内存转储二进制文件失败！");
   };
 
   match output_file.write_all(password_bytes) {
-    Ok(_) => Ok(()),
+    Ok(()) => Ok(()),
     Err(_) => Err("写入密码内存转储二进制文件失败！"),
   }
 }
@@ -185,13 +184,12 @@ pub fn write_cheat_file(
     }
   }
   let output_path = Path::new(sub_dir_str).join("密码金手指.txt");
-  let mut output_file = match File::create(output_path) {
-    Ok(o) => o,
-    Err(_) => return Err("创建密码金手指文本文件失败！"),
+  let Ok(mut output_file) = File::create(output_path) else {
+    return Err("创建密码金手指文本文件失败！");
   };
 
   match output_file.write_all(text.as_bytes()) {
-    Ok(_) => Ok(()),
+    Ok(()) => Ok(()),
     Err(_) => Err("写入密码金手指文本文件失败！"),
   }
 }
@@ -201,13 +199,12 @@ pub fn write_game_data_text_file(
   output_dir_str: &str,
 ) -> Result<(), &'static str> {
   let output_path = Path::new(output_dir_str).join("密码数据.txt");
-  let mut output_file = match File::create(output_path) {
-    Ok(o) => o,
-    Err(_) => return Err("创建密码数据文本文件失败！"),
+  let Ok(mut output_file) = File::create(output_path) else {
+    return Err("创建密码数据文本文件失败！");
   };
 
   match output_file.write_all(text_data.as_bytes()) {
-    Ok(_) => Ok(()),
+    Ok(()) => Ok(()),
     Err(_) => Err("写入密码数据文本文件失败！"),
   }
 }

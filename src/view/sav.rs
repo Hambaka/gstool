@@ -42,7 +42,7 @@ impl App {
 
             self.input_file_path_c2  = file.to_string_lossy().into_owned();
             // 验证存档文件
-            let result = validate_save_conv(&self.input_file_path_c2.as_ref());
+            let result = validate_save_conv(self.input_file_path_c2.as_ref());
             match result {
                 Ok(o) => {
                   self.save_file = o.0;
@@ -50,7 +50,7 @@ impl App {
                 },
                 Err(e) => {
                   self.for_run_c2 = None;
-                  self.err_msg = e.to_owned();
+                  e.clone_into(&mut self.err_msg);
                   self.modal_open = true;
                 },
             }
@@ -141,7 +141,7 @@ impl App {
 
     // Start to create and write output save file.
     let output_path;
-    let output_file;
+
     let input_path = Path::new(&self.input_file_path_c2);
     let file_stem = input_path.file_stem().unwrap().to_str().unwrap();
     let file_extension = if input_path.extension().is_none() {
@@ -163,27 +163,24 @@ impl App {
       output_path = PathBuf::from(parent).join(file_name_str);
     } else {
       if create_dir_all(self.out_dir_c2.clone()).is_err() {
-        self.err_msg = "创建目录失败！".to_owned();
+        "创建目录失败！".clone_into(&mut self.err_msg);
         self.modal_open = true;
         return;
       }
       output_path = PathBuf::from(self.out_dir_c2.clone()).join(file_name_str);
     }
 
-    output_file = File::create(output_path.clone());
-    match output_file {
-      Ok(mut file) => {
-        if file.write_all(&self.save_file).is_err() {
-          self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-          self.modal_open = true;
-          return;
-        }
-      }
-      Err(_) => {
+    let output_file = File::create(output_path.clone());
+    if let Ok(mut file) = output_file {
+      if file.write_all(&self.save_file).is_err() {
         self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
         self.modal_open = true;
         return;
       }
+    } else {
+      self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
+      self.modal_open = true;
+      return;
     }
 
     // More detailed output logs, to improve user experience.
@@ -232,9 +229,8 @@ fn validate_save_conv(path_str: &str) -> Result<(Vec<u8>, GameType, usize), &'st
   let mut sav_file;
   if input_file_result.is_err() {
     return Err("打开存档文件时发生错误！");
-  } else {
-    sav_file = input_file_result.unwrap();
   }
+  sav_file = input_file_result.unwrap();
 
   /* Check the size of save file.
   The size of save file should be 64KB,

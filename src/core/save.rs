@@ -418,6 +418,12 @@ pub struct BitArray {
 }
 
 // Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
+impl Default for BitArray {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl BitArray {
   pub fn new() -> Self {
     BitArray { bits: Vec::new() }

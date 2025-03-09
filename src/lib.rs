@@ -1,4 +1,4 @@
-#![warn(clippy::all, rust_2018_idioms)]
+#![warn(clippy::all, clippy::pedantic)]
 
 mod app;
 mod core;

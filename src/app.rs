@@ -259,7 +259,6 @@ impl eframe::App for App {
           }
         });
         ui.add_space(16.0);
-        egui::widgets::global_theme_preference_buttons(ui);
       });
     });
 
@@ -281,52 +280,32 @@ impl eframe::App for App {
         ui.separator();
         let enable_run_button = match self.command {
           CommandEnum::First => match self.subcommand {
-            CommandEnum::First => {
-              if self.input_file_path_c1s1.is_empty() {
-                false
-              } else {
-                true
-              }
-            }
+            CommandEnum::First => !self.input_file_path_c1s1.is_empty(),
             CommandEnum::Second => {
               let temp1 = !self.input_file_path_c1s2.is_empty();
 
-              let temp2 = if self.pwd_grade_c1s2.is_none()
+              let temp2 = !(self.pwd_grade_c1s2.is_none()
                 && !self.to_convert_pwd_text_ver
                 && !self.to_export_pwd_bin_c1s2
                 && self.pwd_cheat_ver_c1s2.is_none()
-                && !self.to_export_pwd_data_text_c1s2
-              {
-                false
-              } else {
-                true
-              };
+                && !self.to_export_pwd_data_text_c1s2);
 
               temp1 && temp2
             }
             CommandEnum::Third => {
               let temp1 = !self.input_file_path_c1s3.is_empty();
 
-              let temp2 = if self.pwd_grade_c1s3.is_none()
+              let temp2 = !(self.pwd_grade_c1s3.is_none()
                 && self.pwd_text_ver_c1s3.is_none()
                 && self.pwd_cheat_ver_c1s3.is_none()
-                && !self.to_export_data_text_3
-              {
-                false
-              } else {
-                true
-              };
+                && !self.to_export_data_text_3);
 
               temp1 && temp2
             }
           },
           CommandEnum::Second => {
             let temp1 = !self.input_file_path_c2.is_empty();
-            let temp2 = if self.default_name_ver.is_none() && self.build_date_ver.is_none() {
-              false
-            } else {
-              true
-            };
+            let temp2 = !(self.default_name_ver.is_none() && self.build_date_ver.is_none());
 
             temp1 && temp2
           }

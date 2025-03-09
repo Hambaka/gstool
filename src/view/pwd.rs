@@ -91,7 +91,7 @@ impl App {
                     self.save_data_map = o;
                   },
                   Err(e) => {
-                    self.err_msg= e.to_owned();
+                    e.clone_into(&mut self.err_msg);
                     self.modal_open = true;
                   },
               }
@@ -293,7 +293,7 @@ impl App {
                   },
                   Err(e) => {
                     self.for_run_c1s2 = None;
-                    self.err_msg = e.to_owned();
+                    e.clone_into(&mut self.err_msg);
                     self.modal_open = true;
                   },
               }
@@ -475,7 +475,7 @@ impl App {
                   },
                   Err(e) => {
                     self.for_run_c1s3 = None;
-                    self.err_msg = e.to_owned();
+                    e.clone_into(&mut self.err_msg);
                     self.modal_open = true;
                   },
               }
@@ -663,75 +663,58 @@ impl App {
         match output::create_sav_sub_dir(*key + 1, val.get_is_clear(), &output_dir_str) {
           Ok(o) => o,
           Err(e) => {
-            self.err_msg = e.to_owned();
+            e.clone_into(&mut self.err_msg);
             self.modal_open = true;
             return;
           }
         };
 
-      match output::write_password_text_file_with_bytes(
+      if let Err(e) = output::write_password_text_file_with_bytes(
         &password_bytes,
         self.pwd_text_ver_c1s1.unwrap(),
         &sub_dir_str,
       ) {
-        Ok(_) => {}
-        Err(e) => {
-          self.err_msg = e.to_owned();
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
+      }
+
+      if self.to_export_pwd_bin_c1s1 {
+        if let Err(e) = output::write_memory_dump_file(&password_bytes, &sub_dir_str) {
+          e.clone_into(&mut self.err_msg);
           self.modal_open = true;
           return;
         }
       }
 
-      if self.to_export_pwd_bin_c1s1 {
-        match output::write_memory_dump_file(&password_bytes, &sub_dir_str) {
-          Ok(_) => {}
-          Err(e) => {
-            self.err_msg = e.to_owned();
-            self.modal_open = true;
-            return;
-          }
-        }
-      }
-
       if let Some(cheat_version) = self.pwd_cheat_ver_c1s1 {
-        match output::write_cheat_file(&password_bytes, cheat_version, &sub_dir_str) {
-          Ok(_) => {}
-          Err(e) => {
-            self.err_msg = e.to_owned();
-            self.modal_open = true;
-            return;
-          }
+        if let Err(e) = output::write_cheat_file(&password_bytes, cheat_version, &sub_dir_str) {
+          e.clone_into(&mut self.err_msg);
+          self.modal_open = true;
+          return;
         }
       }
 
       if self.to_export_pwd_data_text_c1s1 {
         if self.pwd_grade_c1s1.unwrap().is_gold() {
-          match output::write_game_data_text_file(
+          if let Err(e) = output::write_game_data_text_file(
             &save::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()),
             &sub_dir_str,
           ) {
-            Ok(_) => {}
-            Err(e) => {
-              self.err_msg = e.to_owned();
-              self.modal_open = true;
-              return;
-            }
+            e.clone_into(&mut self.err_msg);
+            self.modal_open = true;
+            return;
           }
-        } else {
-          match output::write_game_data_text_file(
-            &save::get_exported_data_for_dyrati_sheet_by_bytes(
-              &password_bytes,
-              self.pwd_grade_c1s1.unwrap(),
-            ),
-            &sub_dir_str,
-          ) {
-            Ok(_) => {}
-            Err(e) => {
-              self.err_msg = e.to_owned();
-              self.modal_open = true;
-              return;
-            }
-          }
+        } else if let Err(e) = output::write_game_data_text_file(
+          &save::get_exported_data_for_dyrati_sheet_by_bytes(
+            &password_bytes,
+            self.pwd_grade_c1s1.unwrap(),
+          ),
+          &sub_dir_str,
+        ) {
+          e.clone_into(&mut self.err_msg);
+          self.modal_open = true;
+          return;
         }
       }
 
@@ -834,84 +817,64 @@ impl App {
     // Write files.
     if self.to_convert_pwd_text_ver {
       if self.pwd_grade_c1s2.is_some() {
-        match output::write_password_text_file_with_bytes(
+        if let Err(e) = output::write_password_text_file_with_bytes(
           &target_password_bytes,
           password_version.rev(),
           output_dir_str.as_str(),
         ) {
-          Ok(_) => {}
-          Err(e) => {
-            self.err_msg = e.to_owned();
-            self.modal_open = true;
-            return;
-          }
+          e.clone_into(&mut self.err_msg);
+          self.modal_open = true;
+          return;
         }
-      } else {
-        match output::write_converted_password_text_file(
-          &convert::txt_to_another_version(&self.txt_file, password_version),
-          password_version.rev(),
-          &output_dir_str,
-        ) {
-          Ok(_) => {}
-          Err(e) => {
-            self.err_msg = e.to_owned();
-            self.modal_open = true;
-            return;
-          }
-        }
+      } else if let Err(e) = output::write_converted_password_text_file(
+        &convert::txt_to_another_version(&self.txt_file, password_version),
+        password_version.rev(),
+        &output_dir_str,
+      ) {
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
       }
     }
 
     if self.to_export_pwd_bin_c1s2 {
-      match output::write_memory_dump_file(&target_password_bytes, &output_dir_str) {
-        Ok(_) => {}
-        Err(e) => {
-          self.err_msg = e.to_owned();
-          self.modal_open = true;
-          return;
-        }
+      if let Err(e) = output::write_memory_dump_file(&target_password_bytes, &output_dir_str) {
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
       }
     }
 
     if let Some(cheat_version) = self.pwd_cheat_ver_c1s2 {
-      match output::write_cheat_file(&target_password_bytes, cheat_version, &output_dir_str) {
-        Ok(_) => {}
-        Err(e) => {
-          self.err_msg = e.to_owned();
-          self.modal_open = true;
-          return;
-        }
+      if let Err(e) =
+        output::write_cheat_file(&target_password_bytes, cheat_version, &output_dir_str)
+      {
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
       }
     }
 
     if self.to_export_pwd_data_text_c1s2 {
       if self.pwd_grade_c1s2.is_none() {
-        match output::write_game_data_text_file(
+        if let Err(e) = output::write_game_data_text_file(
           &save::get_exported_data_for_dyrati_sheet_by_save_data(&save_data),
           &output_dir_str,
         ) {
-          Ok(_) => {}
-          Err(e) => {
-            self.err_msg = e.to_owned();
-            self.modal_open = true;
-            return;
-          }
+          e.clone_into(&mut self.err_msg);
+          self.modal_open = true;
+          return;
         }
-      } else {
-        match output::write_game_data_text_file(
-          &save::get_exported_data_for_dyrati_sheet_by_bytes(
-            &target_password_bytes,
-            self.pwd_grade_c1s2.unwrap(),
-          ),
-          &output_dir_str,
-        ) {
-          Ok(_) => {}
-          Err(e) => {
-            self.err_msg = e.to_owned();
-            self.modal_open = true;
-            return;
-          }
-        }
+      } else if let Err(e) = output::write_game_data_text_file(
+        &save::get_exported_data_for_dyrati_sheet_by_bytes(
+          &target_password_bytes,
+          self.pwd_grade_c1s2.unwrap(),
+        ),
+        &output_dir_str,
+      ) {
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
       }
     }
 
@@ -1034,70 +997,55 @@ impl App {
 
     // Write files.
     if self.pwd_grade_c1s3.is_some() {
-      match output::write_memory_dump_file(&target_password_bytes, &output_dir_str) {
-        Ok(_) => {}
-        Err(e) => {
-          self.err_msg = e.to_owned();
-          self.modal_open = true;
-          return;
-        }
+      if let Err(e) = output::write_memory_dump_file(&target_password_bytes, &output_dir_str) {
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
       }
     }
 
     if let Some(password_version) = self.pwd_text_ver_c1s3 {
-      match output::write_password_text_file_with_bytes(
+      if let Err(e) = output::write_password_text_file_with_bytes(
         &target_password_bytes,
         password_version,
         &output_dir_str,
       ) {
-        Ok(_) => {}
-        Err(e) => {
-          self.err_msg = e.to_owned();
-          self.modal_open = true;
-          return;
-        }
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
       }
     }
 
     if let Some(cheat_version) = self.pwd_cheat_ver_c1s3 {
-      match output::write_cheat_file(&target_password_bytes, cheat_version, &output_dir_str) {
-        Ok(_) => {}
-        Err(e) => {
-          self.err_msg = e.to_owned();
-          self.modal_open = true;
-          return;
-        }
+      if let Err(e) =
+        output::write_cheat_file(&target_password_bytes, cheat_version, &output_dir_str)
+      {
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
       }
     }
 
     if self.to_export_data_text_3 {
       if self.pwd_grade_c1s3.is_none() {
-        match output::write_game_data_text_file(
+        if let Err(e) = output::write_game_data_text_file(
           &save::get_exported_data_for_dyrati_sheet_by_save_data(&save_data),
           &output_dir_str,
         ) {
-          Ok(_) => {}
-          Err(e) => {
-            self.err_msg = e.to_owned();
-            self.modal_open = true;
-            return;
-          }
+          e.clone_into(&mut self.err_msg);
+          self.modal_open = true;
+          return;
         }
-      } else {
-        match output::write_game_data_text_file(
-          &save::get_exported_data_for_dyrati_sheet_by_bytes(
-            &target_password_bytes,
-            self.pwd_grade_c1s3.unwrap(),
-          ),
-          &output_dir_str,
-        ) {
-          Ok(_) => {}
-          Err(e) => {
-            self.err_msg = e.to_owned();
-            self.modal_open = true;
-            return;
-          }
-        }
+      } else if let Err(e) = output::write_game_data_text_file(
+        &save::get_exported_data_for_dyrati_sheet_by_bytes(
+          &target_password_bytes,
+          self.pwd_grade_c1s3.unwrap(),
+        ),
+        &output_dir_str,
+      ) {
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
       }
     }
 
@@ -1174,9 +1122,8 @@ fn validate_save_pwd(
   let mut sav_file;
   if input_file_result.is_err() {
     return Err("打开存档文件时发生错误！");
-  } else {
-    sav_file = input_file_result.unwrap();
   }
+  sav_file = input_file_result.unwrap();
 
   /* Check the size of save file.
   The size of save file should be 64KB,
@@ -1207,9 +1154,8 @@ fn validate_save_pwd(
   if save_data_map.is_empty() {
     if to_export_all_save {
       return Err("存档文件中没有数据！");
-    } else {
-      return Err("存档文件中没有通关数据！");
     }
+    return Err("存档文件中没有通关数据！");
   }
 
   Ok(Some(save_data_map))
@@ -1223,9 +1169,9 @@ fn validate_txt(
   let mut input_file;
   if input_file_result.is_err() {
     return Err("打开密码文本文件时发生错误！");
-  } else {
-    input_file = input_file_result.unwrap();
   }
+  input_file = input_file_result.unwrap();
+
   let mut password = String::new();
   if input_file.read_to_string(&mut password).is_err() {
     return Err("输入的不是有效的文本文件！");
@@ -1279,9 +1225,8 @@ fn validate_dmp(path_str: &str) -> Result<(Vec<u8>, BitArray, PasswordGrade), &'
   let mut input_file;
   if input_file_result.is_err() {
     return Err("打开密码的内存转储二进制文件时发生错误！");
-  } else {
-    input_file = input_file_result.unwrap();
   }
+  input_file = input_file_result.unwrap();
 
   // Check its file size, and get its grade.
   let file_size = input_file.metadata().unwrap().len();

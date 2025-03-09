@@ -43,7 +43,7 @@ impl App {
           Label::new(*ele)
             .selectable(false)
             .ui(ui)
-            .on_hover_text(format!("{}的自定义角色名。", ele));
+            .on_hover_text(format!("{ele}的自定义角色名。"));
           ui.add(
             egui::TextEdit::singleline(self.new_pc_names.get_mut(i).unwrap())
               .char_limit(5)
