@@ -523,13 +523,14 @@ pub fn get_loop_start_index_option(raw_save_file: &[u8]) -> Option<usize> {
       return Some(i);
     }
   }
+
   None
 }
 
 // convert save
 pub fn get_game_type_with_loop_start_index_option(
   raw_save_file: &[u8],
-) -> (Option<GameType>, Option<usize>) {
+) -> Option<(GameType, GameVersion, usize)> {
   for i in 0..MAX_LOOP_COUNT[0] {
     let Ok(header_string) = std::str::from_utf8(
       &raw_save_file
@@ -541,23 +542,37 @@ pub fn get_game_type_with_loop_start_index_option(
       continue;
     }
 
-    let build_date_from_raw_save_as_tbs = u16::from_le_bytes([
+    let build_date = u16::from_le_bytes([
       raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][0]],
       raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][1]],
     ]);
-    if GS_BUILD_DATE[0].contains(&build_date_from_raw_save_as_tbs) {
-      return (Some(GameType::TheBrokenSeal), Some(i));
+    if GS_BUILD_DATE[0].contains(&build_date) {
+      let game_version = match build_date {
+        0x159C => GameVersion::Japan,
+        0x1652 => GameVersion::USA,
+        0x1849 => GameVersion::Germany,
+        0x1885 => GameVersion::Spain,
+        0x1713 => GameVersion::France,
+        0x1886 => GameVersion::Italy,
+        _ => unreachable!(),
+      };
+      return Some((GameType::TheBrokenSeal, game_version, i));
     }
-    let build_date_from_raw_save_as_tla = u16::from_le_bytes([
-      raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][0]],
-      raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][1]],
-    ]);
-    if GS_BUILD_DATE[1].contains(&build_date_from_raw_save_as_tla) {
-      return (Some(GameType::TheLostAge), Some(i / 3));
+    if GS_BUILD_DATE[1].contains(&build_date) {
+      let game_version = match build_date {
+        0x198A => GameVersion::Japan,
+        0x1C85 => GameVersion::USA,
+        0x1D97 => GameVersion::Germany,
+        0x1DC7 => GameVersion::Spain,
+        0x1D98 => GameVersion::France,
+        0x1DC8 => GameVersion::Italy,
+        _ => unreachable!(),
+      };
+      return Some((GameType::TheLostAge, game_version, i / 3));
     }
   }
 
-  (None, None)
+  None
 }
 
 pub fn get_raw_save_data_map(
@@ -1280,9 +1295,9 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("============开始============\n");
   for (i, level) in save_data.levels.iter().enumerate() {
     if i < save_data.levels.len() - 1 {
-      exported_text.push_str(format!("{level}\t").as_str());
+      exported_text.push_str(&format!("{level}\t"));
     } else {
-      exported_text.push_str(format!("{level}\n").as_str());
+      exported_text.push_str(&format!("{level}\n"));
     }
   }
   exported_text.push_str("============结束============\n\n\n\n");
@@ -1331,9 +1346,9 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   for (i, event) in save_data.events.iter().enumerate() {
     if i == 2 {
       let inverted_event = (event ^ 1) & 1;
-      exported_text.push_str(format!("{inverted_event}\n").as_str());
+      exported_text.push_str(&format!("{inverted_event}\n"));
     } else {
-      exported_text.push_str(format!("{event}\n").as_str());
+      exported_text.push_str(&format!("{event}\n"));
     }
   }
   exported_text.push_str("====结束====\n\n\n\n");
@@ -1353,10 +1368,10 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
   for i in 0..6 {
-    exported_text.push_str(format!("{}\t", save_data.stats[0][i]).as_str());
-    exported_text.push_str(format!("{}\t", save_data.stats[1][i]).as_str());
-    exported_text.push_str(format!("{}\t", save_data.stats[2][i]).as_str());
-    exported_text.push_str(format!("{}\n", save_data.stats[3][i]).as_str());
+    exported_text.push_str(&format!("{}\t", save_data.stats[0][i]));
+    exported_text.push_str(&format!("{}\t", save_data.stats[1][i]));
+    exported_text.push_str(&format!("{}\t", save_data.stats[2][i]));
+    exported_text.push_str(&format!("{}\n", save_data.stats[3][i]));
   }
   exported_text.push_str("============结束============\n\n\n\n");
 
@@ -1374,34 +1389,22 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
   for i in 0..6 {
-    exported_text.push_str(
-      format!(
-        "{}\t",
-        (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as u32
-      )
-      .as_str(),
-    );
-    exported_text.push_str(
-      format!(
-        "{}\t",
-        (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as u32
-      )
-      .as_str(),
-    );
-    exported_text.push_str(
-      format!(
-        "{}\t",
-        (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as u32
-      )
-      .as_str(),
-    );
-    exported_text.push_str(
-      format!(
-        "{}\n",
-        (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as u32
-      )
-      .as_str(),
-    );
+    exported_text.push_str(&format!(
+      "{}\t",
+      (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as u32
+    ));
+    exported_text.push_str(&format!(
+      "{}\t",
+      (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as u32
+    ));
+    exported_text.push_str(&format!(
+      "{}\t",
+      (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as u32
+    ));
+    exported_text.push_str(&format!(
+      "{}\n",
+      (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as u32
+    ));
   }
   exported_text.push_str("============结束============\n\n\n\n");
 
@@ -1417,7 +1420,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       let isaac_item_index = (isaac_item_id - 1) as usize;
       exported_text.push_str(ALL_ITEM_NAMES[isaac_item_index]);
       if STACKABLE_ITEMS.contains(&isaac_item_id) {
-        exported_text.push_str(format!("*{}", (isaac_item >> 11) + 1).as_str());
+        exported_text.push_str(&format!("*{}", (isaac_item >> 11) + 1));
       }
     }
     exported_text.push('\t');
@@ -1428,7 +1431,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       let garet_item_index = (garet_item_id - 1) as usize;
       exported_text.push_str(ALL_ITEM_NAMES[garet_item_index]);
       if STACKABLE_ITEMS.contains(&garet_item_id) {
-        exported_text.push_str(format!("*{}", (garet_item >> 11) + 1).as_str());
+        exported_text.push_str(&format!("*{}", (garet_item >> 11) + 1));
       }
     }
     exported_text.push('\t');
@@ -1439,7 +1442,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       let ivan_item_index = (ivan_item_id - 1) as usize;
       exported_text.push_str(ALL_ITEM_NAMES[ivan_item_index]);
       if STACKABLE_ITEMS.contains(&ivan_item_id) {
-        exported_text.push_str(format!("*{}", (ivan_item >> 11) + 1).as_str());
+        exported_text.push_str(&format!("*{}", (ivan_item >> 11) + 1));
       }
     }
     exported_text.push('\t');
@@ -1450,7 +1453,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       let mia_item_index = (mia_item_id - 1) as usize;
       exported_text.push_str(ALL_ITEM_NAMES[mia_item_index]);
       if STACKABLE_ITEMS.contains(&mia_item_id) {
-        exported_text.push_str(format!("*{}", (mia_item >> 11) + 1).as_str());
+        exported_text.push_str(&format!("*{}", (mia_item >> 11) + 1));
       }
     }
     exported_text.push('\n');
@@ -1461,7 +1464,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   // Coins
   exported_text.push_str("金币\n表格中的范围 -> D28\n");
   exported_text.push_str("====开始====\n");
-  exported_text.push_str(format!("{}\n", save_data.coins).as_str());
+  exported_text.push_str(&format!("{}\n", save_data.coins));
   exported_text.push_str("====结束====\n");
 
   exported_text
@@ -1487,12 +1490,12 @@ pub fn get_exported_data_for_dyrati_sheet_by_bytes(
 
 pub fn convert_save_file(
   raw_save_file: &mut [u8],
-  game_type_option: Option<GameType>,
+  game_type: GameType,
   loop_start_index: usize,
   pc_name_type_option: Option<NameType>,
   build_date_type_option: Option<GameVersion>,
 ) {
-  let game_type_index = match game_type_option.unwrap() {
+  let game_type_index = match game_type {
     GameType::TheBrokenSeal => 0,
     GameType::TheLostAge => 1,
   };

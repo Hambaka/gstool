@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::Path;
 
 use super::convert::dmp_to_txt;
-use super::enums::{GameVersion, PasswordVersion};
+use super::enums::{GameVersion, PasswordGrade, PasswordVersion};
 
 pub fn create_sav_sub_dir(
   slot_num: u8,
@@ -23,10 +23,14 @@ pub fn create_sav_sub_dir(
   Ok(sub_dir_str)
 }
 
-pub fn create_output_dir(output_path: &Path, has_output_arg: bool) -> Result<String, &'static str> {
+pub fn create_output_dir(
+  output_path_str: &str,
+  has_output_arg: bool,
+) -> Result<String, &'static str> {
   let output_dir_str = if has_output_arg {
-    String::from(output_path.to_str().unwrap())
+    String::from(output_path_str)
   } else {
+    let output_path = Path::new(output_path_str);
     String::from(
       output_path
         .parent()
@@ -39,7 +43,7 @@ pub fn create_output_dir(output_path: &Path, has_output_arg: bool) -> Result<Str
         .unwrap(),
     )
   };
-  let output_dir_path = Path::new(output_dir_str.as_str());
+  let output_dir_path = Path::new(&output_dir_str);
   if fs::create_dir_all(output_dir_path).is_err() {
     return Err("创建输出文件夹失败！");
   }
@@ -53,7 +57,7 @@ pub fn write_password_text_file_with_bytes(
   output_dir_str: &str,
 ) -> Result<(), &'static str> {
   write_converted_password_text_file(
-    dmp_to_txt(password_bytes, password_version).as_str(),
+    &dmp_to_txt(password_bytes, password_version),
     password_version,
     output_dir_str,
   )
@@ -130,55 +134,71 @@ pub fn write_cheat_file(
     "（换句话说，在密码输入界面开启密码金手指后，再立刻关闭密码金手指，就一定不会有任何问题）\n",
   );
   text.push_str("2. 如果想要了解具体的使用方法，请见《黄金太阳 开启的封印》新汉化发布时附带的文档“01 - 通关数据继承说明.html”中的“1.2.4 输入密码金手指”章节。\n\n");
-  text.push_str("金手指：\n");
+  let password_grade = match password_bytes.len() {
+    260 => PasswordGrade::Gold,
+    61 => PasswordGrade::Silver,
+    16 => PasswordGrade::Bronze,
+    _ => unreachable!(),
+  };
+  match cheat_version {
+    GameVersion::Germany => text.push_str(&format!(
+      "{}级别密码的金手指（适用于德版《黄金太阳 失落的时代》，亦适用于法/意版）：\n",
+      password_grade.get_name()
+    )),
+    GameVersion::France => text.push_str(&format!(
+      "{}级别密码的金手指（适用于法版《黄金太阳 失落的时代》，亦适用于德/意版）：\n",
+      password_grade.get_name()
+    )),
+    GameVersion::Italy => text.push_str(&format!(
+      "{}级别密码的金手指（适用于意版《黄金太阳 失落的时代》，亦适用于德/法版）：\n",
+      password_grade.get_name()
+    )),
+    _ => text.push_str(&format!(
+      "{}级别密码的金手指（仅适用于{}版《黄金太阳 失落的时代》）：\n",
+      password_grade.get_name(),
+      cheat_version.get_name()
+    )),
+  }
   let size = password_bytes.len();
   let loop_num = (size - 2) / 4;
   let mut loop_count = 0;
-  text.push_str(
-    format!(
-      "{:08X}:{:04X}\n",
-      address,
-      u16::from_le_bytes([password_bytes[0], password_bytes[1]])
-    )
-    .as_str(),
-  );
+  text.push_str(&format!(
+    "{:08X}:{:04X}\n",
+    address,
+    u16::from_le_bytes([password_bytes[0], password_bytes[1]])
+  ));
   address += 2;
   for i in (2..size).step_by(4) {
-    text.push_str(
-      format!(
-        "{:08X}:{:08X}\n",
-        address,
-        u32::from_le_bytes([
-          password_bytes[i],
-          password_bytes[i + 1],
-          password_bytes[i + 2],
-          password_bytes[i + 3]
-        ])
-      )
-      .as_str(),
-    );
+    text.push_str(&format!(
+      "{:08X}:{:08X}\n",
+      address,
+      u32::from_le_bytes([
+        password_bytes[i],
+        password_bytes[i + 1],
+        password_bytes[i + 2],
+        password_bytes[i + 3]
+      ])
+    ));
     address += 4;
     loop_count += 1;
     if loop_count == loop_num {
       if size % 2 == 0 {
-        text.push_str(
-          format!(
-            "{:08X}:{:04X}\n",
-            address,
-            u16::from_le_bytes([password_bytes[i + 4], password_bytes[i + 5]])
-          )
-          .as_str(),
-        );
+        text.push_str(&format!(
+          "{:08X}:{:04X}\n",
+          address,
+          u16::from_le_bytes([password_bytes[i + 4], password_bytes[i + 5]])
+        ));
       } else {
-        text.push_str(
-          format!(
-            "{:08X}:{:04X}\n",
-            address,
-            u16::from_le_bytes([password_bytes[i + 4], password_bytes[i + 5]])
-          )
-          .as_str(),
-        );
-        text.push_str(format!("{:08X}:{:02X}\n", address + 2, password_bytes[i + 6]).as_str());
+        text.push_str(&format!(
+          "{:08X}:{:04X}\n",
+          address,
+          u16::from_le_bytes([password_bytes[i + 4], password_bytes[i + 5]])
+        ));
+        text.push_str(&format!(
+          "{:08X}:{:02X}\n",
+          address + 2,
+          password_bytes[i + 6]
+        ));
       }
       break;
     }

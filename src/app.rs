@@ -1,11 +1,23 @@
 use std::collections::HashMap;
 
-use egui::{Align2, Button, Id, Modal, Sides, Widget};
+use egui::{Align2, Button, Id, Modal, RichText, Sides, Widget};
 
-use crate::core::{
-  enums::{GameType, GameVersion, NameType, PasswordGrade, PasswordVersion},
-  save::{BitArray, RawSaveData},
+use crate::{
+  colors::{DANGER, LIGHT, SECONDARY, SUCCESS},
+  core::{
+    enums::{GameType, GameVersion, NameType, PasswordGrade, PasswordVersion},
+    save::{BitArray, RawSaveData},
+  },
 };
+
+pub const GAME_VERSIONS: [GameVersion; 6] = [
+  GameVersion::Japan,
+  GameVersion::USA,
+  GameVersion::Germany,
+  GameVersion::Spain,
+  GameVersion::France,
+  GameVersion::Italy,
+];
 
 #[derive(Debug, PartialEq)]
 pub enum CommandEnum {
@@ -22,11 +34,11 @@ pub struct App {
   pub err_msg: String,
   // 1. 密码导出功能部分
   // 1.1 使用存档文件
+  pub to_export_all_save: bool,
   pub input_file_path_c1s1: String,
   pub save_data_map: Option<HashMap<u8, RawSaveData>>,
-  pub pwd_grade_c1s1: Option<PasswordGrade>,
+  pub pwd_grade_c1s1: PasswordGrade,
   pub pwd_text_ver_c1s1: Option<PasswordVersion>,
-  pub to_export_all_save: bool,
   pub to_export_pwd_bin_c1s1: bool,
   pub pwd_cheat_ver_c1s1: Option<GameVersion>,
   pub to_export_pwd_data_text_c1s1: bool,
@@ -37,32 +49,32 @@ pub struct App {
   pub txt_file: String,
   pub txt_bytes: Vec<u8>,
   pub txt_bits: Option<BitArray>,
+  pub txt_src_grade_version: Option<(PasswordGrade, PasswordVersion)>,
   pub pwd_grade_c1s2: Option<PasswordGrade>,
   pub to_convert_pwd_text_ver: bool,
   pub to_export_pwd_bin_c1s2: bool,
   pub pwd_cheat_ver_c1s2: Option<GameVersion>,
   pub to_export_pwd_data_text_c1s2: bool,
   pub out_dir_c1s2: String,
-  pub for_run_c1s2: Option<(PasswordGrade, PasswordVersion)>,
   pub out_log_c1s2: String,
   // 1.3 使用内存转储文件
   pub input_file_path_c1s3: String,
   pub dmp_bytes: Vec<u8>,
   pub dmp_bits: Option<BitArray>,
+  pub dmp_src_grade: Option<PasswordGrade>,
   pub pwd_grade_c1s3: Option<PasswordGrade>,
   pub pwd_text_ver_c1s3: Option<PasswordVersion>,
   pub pwd_cheat_ver_c1s3: Option<GameVersion>,
-  pub to_export_data_text_3: bool,
+  pub to_export_pwd_data_text_c1s3: bool,
   pub out_dir_c1s3: String,
-  pub for_run_c1s3: Option<PasswordGrade>,
   pub out_log_c1s3: String,
   // 2. 存档转换功能部分
   pub input_file_path_c2: String,
   pub save_file: Vec<u8>,
+  pub save_src_type_index: Option<(GameType, GameVersion, usize)>,
   pub default_name_ver: Option<NameType>,
   pub build_date_ver: Option<GameVersion>,
   pub out_dir_c2: String,
-  pub for_run_c2: Option<(GameType, usize)>,
   pub out_log_c2: String,
   // 3. 自定义角色名部分
   /// 主角团7人的自定义名字
@@ -80,11 +92,11 @@ impl Default for App {
       err_msg: String::new(),
       // 1. 密码导出功能部分
       // 1.1 使用存档文件
+      to_export_all_save: false,
       input_file_path_c1s1: String::new(),
       save_data_map: None,
-      pwd_grade_c1s1: Some(PasswordGrade::Gold),
+      pwd_grade_c1s1: PasswordGrade::Gold,
       pwd_text_ver_c1s1: Some(PasswordVersion::English),
-      to_export_all_save: false,
       to_export_pwd_bin_c1s1: false,
       pwd_cheat_ver_c1s1: None,
       to_export_pwd_data_text_c1s1: false,
@@ -95,32 +107,32 @@ impl Default for App {
       txt_file: String::new(),
       txt_bytes: Vec::new(),
       txt_bits: None,
+      txt_src_grade_version: None,
       pwd_grade_c1s2: None,
       to_convert_pwd_text_ver: false,
       to_export_pwd_bin_c1s2: false,
       pwd_cheat_ver_c1s2: None,
       to_export_pwd_data_text_c1s2: false,
       out_dir_c1s2: String::new(),
-      for_run_c1s2: None,
       out_log_c1s2: String::new(),
       // 1.3 使用内存转储文件
       input_file_path_c1s3: String::new(),
       dmp_bytes: Vec::new(),
       dmp_bits: None,
+      dmp_src_grade: None,
       pwd_grade_c1s3: None,
       pwd_text_ver_c1s3: None,
       pwd_cheat_ver_c1s3: None,
-      to_export_data_text_3: false,
+      to_export_pwd_data_text_c1s3: false,
       out_dir_c1s3: String::new(),
-      for_run_c1s3: None,
       out_log_c1s3: String::new(),
       // 2. 存档转换功能部分
       input_file_path_c2: String::new(),
       save_file: Vec::new(),
+      save_src_type_index: None,
       default_name_ver: None,
       build_date_ver: None,
       out_dir_c2: String::new(),
-      for_run_c2: None,
       out_log_c2: String::new(),
       // 3. 自定义角色名部分
       new_pc_names: vec![String::new(); 7],
@@ -201,12 +213,10 @@ impl eframe::App for App {
     if self.modal_open {
       let modal = Modal::new(Id::new("Modal_Error_Msg")).show(ctx, |ui| {
         ui.set_width(250.0);
-
         ui.heading("错误！");
+        ui.add_space(16.0);
         ui.label(self.err_msg.clone());
-
         ui.separator();
-
         Sides::new().show(
           ui,
           |_ui| {},
@@ -239,7 +249,7 @@ impl eframe::App for App {
 
       // 菜单栏
       egui::menu::bar(ui, |ui| {
-        ui.menu_button("🗁 文件", |ui| {
+        ui.menu_button("🗀 文件", |ui| {
           if ui.button("❓ 关于").clicked() {
             self.window_open = !self.window_open;
             ui.close_menu();
@@ -265,115 +275,131 @@ impl eframe::App for App {
     // 功能区
     egui::CentralPanel::default().show(ctx, |ui| {
       egui::ScrollArea::vertical().show(ui, |ui| {
+        // 功能选择“标签”页
         ui.columns(3, |columns| {
           columns[0].selectable_value(&mut self.command, CommandEnum::First, "（1）密码导出功能");
           columns[1].selectable_value(&mut self.command, CommandEnum::Second, "（2）存档转换功能");
           columns[2].selectable_value(&mut self.command, CommandEnum::Third, "（3）自定义角色名");
         });
-
+        // 显示对应的功能页面
         match self.command {
           CommandEnum::First => self.show_pwd(ui),
           CommandEnum::Second => self.show_sav(ui),
           CommandEnum::Third => self.show_name(ui),
         }
-
         ui.separator();
+
+        // 判断是否可以点击运行按钮
         let enable_run_button = match self.command {
+          // 1. 密码导出功能部分
           CommandEnum::First => match self.subcommand {
-            CommandEnum::First => !self.input_file_path_c1s1.is_empty(),
-            CommandEnum::Second => {
-              let temp1 = !self.input_file_path_c1s2.is_empty();
+            // 1.1 使用存档文件
+            CommandEnum::First => {
+              let bool1 = self.save_data_map.is_some();
+              let bool2 = self.pwd_text_ver_c1s1.is_some()
+                || self.to_export_pwd_bin_c1s1
+                || self.pwd_cheat_ver_c1s1.is_some()
+                || self.to_export_pwd_data_text_c1s1;
 
-              let temp2 = !(self.pwd_grade_c1s2.is_none()
-                && !self.to_convert_pwd_text_ver
-                && !self.to_export_pwd_bin_c1s2
-                && self.pwd_cheat_ver_c1s2.is_none()
-                && !self.to_export_pwd_data_text_c1s2);
-
-              temp1 && temp2
+              bool1 && bool2
             }
+            // 1.2 使用密码文本文件
+            CommandEnum::Second => {
+              let bool1 = self.txt_bits.is_some();
+              let bool2 = self.pwd_grade_c1s2.is_some()
+                || self.to_convert_pwd_text_ver
+                || self.to_export_pwd_bin_c1s2
+                || self.pwd_cheat_ver_c1s2.is_some()
+                || self.to_export_pwd_data_text_c1s2;
+
+              bool1 && bool2
+            }
+            // 1.3 使用内存转储文件
             CommandEnum::Third => {
-              let temp1 = !self.input_file_path_c1s3.is_empty();
+              let bool1 = self.dmp_bits.is_some();
+              let bool2 = self.pwd_grade_c1s3.is_some()
+                || self.pwd_text_ver_c1s3.is_some()
+                || self.pwd_cheat_ver_c1s3.is_some()
+                || self.to_export_pwd_data_text_c1s3;
 
-              let temp2 = !(self.pwd_grade_c1s3.is_none()
-                && self.pwd_text_ver_c1s3.is_none()
-                && self.pwd_cheat_ver_c1s3.is_none()
-                && !self.to_export_data_text_3);
-
-              temp1 && temp2
+              bool1 && bool2
             }
           },
+          // 2. 存档转换功能部分
           CommandEnum::Second => {
-            let temp1 = !self.input_file_path_c2.is_empty();
-            let temp2 = !(self.default_name_ver.is_none() && self.build_date_ver.is_none());
+            let bool1 = !self.save_file.is_empty();
+            let bool2 = self.default_name_ver.is_some() || self.build_date_ver.is_some();
 
-            temp1 && temp2
+            bool1 && bool2
           }
+          // 3. 自定义角色名部分
           CommandEnum::Third => {
-            let mut temp = false;
+            let mut bool1 = false;
             for ele in self.new_pc_names.clone() {
               if !ele.is_empty() {
-                temp = true;
+                bool1 = true;
               }
             }
-            temp
+            bool1
           }
         };
 
-        if enable_run_button {
-          if ui.add_enabled(true, Button::new("运行")).clicked() {
-            match self.command {
-              CommandEnum::First => self.run_pwd(),
-              CommandEnum::Second => self.run_save(),
-              CommandEnum::Third => self.run_name(),
-            }
-          };
-        } else {
-          ui.add_enabled(false, Button::new("运行"));
-        }
-
-        match self.command {
+        // 判断是否可以点击输出按钮
+        let enable_copy_button = !match self.command {
           CommandEnum::First => match self.subcommand {
-            CommandEnum::First => {
-              if !self.out_log_c1s1.is_empty() {
-                if ui.button("复制输出内容").clicked() {
-                  ctx.copy_text(self.out_log_c1s1.clone());
-                }
-                ui.label(self.out_log_c1s1.clone());
-              }
-            }
-            CommandEnum::Second => {
-              if !self.out_log_c1s2.is_empty() {
-                if ui.button("复制输出内容").clicked() {
-                  ctx.copy_text(self.out_log_c1s2.clone());
-                }
-                ui.label(self.out_log_c1s2.clone());
-              }
-            }
-            CommandEnum::Third => {
-              if !self.out_log_c1s3.is_empty() {
-                if ui.button("复制输出内容").clicked() {
-                  ctx.copy_text(self.out_log_c1s3.clone());
-                }
-                ui.label(self.out_log_c1s3.clone());
-              }
-            }
+            CommandEnum::First => self.out_log_c1s1.is_empty(),
+            CommandEnum::Second => self.out_log_c1s2.is_empty(),
+            CommandEnum::Third => self.out_log_c1s3.is_empty(),
           },
-          CommandEnum::Second => {
-            if !self.out_log_c2.is_empty() {
-              if ui.button("复制输出内容").clicked() {
-                ctx.copy_text(self.out_log_c2.clone());
+          CommandEnum::Second => self.out_log_c2.is_empty(),
+          CommandEnum::Third => self.out_log_c3.is_empty(),
+        };
+
+        ui.vertical_centered(|ui| {
+          if enable_run_button {
+            if ui
+              .add(Button::new(RichText::new("⏵ 运行").color(LIGHT)).fill(SUCCESS))
+              .clicked()
+            {
+              match self.command {
+                CommandEnum::First => self.run_pwd(),
+                CommandEnum::Second => self.run_sav(),
+                CommandEnum::Third => self.run_name(),
               }
-              ui.label(self.out_log_c2.clone());
-            }
+            };
+          } else {
+            ui.add_enabled(
+              false,
+              Button::new(RichText::new("❌ 运行").color(LIGHT)).fill(DANGER),
+            );
           }
-          CommandEnum::Third => {
-            if !self.out_log_c3.is_empty() {
-              if ui.button("复制输出内容").clicked() {
-                ctx.copy_text(self.out_log_c3.clone());
-              }
-              ui.label(self.out_log_c3.clone());
-            }
+          // 输出按钮
+          if ui
+            .add_enabled(
+              enable_copy_button,
+              Button::new(RichText::new("🗐 复制").color(LIGHT)).fill(SECONDARY),
+            )
+            .clicked()
+          {
+            let log = match self.command {
+              CommandEnum::First => match self.subcommand {
+                CommandEnum::First => &self.out_log_c1s1,
+                CommandEnum::Second => &self.out_log_c1s2,
+                CommandEnum::Third => &self.out_log_c1s3,
+              },
+              CommandEnum::Second => &self.out_log_c2,
+              CommandEnum::Third => &self.out_log_c3,
+            };
+            ctx.copy_text(log.to_string());
+          }
+        });
+
+        // 显示输出日志（概要）
+        if enable_copy_button {
+          match self.command {
+            CommandEnum::First => self.show_log_pwd(ui),
+            CommandEnum::Second => self.show_log_sav(ui),
+            CommandEnum::Third => self.show_log_name(ui),
           }
         }
       });

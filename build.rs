@@ -168,7 +168,7 @@ fn gen_name_tables() {
   )
   .unwrap();
   for (key, value) in base_characters {
-    if "'".eq(key.as_str()) {
+    if "'".eq(&key) {
       writeln!(&mut file, "  '\\{key}' => 0x{value},").unwrap();
     } else {
       writeln!(&mut file, "  '{key}' => 0x{value},").unwrap();

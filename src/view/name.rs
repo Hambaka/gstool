@@ -57,9 +57,15 @@ impl App {
 
   pub fn run_name(&mut self) {
     self.out_log_c3.clear();
+    let mut first_run = true;
+
     for (index, pc_name_new) in self.new_pc_names.iter().enumerate() {
       if pc_name_new.is_empty() {
         continue;
+      }
+
+      if !first_run {
+        self.out_log_c3.push_str("\n\n");
       }
 
       let pc_name = PC_NAMES[index];
@@ -135,13 +141,9 @@ impl App {
         let len = name_bytes.len();
         for (i, name_byte) in name_bytes.iter().enumerate() {
           if i + 1 == len {
-            self
-              .out_log_c3
-              .push_str(format!("{name_byte:02X}\n").as_str());
+            self.out_log_c3.push_str(&format!("{name_byte:02X}\n"));
           } else {
-            self
-              .out_log_c3
-              .push_str(format!("{name_byte:02X} ").as_str());
+            self.out_log_c3.push_str(&format!("{name_byte:02X} "));
           }
         }
 
@@ -153,7 +155,7 @@ impl App {
             let value = u16::from_le_bytes([name_bytes[j * 4], name_bytes[j * 4 + 1]]);
             self
               .out_log_c3
-              .push_str(format!("{address:08X}:{value:04X}\n").as_str());
+              .push_str(&format!("{address:08X}:{value:04X}\n"));
           } else {
             let j = i as usize;
             let address = NAME_ADDRESS + u32::try_from(index).unwrap() * 0x14C + i * 4;
@@ -165,11 +167,18 @@ impl App {
             ]);
             self
               .out_log_c3
-              .push_str(format!("{address:08X}:{value:08X}\n").as_str());
+              .push_str(&format!("{address:08X}:{value:08X}\n"));
           }
         }
       }
-      self.out_log_c3.push_str("\n\n");
+
+      if first_run {
+        first_run = false;
+      }
     }
+  }
+
+  pub fn show_log_name(&mut self, ui: &mut Ui) {
+    Label::new(&self.out_log_c3).selectable(false).ui(ui);
   }
 }

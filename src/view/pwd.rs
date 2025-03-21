@@ -1,32 +1,46 @@
 use core::f32;
-use std::{collections::HashMap, fs::File, io::Read, path::Path};
+use std::{collections::HashMap, fs::File, io::Read};
 
-use egui::{Checkbox, ComboBox, Grid, Label, Ui, Widget};
+use egui::{Button, Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
 
 use crate::{
   App,
-  app::CommandEnum,
+  app::{CommandEnum, GAME_VERSIONS},
+  colors::{DARK, LIGHT, PRIMARY, WARNING},
   core::{
     convert,
-    enums::{GameVersion, PasswordGrade, PasswordVersion},
+    enums::{PasswordGrade, PasswordVersion},
     output,
     save::{self, BitArray, RawSaveData},
   },
 };
 
-impl App {
-  pub fn show_pwd(&mut self, ui: &mut Ui) {
-    Label::new("使用该功能可导出密码，可导出以下几类文件：\n\
+const PASSWORD_GRADES: [PasswordGrade; 3] = [
+  PasswordGrade::Gold,
+  PasswordGrade::Silver,
+  PasswordGrade::Bronze,
+];
+const PASSWORD_VERSIONS: [PasswordVersion; 2] =
+  [PasswordVersion::Japanese, PasswordVersion::English];
+
+const DESC_C1: &str = "使用该功能可导出密码，可导出以下几类文件：\n\
         （1）密码的文本文件（支持导出日文版/英文版密码）\n\
         （2）密码的内存转储文件\n\
         （3）密码的金手指文本文件，可以在《黄金太阳 失落的时代》中使用（支持日/美/德/西/法/意版本）\n\
         （4）密码数据的文本文件，可结合 Dyrati 的“Golden Sun Password Generator”表格使用\n\n\
-        注：Mobile&Elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，因此金手指版本选择美版即可。"
-    ).selectable(false).ui(ui);
+        注：Mobile&Elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，因此金手指版本选择美版即可。";
+const DESC_C1S1: &str = "“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。\n\
+      程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项。";
+const DESC_C1S2: &str = "“密码级别”，“转换密码版本”，“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。\n\
+      以上五项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
+const DESC_C1S3: &str = "“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。\n\
+      以上四项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
 
+impl App {
+  pub fn show_pwd(&mut self, ui: &mut Ui) {
+    Label::new(DESC_C1).selectable(false).ui(ui);
     ui.separator();
-
     ui.columns(3, |columns| {
       columns[0].selectable_value(
         &mut self.subcommand,
@@ -53,12 +67,9 @@ impl App {
   }
 
   fn show_sub_one(&mut self, ui: &mut Ui) {
-    Label::new(
-      "“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。\n\
-      程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项。",
-    )
-    .selectable(false)
-    .ui(ui);
+    Label::new(DESC_C1S1).selectable(false).ui(ui);
+
+    ui.add_space(16.0);
 
     Grid::new("(1.1)使用存档文件")
       .num_columns(2)
@@ -66,29 +77,34 @@ impl App {
       .striped(true)
       .show(ui, |ui| {
         // 第1行
-        Label::new("导出所有存档").selectable(false).ui(ui).on_hover_text("若不勾选，则仅导出通关存档的相关文件。");
-        Checkbox::without_text(&mut self.to_export_all_save).ui(ui);
+        if self.input_file_path_c1s1.is_empty(){
+          Label::new("存档导出选项").selectable(false).ui(ui).on_hover_text("根据需求进行勾选。");
+        } else {
+          Label::new(RichText::new("存档导出选项").weak()).selectable(false).ui(ui).on_hover_text("根据需求进行勾选。");
+        }
+        ui.add_enabled_ui(self.input_file_path_c1s1.is_empty(), |ui|{
+          ui.radio_value(&mut self.to_export_all_save, false, "仅导出通关存档");
+          ui.radio_value(&mut self.to_export_all_save, true, "导出全部存档（无论是否通关）");
+        });
         ui.end_row();
         // 第2行
         Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳 开启的封印》的存档文件。");
         ui.horizontal(|ui| {
-          if ui.button("选择文件……").clicked(){
+          if ui.add(Button::new(RichText::new("🖹 选择文件").color(LIGHT)).fill(PRIMARY)).clicked() {
             if let Some(file) = FileDialog::new().pick_file(){
-              self.to_export_all_save= false;
-              self.save_data_map = None;
-
-              self.pwd_grade_c1s1= Some(PasswordGrade::Gold);
-              self.pwd_text_ver_c1s1= Some(PasswordVersion::English);
-              self.to_export_pwd_bin_c1s1= false;
-              self.pwd_cheat_ver_c1s1= None;
-              self.to_export_pwd_data_text_c1s1= false;
-
-              self.input_file_path_c1s1 = file.to_string_lossy().into_owned();
+              let new_file_path = file.to_string_lossy().into_owned();
               // 验证存档文件
-              let result = validate_save_pwd(&self.input_file_path_c1s1, self.to_export_all_save);
+              let result = validate_save_pwd(&new_file_path, self.to_export_all_save);
               match result {
                   Ok(o) => {
+                    self.input_file_path_c1s1 = new_file_path;
                     self.save_data_map = o;
+
+                    self.pwd_grade_c1s1= PasswordGrade::Gold;
+                    self.pwd_text_ver_c1s1= Some(PasswordVersion::English);
+                    self.to_export_pwd_bin_c1s1= false;
+                    self.pwd_cheat_ver_c1s1= None;
+                    self.to_export_pwd_data_text_c1s1= false;
                   },
                   Err(e) => {
                     e.clone_into(&mut self.err_msg);
@@ -97,12 +113,14 @@ impl App {
               }
             }
           };
-          if ui.button("清空").clicked(){
+          if self.input_file_path_c1s1.is_empty() {
+            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
+          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
             self.to_export_all_save= false;
             self.input_file_path_c1s1.clear();
             self.save_data_map = None;
 
-            self.pwd_grade_c1s1= Some(PasswordGrade::Gold);
+            self.pwd_grade_c1s1= PasswordGrade::Gold;
             self.pwd_text_ver_c1s1= Some(PasswordVersion::English);
             self.to_export_pwd_bin_c1s1= false;
             self.pwd_cheat_ver_c1s1= None;
@@ -117,72 +135,60 @@ impl App {
         });
         ui.end_row();
         // 第3行
-        Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别，若留空则自动指定默认值“金”");
-        ComboBox::from_id_salt("（1.1）密码级别")
-          .width(100.0)
-          .selected_text(match &self.pwd_grade_c1s1 {
-            Some(password_grade_enum) => password_grade_enum.get_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            if ui.selectable_value(&mut self.pwd_grade_c1s1, None, "无").changed(){
-              self.pwd_text_ver_c1s1= None;
-              self.to_export_pwd_bin_c1s1= false;
-              self.pwd_cheat_ver_c1s1= None;
-              self.to_export_pwd_data_text_c1s1= false;
-            };
-            ui.selectable_value(
-              &mut self.pwd_grade_c1s1,
-              Some(PasswordGrade::Gold),
-              PasswordGrade::Gold.get_name(),
-            );
-            ui.selectable_value(
-              &mut self.pwd_grade_c1s1,
-              Some(PasswordGrade::Silver),
-              PasswordGrade::Silver.get_name(),
-            );
-            ui.selectable_value(
-              &mut self.pwd_grade_c1s1,
-              Some(PasswordGrade::Bronze),
-              PasswordGrade::Bronze.get_name(),
-            );
+        if self.save_data_map.is_some(){
+          Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别，默认值为“金”");
+          ComboBox::from_id_salt("（1.1）密码级别")
+            .width(100.0)
+            .selected_text(
+              self.pwd_grade_c1s1.get_name()
+            )
+            .show_ui(ui, |ui| {
+              for ele in PASSWORD_GRADES {
+                ui.selectable_value(&mut self.pwd_grade_c1s1, ele, ele.get_name());
+              }
+            });
+        } else {
+          Label::new(RichText::new("密码级别").weak()).selectable(false).ui(ui).on_hover_text("目标密码级别，默认值为“金”");
+          ui.add_enabled_ui(false, |ui|{
+            ComboBox::from_id_salt("（1.1）密码级别（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
+        }
         ui.end_row();
         // 第4行
-        Label::new("密码文本版本").selectable(false).ui(ui).on_hover_text("生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。");
-        ComboBox::from_id_salt("（1.1）密码文本版本")
-          .width(100.0)
-          .selected_text(match &self.pwd_text_ver_c1s1 {
-            Some(password_version_enum) => password_version_enum.get_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut self.pwd_text_ver_c1s1, None, "无");
-            if self.save_data_map.is_some() && self.pwd_grade_c1s1.is_some(){
-              ui.selectable_value(
-                &mut self.pwd_text_ver_c1s1,
-                Some(PasswordVersion::Japanese),
-                PasswordVersion::Japanese.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_text_ver_c1s1,
-                Some(PasswordVersion::English),
-                PasswordVersion::English.get_name(),
-              );
-            }
+        if self.save_data_map.is_some(){
+          Label::new("密码文本版本").selectable(false).ui(ui).on_hover_text("生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。");
+          ComboBox::from_id_salt("（1.1）密码文本版本")
+            .width(100.0)
+            .selected_text(match &self.pwd_text_ver_c1s1 {
+              Some(password_version_enum) => password_version_enum.get_name(),
+              None => "无",
+            })
+            .show_ui(ui, |ui| {
+              ui.selectable_value(&mut self.pwd_text_ver_c1s1, None, "无");
+              for ele in PASSWORD_VERSIONS {
+                ui.selectable_value(&mut self.pwd_text_ver_c1s1, Some(ele), ele.get_name());
+              }
+            });
+        } else {
+          Label::new(RichText::new("密码文本版本").weak()).selectable(false).ui(ui).on_hover_text("生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。");
+          ui.add_enabled_ui(false, |ui|{
+            ComboBox::from_id_salt("（1.1）密码文本版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
+        }
         ui.end_row();
         // 第5行
-        Label::new("生成内存转储文件").selectable(false).ui(ui).on_hover_text("若勾选，则生成密码的内存转储文件。");
-        if self.save_data_map.is_some() && self.pwd_grade_c1s1.is_some(){
+        if self.save_data_map.is_some() {
+          Label::new("生成内存转储文件").selectable(false).ui(ui).on_hover_text("若勾选，则生成密码的内存转储文件。");
           Checkbox::without_text(&mut self.to_export_pwd_bin_c1s1).ui(ui);
         } else {
+          Label::new(RichText::new("生成内存转储文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则生成密码的内存转储文件。");
           ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_bin_c1s1));
         }
         ui.end_row();
         // 第6行
-        Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
-        ComboBox::from_id_salt("（1.1）生成密码金手指")
+        if self.save_data_map.is_some() {
+          Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
+          ComboBox::from_id_salt("（1.1）生成密码金手指")
           .width(100.0)
           .selected_text(match &self.pwd_cheat_ver_c1s1 {
             Some(version_enum) => version_enum.get_name(),
@@ -190,57 +196,38 @@ impl App {
           })
           .show_ui(ui, |ui| {
             ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, None, "无");
-            if self.save_data_map.is_some() && self.pwd_grade_c1s1.is_some(){
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s1,
-                Some(GameVersion::Japan),
-                GameVersion::Japan.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s1,
-                Some(GameVersion::USA),
-                GameVersion::USA.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s1,
-                Some(GameVersion::Germany),
-                GameVersion::Germany.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s1,
-                Some(GameVersion::Spain),
-                GameVersion::Spain.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s1,
-                Some(GameVersion::France),
-                GameVersion::France.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s1,
-                Some(GameVersion::Italy),
-                GameVersion::Italy.get_name(),
-              );
+            for ele in GAME_VERSIONS {
+              ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, Some(ele), ele.get_name());
             }
           });
+        } else {
+          Label::new(RichText::new("生成密码金手指").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
+          ui.add_enabled_ui(false, |ui|{
+            ComboBox::from_id_salt("（1.1）生成密码金手指（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
+          });
+        }
         ui.end_row();
         // 第7行
-        Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-        if self.save_data_map.is_some() && self.pwd_grade_c1s1.is_some(){
+        if self.save_data_map.is_some() {
+          Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
           Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1).ui(ui);
-        }else {
-            ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1));
+        } else {
+          Label::new(RichText::new("导出密码数据至文本文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
+          ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1));
         }
         ui.end_row();
         // 第8行
         Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
         ui.horizontal(|ui| {
-          if ui.button("选择目录……").clicked(){
+          if ui.add(Button::new(RichText::new("🗁 选择目录").color(LIGHT)).fill(PRIMARY)).clicked() {
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s1 = dir.to_string_lossy().into_owned();
             }
           };
-          if ui.button("清空").clicked(){
+
+          if self.out_dir_c1s1.is_empty() {
+            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
+          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
             self.out_dir_c1s1.clear();
           }
           ui.add(
@@ -255,11 +242,9 @@ impl App {
   }
 
   fn show_sub_two(&mut self, ui: &mut Ui) {
-    Label::new("“密码级别”，“转换密码版本”，“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。\n\
-      以上五项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。"
-    )
-    .selectable(false)
-    .ui(ui);
+    Label::new(DESC_C1S2).selectable(false).ui(ui);
+
+    ui.add_space(16.0);
 
     Grid::new("(1.2)使用密码文本文件")
       .num_columns(2)
@@ -267,43 +252,42 @@ impl App {
       .striped(true)
       .show(ui, |ui| {
         // 第1行
-        Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("黄金太阳的密码文本文件。");
+        Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳》的密码文本文件。");
         ui.horizontal(|ui| {
-          if ui.button("选择文件……").clicked(){
+          if ui.add(Button::new(RichText::new("🖹 选择文件").color(LIGHT)).fill(PRIMARY)).clicked(){
             if let Some(file) = FileDialog::new().pick_file(){
-              self.txt_file.clear();
-              self.txt_bytes.clear();
-              self.txt_bits = None;
-
-              self.pwd_grade_c1s2 = None;
-              self.to_convert_pwd_text_ver = false;
-              self.to_export_pwd_bin_c1s2 = false;
-              self.pwd_cheat_ver_c1s2 = None;
-              self.to_export_pwd_data_text_c1s2 = false;
-
-              self.input_file_path_c1s2 = file.to_string_lossy().into_owned();
+              let new_file_path = file.to_string_lossy().into_owned();
               // 验证密码文本文件
-              let result = validate_txt(&self.input_file_path_c1s2);
+              let result = validate_txt(&new_file_path);
               match result {
                   Ok(o) => {
+                    self.input_file_path_c1s2 = new_file_path;
                     self.txt_file = o.0;
                     self.txt_bytes = o.1;
                     self.txt_bits = Some(o.2);
-                    self.for_run_c1s2 = Some((o.3, o.4));
+                    self.txt_src_grade_version = Some((o.3, o.4));
+
+                    self.pwd_grade_c1s2 = None;
+                    self.to_convert_pwd_text_ver = false;
+                    self.to_export_pwd_bin_c1s2 = false;
+                    self.pwd_cheat_ver_c1s2 = None;
+                    self.to_export_pwd_data_text_c1s2 = false;
                   },
                   Err(e) => {
-                    self.for_run_c1s2 = None;
                     e.clone_into(&mut self.err_msg);
                     self.modal_open = true;
                   },
               }
             }
           };
-          if ui.button("清空").clicked(){
+          if self.input_file_path_c1s2.is_empty() {
+            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
+          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
             self.input_file_path_c1s2.clear();
             self.txt_file.clear();
             self.txt_bytes.clear();
             self.txt_bits = None;
+            self.txt_src_grade_version = None;
 
             self.pwd_grade_c1s2 = None;
             self.to_convert_pwd_text_ver = false;
@@ -320,111 +304,91 @@ impl App {
         });
         ui.end_row();
         // 第2行
-        Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
-        ComboBox::from_id_salt("（1.2）密码级别")
-          .width(100.0)
-          .selected_text(match &self.pwd_grade_c1s2 {
-            Some(password_grade_enum) => password_grade_enum.get_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut self.pwd_grade_c1s2, None, "无");
-            if let Some((source_grade,_)) = self.for_run_c1s2{
-              if source_grade.is_gold(){
-                ui.selectable_value(
-                  &mut self.pwd_grade_c1s2,
-                  Some(PasswordGrade::Silver),
-                  PasswordGrade::Silver.get_name(),
-                );
+        if self.txt_src_grade_version.is_some() {
+          Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
+          ComboBox::from_id_salt("（1.2）密码级别")
+            .width(100.0)
+            .selected_text(match &self.pwd_grade_c1s2 {
+              Some(password_grade_enum) => password_grade_enum.get_name(),
+              None => "无",
+            })
+            .show_ui(ui, |ui| {
+              ui.selectable_value(&mut self.pwd_grade_c1s2, None, "无");
+              if let Some((source_grade, _)) = self.txt_src_grade_version {
+                for ele in PASSWORD_GRADES {
+                  ui.add_enabled_ui(source_grade.get_priority() < ele.get_priority(), |ui|{
+                    ui.selectable_value(&mut self.pwd_grade_c1s2, Some(ele), ele.get_name());
+                  });
+                }
               }
-              if source_grade.is_gold() || source_grade.is_silver(){
-                ui.selectable_value(
-                  &mut self.pwd_grade_c1s2,
-                  Some(PasswordGrade::Bronze),
-                  PasswordGrade::Bronze.get_name(),
-                );
-              }
-            }
+            });
+        } else {
+          Label::new(RichText::new("密码级别").weak()).selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
+          ui.add_enabled_ui(false, |ui|{
+            ComboBox::from_id_salt("（1.2）密码级别（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
+        }
         ui.end_row();
         // 第3行
-        Label::new("转换密码版本").selectable(false).ui(ui).on_hover_text("若勾选，则自动检测输入的密码文本的版本，并转换输出另外一个版本的密码文本文件，即日转英，英转日。");
-        if self.for_run_c1s2.is_some(){
+        if self.txt_src_grade_version.is_some(){
+          Label::new("转换密码版本").selectable(false).ui(ui).on_hover_text("若勾选，则自动检测输入的密码文本的版本，并转换输出另外一个版本的密码文本文件，即日转英，英转日。");
           Checkbox::without_text(&mut self.to_convert_pwd_text_ver).ui(ui);
         } else {
+          Label::new(RichText::new("转换密码版本").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则自动检测输入的密码文本的版本，并转换输出另外一个版本的密码文本文件，即日转英，英转日。");
           ui.add_enabled(false, Checkbox::without_text(&mut self.to_convert_pwd_text_ver));
         }
         ui.end_row();
         // 第4行
-        Label::new("生成内存转储文件").selectable(false).ui(ui).on_hover_text("若勾选，则生成密码的内存转储文件");
-        if self.for_run_c1s2.is_some(){
+        if self.txt_src_grade_version.is_some(){
+          Label::new("生成内存转储文件").selectable(false).ui(ui).on_hover_text("若勾选，则生成密码的内存转储文件");
           Checkbox::without_text(&mut self.to_export_pwd_bin_c1s2).ui(ui);
         } else {
-            ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_bin_c1s2));
+          Label::new(RichText::new("生成内存转储文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则生成密码的内存转储文件");
+          ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_bin_c1s2));
         }
         ui.end_row();
         // 第5行
-        Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件");
-        ComboBox::from_id_salt("（1.2）生成密码金手指")
-          .width(100.0)
-          .selected_text(match &self.pwd_cheat_ver_c1s2 {
-            Some(version_enum) => version_enum.get_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut self.pwd_cheat_ver_c1s2, None, "无");
-            if self.for_run_c1s2.is_some(){
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s2,
-                Some(GameVersion::Japan),
-                GameVersion::Japan.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s2,
-                Some(GameVersion::USA),
-                GameVersion::USA.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s2,
-                Some(GameVersion::Germany),
-                GameVersion::Germany.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s2,
-                Some(GameVersion::Spain),
-                GameVersion::Spain.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s2,
-                Some(GameVersion::France),
-                GameVersion::France.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s2,
-                Some(GameVersion::Italy),
-                GameVersion::Italy.get_name(),
-              );
-            }
+        if self.txt_src_grade_version.is_some(){
+          Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件");
+          ComboBox::from_id_salt("（1.2）生成密码金手指")
+            .width(100.0)
+            .selected_text(match &self.pwd_cheat_ver_c1s2 {
+              Some(version_enum) => version_enum.get_name(),
+              None => "无",
+            })
+            .show_ui(ui, |ui| {
+              ui.selectable_value(&mut self.pwd_cheat_ver_c1s2, None, "无");
+              for ele in GAME_VERSIONS {
+                ui.selectable_value(&mut self.pwd_cheat_ver_c1s2, Some(ele), ele.get_name());
+              }
+            });
+        } else {
+          Label::new(RichText::new("生成密码金手指").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件");
+          ui.add_enabled_ui(false, |ui|{
+            ComboBox::from_id_salt("（1.2）生成密码金手指（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
+        }
         ui.end_row();
         // 第6行
-        Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件");
-        if self.for_run_c1s2.is_some(){
+        if self.txt_src_grade_version.is_some(){
+          Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件");
           Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2).ui(ui);
         }else {
-            ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2));
+          Label::new(RichText::new("导出密码数据至文本文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件");
+          ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2));
         }
-        ui.checkbox(&mut self.to_export_pwd_data_text_c1s2, "");
         ui.end_row();
         // 第7行
         Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
         ui.horizontal(|ui| {
-          if ui.button("选择目录……").clicked(){
+          if ui.add(Button::new(RichText::new("🗁 选择目录").color(LIGHT)).fill(PRIMARY)).clicked(){
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s2 = dir.to_string_lossy().into_owned();
             }
           };
-          if ui.button("清空").clicked(){
+          if self.out_dir_c1s2.is_empty() {
+            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
+          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked(){
             self.out_dir_c1s2.clear();
           }
           ui.add(
@@ -439,12 +403,9 @@ impl App {
   }
 
   fn show_sub_three(&mut self, ui: &mut Ui) {
-    Label::new(
-      "“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。\n\
-      以上四项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。",
-    )
-    .selectable(false)
-    .ui(ui);
+    Label::new(DESC_C1S3).selectable(false).ui(ui);
+
+    ui.add_space(16.0);
 
     Grid::new("（1.3）使用内存转储文件")
       .num_columns(2)
@@ -454,42 +415,42 @@ impl App {
         // 第1行
         Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("黄金太阳的密码内存转储文件");
         ui.horizontal(|ui| {
-          if ui.button("选择文件……").clicked(){
+          if ui.add(Button::new(RichText::new("🖹 选择文件").color(LIGHT)).fill(PRIMARY)).clicked() {
             if let Some(file) = FileDialog::new().pick_file(){
-              self.dmp_bytes.clear();
-              self.dmp_bits = None;
-
-              self.pwd_grade_c1s3 = None;
-              self.pwd_text_ver_c1s3 = None;
-              self.pwd_cheat_ver_c1s3 = None;
-              self.to_export_data_text_3 = false;
-
-              self.input_file_path_c1s3 = file.to_string_lossy().into_owned();
+              let new_file_path = file.to_string_lossy().into_owned();
               // 验证内存转储文件
-              let result = validate_dmp(&self.input_file_path_c1s3);
+              let result = validate_dmp(&new_file_path);
               match result {
                   Ok(o) => {
+                    self.input_file_path_c1s3 = new_file_path;
                     self.dmp_bytes = o.0;
                     self.dmp_bits = Some(o.1);
-                    self.for_run_c1s3 = Some(o.2);
+                    self.dmp_src_grade = Some(o.2);
+
+                    self.pwd_grade_c1s3 = None;
+                    self.pwd_text_ver_c1s3 = None;
+                    self.pwd_cheat_ver_c1s3 = None;
+                    self.to_export_pwd_data_text_c1s3 = false;
                   },
                   Err(e) => {
-                    self.for_run_c1s3 = None;
                     e.clone_into(&mut self.err_msg);
                     self.modal_open = true;
                   },
               }
             }
           };
-          if ui.button("清空").clicked(){
+          if self.input_file_path_c1s3.is_empty() {
+            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
+          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
             self.input_file_path_c1s3.clear();
+            self.dmp_bytes.clear();
             self.dmp_bits = None;
-            self.for_run_c1s3 = None;
+            self.dmp_src_grade = None;
 
             self.pwd_grade_c1s3 = None;
             self.pwd_text_ver_c1s3 = None;
             self.pwd_cheat_ver_c1s3 = None;
-            self.to_export_data_text_3 = false;
+            self.to_export_pwd_data_text_c1s3 = false;
           }
           ui.add(
             egui::TextEdit::singleline(&mut self.input_file_path_c1s3)
@@ -500,118 +461,93 @@ impl App {
         });
         ui.end_row();
         // 第2行
-        Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
-        ComboBox::from_id_salt("（1.3）密码级别")
-          .width(100.0)
-          .selected_text(match &self.pwd_grade_c1s3 {
-            Some(password_grade_enum) => password_grade_enum.get_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut self.pwd_grade_c1s3, None, "无");
-            if let Some(source_grade) = self.for_run_c1s3{
-              if source_grade.is_gold(){
-                ui.selectable_value(
-                  &mut self.pwd_grade_c1s3,
-                  Some(PasswordGrade::Silver),
-                  PasswordGrade::Silver.get_name(),
-                );
+        if let Some(source_grade) = self.dmp_src_grade {
+          Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
+          ComboBox::from_id_salt("（1.3）密码级别")
+            .width(100.0)
+            .selected_text(match &self.pwd_grade_c1s3 {
+              Some(password_grade_enum) => password_grade_enum.get_name(),
+              None => "无",
+            })
+            .show_ui(ui, |ui| {
+              ui.selectable_value(&mut self.pwd_grade_c1s3, None, "无");
+              for ele in PASSWORD_GRADES {
+                ui.add_enabled_ui(source_grade.get_priority() < ele.get_priority(), |ui|{
+                  ui.selectable_value(&mut self.pwd_grade_c1s3, Some(ele), ele.get_name());
+                });
               }
-              if source_grade.is_gold() || source_grade.is_silver(){
-                ui.selectable_value(
-                  &mut self.pwd_grade_c1s3,
-                  Some(PasswordGrade::Bronze),
-                  PasswordGrade::Bronze.get_name(),
-                );
-              }
-            }
+            });
+        } else {
+          Label::new(RichText::new("密码级别").weak()).selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
+          ui.add_enabled_ui(false, |ui|{
+            ComboBox::from_id_salt("（1.3）密码级别（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
+        }
         ui.end_row();
         // 第3行
-        Label::new("密码文本版本").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的密码文本文件。");
-        ComboBox::from_id_salt("（1.3）密码文本版本")
-          .width(100.0)
-          .selected_text(match &self.pwd_text_ver_c1s3 {
-            Some(password_version_enum) => password_version_enum.get_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut self.pwd_text_ver_c1s3, None, "无");
-            if self.for_run_c1s3.is_some(){
-              ui.selectable_value(
-                &mut self.pwd_text_ver_c1s3,
-                Some(PasswordVersion::Japanese),
-                PasswordVersion::Japanese.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_text_ver_c1s3,
-                Some(PasswordVersion::English),
-                PasswordVersion::English.get_name(),
-              );
-            }
+        if self.dmp_src_grade.is_some(){
+          Label::new("密码文本版本").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的密码文本文件。");
+          ComboBox::from_id_salt("（1.3）密码文本版本")
+            .width(100.0)
+            .selected_text(match &self.pwd_text_ver_c1s3 {
+              Some(password_version_enum) => password_version_enum.get_name(),
+              None => "无",
+            })
+            .show_ui(ui, |ui| {
+              ui.selectable_value(&mut self.pwd_text_ver_c1s3, None, "无");
+              for ele in PASSWORD_VERSIONS {
+                ui.selectable_value(&mut self.pwd_text_ver_c1s3, Some(ele), ele.get_name());
+              }
+            });
+        } else {
+          Label::new(RichText::new("密码文本版本").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的密码文本文件。");
+          ui.add_enabled_ui(false, |ui|{
+            ComboBox::from_id_salt("（1.3）密码文本版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
+        }
         ui.end_row();
         // 第4行
-        Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
-        ComboBox::from_id_salt("（1.3）生成密码金手指")
-          .width(100.0)
-          .selected_text(match &self.pwd_cheat_ver_c1s3 {
-            Some(version_enum) => version_enum.get_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut self.pwd_cheat_ver_c1s3, None, "无");
-            if self.for_run_c1s3.is_some(){
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s3,
-                Some(GameVersion::Japan),
-                GameVersion::Japan.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s3,
-                Some(GameVersion::USA),
-                GameVersion::USA.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s3,
-                Some(GameVersion::Germany),
-                GameVersion::Germany.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s3,
-                Some(GameVersion::Spain),
-                GameVersion::Spain.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s3,
-                Some(GameVersion::France),
-                GameVersion::France.get_name(),
-              );
-              ui.selectable_value(
-                &mut self.pwd_cheat_ver_c1s3,
-                Some(GameVersion::Italy),
-                GameVersion::Italy.get_name(),
-              );
-            }
+        if self.dmp_src_grade.is_some(){
+          Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
+          ComboBox::from_id_salt("（1.3）生成密码金手指")
+            .width(100.0)
+            .selected_text(match &self.pwd_cheat_ver_c1s3 {
+              Some(version_enum) => version_enum.get_name(),
+              None => "无",
+            })
+            .show_ui(ui, |ui| {
+              ui.selectable_value(&mut self.pwd_cheat_ver_c1s3, None, "无");
+              for ele in GAME_VERSIONS {
+                ui.selectable_value(&mut self.pwd_cheat_ver_c1s3, Some(ele), ele.get_name());
+              }
+            });
+        } else {
+          Label::new(RichText::new("生成密码金手指").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
+          ui.add_enabled_ui(false, |ui|{
+            ComboBox::from_id_salt("（1.3）生成密码金手指（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
+        }
         ui.end_row();
         // 第5行
-        Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-        if self.for_run_c1s3.is_some(){
-          Checkbox::without_text(&mut self.to_export_data_text_3).ui(ui);
+        if self.dmp_src_grade.is_some(){
+          Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
+          Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s3).ui(ui);
         } else {
-          ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_data_text_3));
+          Label::new(RichText::new("导出密码数据至文本文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
+          ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s3));
         }
         ui.end_row();
         // 第6行
         Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
         ui.horizontal(|ui| {
-          if ui.button("选择目录……").clicked(){
+          if ui.add(Button::new(RichText::new("🗁 选择目录").color(LIGHT)).fill(PRIMARY)).clicked() {
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s3 = dir.to_string_lossy().into_owned();
             }
           };
-          if ui.button("清空").clicked(){
+          if self.out_dir_c1s3.is_empty() {
+            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
+          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
             self.out_dir_c1s3.clear();
           }
           ui.add(
@@ -636,19 +572,19 @@ impl App {
   fn run_sub_one(&mut self) {
     // Create main output directory.
     let output_dir_str = if self.out_dir_c1s1.is_empty() {
-      match output::create_output_dir(Path::new(&self.input_file_path_c1s1), false) {
+      match output::create_output_dir(&self.input_file_path_c1s1, false) {
         Ok(o) => o,
         Err(e) => {
-          self.err_msg = e.to_owned();
+          e.clone_into(&mut self.err_msg);
           self.modal_open = true;
           return;
         }
       }
     } else {
-      match output::create_output_dir(Path::new(&self.out_dir_c1s1), true) {
+      match output::create_output_dir(&self.out_dir_c1s1, true) {
         Ok(o) => o,
         Err(e) => {
-          self.err_msg = e.to_owned();
+          e.clone_into(&mut self.err_msg);
           self.modal_open = true;
           return;
         }
@@ -657,7 +593,7 @@ impl App {
 
     for (key, val) in self.save_data_map.as_ref().unwrap() {
       let password_bytes =
-        save::get_password_bytes_with_raw_save_bytes(val.get_data(), self.pwd_grade_c1s1.unwrap());
+        save::get_password_bytes_with_raw_save_bytes(val.get_data(), self.pwd_grade_c1s1);
       // Key is save slot number: 0, 1, 2 -> 1, 2, 3
       let sub_dir_str =
         match output::create_sav_sub_dir(*key + 1, val.get_is_clear(), &output_dir_str) {
@@ -669,14 +605,16 @@ impl App {
           }
         };
 
-      if let Err(e) = output::write_password_text_file_with_bytes(
-        &password_bytes,
-        self.pwd_text_ver_c1s1.unwrap(),
-        &sub_dir_str,
-      ) {
-        e.clone_into(&mut self.err_msg);
-        self.modal_open = true;
-        return;
+      if let Some(password_version) = self.pwd_text_ver_c1s1 {
+        if let Err(e) = output::write_password_text_file_with_bytes(
+          &password_bytes,
+          password_version,
+          &sub_dir_str,
+        ) {
+          e.clone_into(&mut self.err_msg);
+          self.modal_open = true;
+          return;
+        }
       }
 
       if self.to_export_pwd_bin_c1s1 {
@@ -696,7 +634,7 @@ impl App {
       }
 
       if self.to_export_pwd_data_text_c1s1 {
-        if self.pwd_grade_c1s1.unwrap().is_gold() {
+        if self.pwd_grade_c1s1.is_gold() {
           if let Err(e) = output::write_game_data_text_file(
             &save::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()),
             &sub_dir_str,
@@ -706,10 +644,7 @@ impl App {
             return;
           }
         } else if let Err(e) = output::write_game_data_text_file(
-          &save::get_exported_data_for_dyrati_sheet_by_bytes(
-            &password_bytes,
-            self.pwd_grade_c1s1.unwrap(),
-          ),
+          &save::get_exported_data_for_dyrati_sheet_by_bytes(&password_bytes, self.pwd_grade_c1s1),
           &sub_dir_str,
         ) {
           e.clone_into(&mut self.err_msg);
@@ -737,10 +672,10 @@ impl App {
         ));
       }
 
-      result_index += 1;
-      let password_grade_cn = self.pwd_grade_c1s1.unwrap().get_name();
+      let password_grade_cn = self.pwd_grade_c1s1.get_name();
 
       if let Some(password_version) = self.pwd_text_ver_c1s1 {
+        result_index += 1;
         let password_version_cn = password_version.get_name();
         if self.to_export_all_save {
           self.out_log_c1s1.push_str(&format!("{result_index}. 已生成存档记录所对应的{password_grade_cn}级别、{password_version_cn}版的“密码文本.txt”文件。\n"));
@@ -783,11 +718,13 @@ impl App {
 
   fn run_sub_two(&mut self) {
     let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
-    let password_version = self.for_run_c1s2.unwrap().1;
+    let password_version = self.txt_src_grade_version.unwrap().1;
 
     // Generate save data, and set target password bytes
-    let save_data =
-      save::get_save_data_with_password_bits(&mut password_bits, self.for_run_c1s2.unwrap().0);
+    let save_data = save::get_save_data_with_password_bits(
+      &mut password_bits,
+      self.txt_src_grade_version.unwrap().0,
+    );
     let target_password_bytes = match self.pwd_grade_c1s2 {
       Some(password_grade) => save::get_password_bytes_with_save_data(&save_data, password_grade),
       None => self.txt_bytes.clone(),
@@ -795,19 +732,19 @@ impl App {
 
     // Create output directory.
     let output_dir_str = if self.out_dir_c1s2.is_empty() {
-      match output::create_output_dir(Path::new(&self.input_file_path_c1s2), false) {
+      match output::create_output_dir(&self.input_file_path_c1s2, false) {
         Ok(o) => o,
         Err(e) => {
-          self.err_msg = e.to_owned();
+          e.clone_into(&mut self.err_msg);
           self.modal_open = true;
           return;
         }
       }
     } else {
-      match output::create_output_dir(Path::new(&self.out_dir_c1s2), true) {
+      match output::create_output_dir(&self.out_dir_c1s2, true) {
         Ok(o) => o,
         Err(e) => {
-          self.err_msg = e.to_owned();
+          e.clone_into(&mut self.err_msg);
           self.modal_open = true;
           return;
         }
@@ -820,7 +757,7 @@ impl App {
         if let Err(e) = output::write_password_text_file_with_bytes(
           &target_password_bytes,
           password_version.rev(),
-          output_dir_str.as_str(),
+          &output_dir_str,
         ) {
           e.clone_into(&mut self.err_msg);
           self.modal_open = true;
@@ -834,6 +771,18 @@ impl App {
         e.clone_into(&mut self.err_msg);
         self.modal_open = true;
         return;
+      }
+    } else {
+      if self.pwd_grade_c1s2.is_some() {
+        if let Err(e) = output::write_password_text_file_with_bytes(
+          &target_password_bytes,
+          password_version,
+          &output_dir_str,
+        ) {
+          e.clone_into(&mut self.err_msg);
+          self.modal_open = true;
+          return;
+        }
       }
     }
 
@@ -883,14 +832,14 @@ impl App {
     self.out_log_c1s2.clear();
     self
       .out_log_c1s2
-      .push_str(format!("输出目录：\n{output_dir_str}\n\n").as_str());
+      .push_str(&format!("输出目录：\n{output_dir_str}\n\n"));
     self.out_log_c1s2.push_str("运行概况：\n");
 
     let mut result_index = 1;
-    let source_password_grade_cn = self.for_run_c1s2.unwrap().0.get_name();
+    let source_password_grade_cn = self.txt_src_grade_version.unwrap().0.get_name();
     let source_password_version_cn = password_version.get_name();
 
-    self.out_log_c1s2.push_str(format!("{result_index}. 输入的源文件为{source_password_grade_cn}级别的{source_password_version_cn}版密码文本文件。\n").as_str());
+    self.out_log_c1s2.push_str(&format!("{result_index}. 输入的源文件为{source_password_grade_cn}级别的{source_password_version_cn}版密码文本文件。\n"));
 
     let convert_flag_str_option = if self.to_convert_pwd_text_ver {
       Some(password_version.rev().get_name())
@@ -900,7 +849,6 @@ impl App {
 
     let mut downgrade_str_option = None;
     if let Some(target_password_grade) = self.pwd_grade_c1s2 {
-      result_index += 1;
       let target_password_grade_cn = target_password_grade.get_name();
       downgrade_str_option = Some(target_password_grade_cn);
     }
@@ -908,33 +856,31 @@ impl App {
     match convert_flag_str_option {
       Some(convert_flag_str) => match downgrade_str_option {
         Some(downgrade_str) => {
-          self.out_log_c1s2.push_str(format!("{result_index}. 已生成降级为{downgrade_str}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。\n").as_str());
+          result_index += 1;
+          self.out_log_c1s2.push_str(&format!("{result_index}. 已生成降级为{downgrade_str}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。\n"));
         }
         None => {
-          self.out_log_c1s2.push_str(format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。\n").as_str());
+          result_index += 1;
+          self.out_log_c1s2.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。\n"));
         }
       },
       None => match downgrade_str_option {
         Some(downgrade_str) => {
-          self.out_log_c1s2.push_str(format!("{result_index}. 已生成降级为{downgrade_str}级别的、未经版本转换的{source_password_version_cn}版“密码文本.txt”文件。\n").as_str());
+          result_index += 1;
+          self.out_log_c1s2.push_str(&format!("{result_index}. 已生成降级为{downgrade_str}级别的、未经版本转换的{source_password_version_cn}版“密码文本.txt”文件。\n"));
         }
-        None => {
-          self.out_log_c1s2.push_str(format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、未经版本转换的{source_password_version_cn}版“密码文本.txt”文件。\n").as_str());
-        }
+        None => {}
       },
     }
 
     if self.to_export_pwd_bin_c1s2 {
       result_index += 1;
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s2.push_str(
-          format!(
-            "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码内存转储.dmp”文件。\n"
-          )
-          .as_str(),
-        );
+        self.out_log_c1s2.push_str(&format!(
+          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码内存转储.dmp”文件。\n"
+        ));
       } else {
-        self.out_log_c1s2.push_str(format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码内存转储.dmp”文件。\n").as_str());
+        self.out_log_c1s2.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码内存转储.dmp”文件。\n"));
       }
     }
 
@@ -942,23 +888,22 @@ impl App {
       result_index += 1;
       let cheat_version_cn = cheat_version.get_name();
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s2.push_str(format!("{result_index}. 已生成降级为{target_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n").as_str());
+        self.out_log_c1s2.push_str(&format!("{result_index}. 已生成降级为{target_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
       } else {
-        self.out_log_c1s2.push_str(format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n").as_str());
+        self.out_log_c1s2.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
       }
     }
 
     if self.to_export_pwd_data_text_c1s2 {
       result_index += 1;
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s2.push_str(
-          format!(
-            "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码数据.txt”文件\n"
-          )
-          .as_str(),
-        );
+        self.out_log_c1s2.push_str(&format!(
+          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码数据.txt”文件\n"
+        ));
       } else {
-        self.out_log_c1s2.push_str(format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码数据.txt”文件\n").as_str());
+        self.out_log_c1s2.push_str(&format!(
+          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码数据.txt”文件\n"
+        ));
       }
     }
   }
@@ -968,7 +913,7 @@ impl App {
 
     // Generate save data, and set target password bytes
     let save_data =
-      save::get_save_data_with_password_bits(&mut password_bits, self.for_run_c1s3.unwrap());
+      save::get_save_data_with_password_bits(&mut password_bits, self.dmp_src_grade.unwrap());
     let target_password_bytes = match self.pwd_grade_c1s3 {
       Some(password_grade) => save::get_password_bytes_with_save_data(&save_data, password_grade),
       None => self.dmp_bytes.clone(),
@@ -976,19 +921,19 @@ impl App {
 
     // Create output directory.
     let output_dir_str = if self.out_dir_c1s3.is_empty() {
-      match output::create_output_dir(Path::new(&self.input_file_path_c1s3), false) {
+      match output::create_output_dir(&self.input_file_path_c1s3, false) {
         Ok(o) => o,
         Err(e) => {
-          self.err_msg = e.to_owned();
+          e.clone_into(&mut self.err_msg);
           self.modal_open = true;
           return;
         }
       }
     } else {
-      match output::create_output_dir(Path::new(&self.out_dir_c1s3), true) {
+      match output::create_output_dir(&self.out_dir_c1s3, true) {
         Ok(o) => o,
         Err(e) => {
-          self.err_msg = e.to_owned();
+          e.clone_into(&mut self.err_msg);
           self.modal_open = true;
           return;
         }
@@ -1026,7 +971,7 @@ impl App {
       }
     }
 
-    if self.to_export_data_text_3 {
+    if self.to_export_pwd_data_text_c1s3 {
       if self.pwd_grade_c1s3.is_none() {
         if let Err(e) = output::write_game_data_text_file(
           &save::get_exported_data_for_dyrati_sheet_by_save_data(&save_data),
@@ -1054,36 +999,32 @@ impl App {
     self.out_log_c1s3.clear();
     self
       .out_log_c1s3
-      .push_str(format!("输出目录：\n{output_dir_str}\n\n").as_str());
+      .push_str(&format!("输出目录：\n{output_dir_str}\n\n"));
     self.out_log_c1s3.push_str("运行概况：\n");
 
     let mut result_index = 1;
-    let source_password_grade_cn = self.for_run_c1s3.unwrap().get_name();
-    self.out_log_c1s3.push_str(
-      format!("{result_index}. 输入的源文件为{source_password_grade_cn}级别的密码内存转储文件。\n")
-        .as_str(),
-    );
+    let source_password_grade_cn = self.dmp_src_grade.unwrap().get_name();
+    self.out_log_c1s3.push_str(&format!(
+      "{result_index}. 输入的源文件为{source_password_grade_cn}级别的密码内存转储文件。\n"
+    ));
 
     let mut downgrade_str_option = None;
     if let Some(target_password_grade) = self.pwd_grade_c1s3 {
       result_index += 1;
       let target_password_grade_cn = target_password_grade.get_name();
       downgrade_str_option = Some(target_password_grade_cn);
-      self.out_log_c1s3.push_str(
-        format!(
-          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码内存转储.dmp”文件。\n"
-        )
-        .as_str(),
-      );
+      self.out_log_c1s3.push_str(&format!(
+        "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码内存转储.dmp”文件。\n"
+      ));
     }
 
     if let Some(password_version) = self.pwd_text_ver_c1s3 {
       result_index += 1;
       let password_version_cn = password_version.get_name();
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s3.push_str(format!("{result_index}. 已生成降级为{target_password_grade_cn}级别的{password_version_cn}版“密码文本.txt”文件。\n").as_str());
+        self.out_log_c1s3.push_str(&format!("{result_index}. 已生成降级为{target_password_grade_cn}级别的{password_version_cn}版“密码文本.txt”文件。\n"));
       } else {
-        self.out_log_c1s3.push_str(format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的{password_version_cn}版“密码文本.txt”文件。\n").as_str());
+        self.out_log_c1s3.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的{password_version_cn}版“密码文本.txt”文件。\n"));
       }
     }
 
@@ -1091,25 +1032,32 @@ impl App {
       result_index += 1;
       let cheat_version_cn = cheat_version.get_name();
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s3.push_str(format!("{result_index}. 已生成降级为{target_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n").as_str());
+        self.out_log_c1s3.push_str(&format!("{result_index}. 已生成降级为{target_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
       } else {
-        self.out_log_c1s3.push_str(format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n").as_str());
+        self.out_log_c1s3.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
       }
     }
 
-    if self.to_export_data_text_3 {
+    if self.to_export_pwd_data_text_c1s3 {
       result_index += 1;
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s3.push_str(
-          format!(
-            "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码数据.txt”文件\n"
-          )
-          .as_str(),
-        );
+        self.out_log_c1s3.push_str(&format!(
+          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码数据.txt”文件\n"
+        ));
       } else {
-        self.out_log_c1s3.push_str(format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码数据.txt”文件\n").as_str());
+        self.out_log_c1s3.push_str(&format!(
+          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码数据.txt”文件\n"
+        ));
       }
     }
+  }
+
+  pub fn show_log_pwd(&mut self, ui: &mut Ui) {
+    match self.subcommand {
+      CommandEnum::First => Label::new(&self.out_log_c1s1).selectable(false).ui(ui),
+      CommandEnum::Second => Label::new(&self.out_log_c1s2).selectable(false).ui(ui),
+      CommandEnum::Third => Label::new(&self.out_log_c1s3).selectable(false).ui(ui),
+    };
   }
 }
 
@@ -1211,7 +1159,7 @@ fn validate_txt(
   }
 
   Ok((
-    password,
+    password_without_whitespace,
     password_bytes,
     password_bits,
     source_password_grade,
