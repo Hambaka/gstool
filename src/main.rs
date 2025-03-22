@@ -11,6 +11,9 @@ fn main() -> eframe::Result {
   eframe::run_native(
     &gstool::App::name(),
     native_options,
-    Box::new(|cc| Ok(Box::new(gstool::App::new(cc)))),
+    Box::new(|cc| {
+      egui_extras::install_image_loaders(&cc.egui_ctx);
+      Ok(Box::new(gstool::App::new(cc)))
+    }),
   )
 }

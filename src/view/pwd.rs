@@ -772,17 +772,15 @@ impl App {
         self.modal_open = true;
         return;
       }
-    } else {
-      if self.pwd_grade_c1s2.is_some() {
-        if let Err(e) = output::write_password_text_file_with_bytes(
-          &target_password_bytes,
-          password_version,
-          &output_dir_str,
-        ) {
-          e.clone_into(&mut self.err_msg);
-          self.modal_open = true;
-          return;
-        }
+    } else if self.pwd_grade_c1s2.is_some() {
+      if let Err(e) = output::write_password_text_file_with_bytes(
+        &target_password_bytes,
+        password_version,
+        &output_dir_str,
+      ) {
+        e.clone_into(&mut self.err_msg);
+        self.modal_open = true;
+        return;
       }
     }
 
@@ -854,23 +852,21 @@ impl App {
     }
 
     match convert_flag_str_option {
-      Some(convert_flag_str) => match downgrade_str_option {
-        Some(downgrade_str) => {
+      Some(convert_flag_str) => {
+        if let Some(downgrade_str) = downgrade_str_option {
           result_index += 1;
           self.out_log_c1s2.push_str(&format!("{result_index}. 已生成降级为{downgrade_str}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。\n"));
-        }
-        None => {
+        } else {
           result_index += 1;
           self.out_log_c1s2.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。\n"));
         }
-      },
-      None => match downgrade_str_option {
-        Some(downgrade_str) => {
+      }
+      None => {
+        if let Some(downgrade_str) = downgrade_str_option {
           result_index += 1;
           self.out_log_c1s2.push_str(&format!("{result_index}. 已生成降级为{downgrade_str}级别的、未经版本转换的{source_password_version_cn}版“密码文本.txt”文件。\n"));
         }
-        None => {}
-      },
+      }
     }
 
     if self.to_export_pwd_bin_c1s2 {

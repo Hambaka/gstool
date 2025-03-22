@@ -139,27 +139,28 @@ fn gen_pwd_tables() {
 fn gen_name_tables() {
   // val -> u8
   let base_characters = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    r"src/json/base_characters.json"
+    r"res/json/base_characters.json"
   ))
   .unwrap();
   // val -> u16
   let special_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    r"src/json/special_hanzi.json"
+    r"res/json/special_hanzi.json"
   ))
   .unwrap();
   let common_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    r"src/json/common_hanzi.json"
+    r"res/json/common_hanzi.json"
   ))
   .unwrap();
   let dakuten_kana = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    r"src/json/dakuten_kana.json"
+    r"res/json/dakuten_kana.json"
   ))
   .unwrap();
 
   let path = Path::new(&env::var("OUT_DIR").unwrap()).join("codegen_name.rs");
   let mut file = BufWriter::new(File::create(&path).unwrap());
 
-  writeln!(&mut file, "use phf::phf_map;\n").unwrap();
+  writeln!(&mut file, "use phf::phf_map;").unwrap();
+  writeln!(&mut file, "use eframe::egui::ImageSource;\n").unwrap();
 
   // BASE_CHARACTERS_MAP
   writeln!(
@@ -220,6 +221,33 @@ fn gen_name_tables() {
   .unwrap();
   for (key, value) in dakuten_kana {
     writeln!(&mut file, "  '{key}' => \"{value}\",").unwrap();
+  }
+  writeln!(&mut file, "}};\n").unwrap();
+
+  // keyboard images
+  writeln!(
+    &mut file,
+    "static KEYBOARD_IMG_MAP: phf::Map<u8, ImageSource> = phf_map! {{"
+  )
+  .unwrap();
+
+  // 60,
+  // 7F
+  // 80, 81, 82, 83, 84, 85,
+  // 90,
+  // A0, A1, A2, A3, A4, A5
+  let invalid_num = [
+    0x60, 0x7F, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x90, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5,
+  ];
+  for i in 0x20..0xFE {
+    if invalid_num.contains(&i) {
+      continue;
+    }
+    writeln!(
+      &mut file,
+      "  0x{i:02X}u8 => egui::include_image!(\"../../../../../assets/keyboard_img/0x{i:02X}.png\"),"
+    )
+    .unwrap();
   }
   writeln!(&mut file, "}};").unwrap();
 }

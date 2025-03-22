@@ -154,7 +154,7 @@ impl App {
     fonts.font_data.insert(
       "unifont".to_owned(),
       std::sync::Arc::new(egui::FontData::from_static(include_bytes!(
-        "font/unifont-16.0.02.otf"
+        "../assets/font/unifont-16.0.02.otf"
       ))),
     );
     fonts
@@ -327,7 +327,7 @@ impl eframe::App for App {
           },
           // 2. 存档转换功能部分
           CommandEnum::Second => {
-            let bool1 = !self.save_file.is_empty();
+            let bool1 = self.save_src_type_index.is_some();
             let bool2 = self.default_name_ver.is_some() || self.build_date_ver.is_some();
 
             bool1 && bool2
