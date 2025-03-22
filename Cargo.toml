@@ -1,17 +1,25 @@
 [package]
 name = "gstool"
-version = "0.1.0"
-edition = "2021"
+version = "0.2.0"
+authors = ["Hambaka"]
+edition = "2024"
 # Unnecessary
 build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.1.14", features = ["cargo"] }
-# For wasm support -> klask = { git = "https://github.com/Easyoakland/klask.git" }
-klask = { git = "https://github.com/xosxos/klask.git", rev = "991c70af" }
+egui = "0.31"
+eframe = { version = "0.31", default-features = false, features = [
+    "default_fonts", # Embed the default egui fonts.
+    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "wayland",       # To support Linux (and CI)
+] }
+egui_extras = { version = "0.31", default-features = false, features = ["image"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+egui-notify = "0.19"
 phf = { version = "0.11", features = ["macros"] }
+rfd = "0.15"
 
 [build-dependencies]
 serde_json = "1.0"
@@ -22,3 +30,4 @@ strip = true
 opt-level = 2
 lto = true
 codegen-units = 1
+panic = "abort"
