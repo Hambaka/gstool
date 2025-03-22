@@ -239,13 +239,22 @@ fn gen_name_tables() {
   let invalid_num = [
     0x60, 0x7F, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x90, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5,
   ];
+
   for i in 0x20..0xFE {
     if invalid_num.contains(&i) {
       continue;
     }
+    let img_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets").join("keyboard_img").join(format!("0x{:02X}.png", i));
+    let img_path_str = img_path.as_os_str().to_str().unwrap();
+    let new_str = if img_path_str.contains("\\"){
+      img_path_str.replace("\\", "\\\\")
+    } else {
+      img_path_str.to_owned()
+    };
+    
     writeln!(
       &mut file,
-      "  0x{i:02X}u8 => egui::include_image!(\"../../../../../assets/keyboard_img/0x{i:02X}.png\"),"
+      "  0x{i:02X}u8 => egui::include_image!(\"{new_str}\"),"
     )
     .unwrap();
   }
