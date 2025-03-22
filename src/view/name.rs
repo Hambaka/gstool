@@ -119,7 +119,7 @@ impl App {
           name_index += 2;
 
           self.out_log_c3.push_str(&format!(
-            "{}：汉化版字库中包含该字符，但无法在游戏中正常输入，码值为{}\n",
+            "{}：汉化版字库中包含该字符，但无法在起名界面中正常输入，码值为0x{:04X}\n",
             c,
             SPECIAL_HANZI_MAP.get(&c).unwrap()
           ));

@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
-use egui::{Align2, Button, Id, Modal, RichText, Sides, Widget};
+use egui::{Align2, Button, Id, Modal, RichText, Shadow, Sides, Widget};
+use egui_notify::{Anchor, Toasts};
 
 use crate::{
   colors::{DANGER, LIGHT, SECONDARY, SUCCESS},
@@ -28,6 +29,7 @@ pub enum CommandEnum {
 
 pub struct App {
   window_open: bool,
+  toasts: Toasts,
   command: CommandEnum,
   pub subcommand: CommandEnum,
   pub modal_open: bool,
@@ -86,6 +88,14 @@ impl Default for App {
   fn default() -> Self {
     Self {
       window_open: false,
+      toasts: Toasts::default()
+        .with_anchor(Anchor::BottomRight)
+        .with_shadow(Shadow {
+          offset: [1, 2],
+          blur: 10,
+          spread: 3,
+          color: egui::Color32::from_black_alpha(70),
+        }),
       command: CommandEnum::First,
       subcommand: CommandEnum::First,
       modal_open: false,
@@ -391,6 +401,10 @@ impl eframe::App for App {
               CommandEnum::Third => &self.out_log_c3,
             };
             ctx.copy_text(log.to_string());
+            self
+              .toasts
+              .success("已复制输出内容至剪贴板！")
+              .duration(Some(Duration::from_secs(5)));
           }
         });
 
@@ -404,5 +418,7 @@ impl eframe::App for App {
         }
       });
     });
+
+    self.toasts.show(ctx);
   }
 }
