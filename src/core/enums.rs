@@ -26,12 +26,8 @@ impl PasswordGrade {
     }
   }
 
-  pub fn get_priority(self) -> u8 {
-    match self {
-      PasswordGrade::Gold => 0,
-      PasswordGrade::Silver => 1,
-      PasswordGrade::Bronze => 2,
-    }
+  pub fn get_priority(self) -> usize {
+    self as usize
   }
 }
 

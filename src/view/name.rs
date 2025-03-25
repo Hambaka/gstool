@@ -138,7 +138,7 @@ impl App {
 
       if invalid_flag {
         self.out_log_c3.push_str(&format!(
-          "由于存在不可用的字符，故不展示{pc_name_new}自定义名字所对应的十六进制值和金手指！\n"
+          "由于存在不可用的字符，故不展示{pc_name}自定义名字所对应的十六进制值和金手指！\n"
         ));
       } else {
         self.out_log_c3.push_str("十六进制值：\n");
