@@ -19,8 +19,9 @@ jobs:
         - os: ubuntu-latest
           TARGET: x86_64-unknown-linux-gnu
 
+        # For Windows 7 +
         - os: windows-latest
-          TARGET: x86_64-pc-windows-gnu
+          TARGET: x86_64-win7-windows-msvc
           EXTENSION: .exe
 
     steps:
@@ -29,25 +30,53 @@ jobs:
 
     - uses: actions/checkout@master
 
-    - name: Update Rust (mac OS, Linux)
+    # Check rust...
+    # Windows only
+    - name: Switch to nightly (Windows)
+      if: contains(matrix.TARGET, 'windows')
+      run: |
+        rustup default nightly
+  
+    # Windows only
+    - name: Add rust-src component (Windows)
+      if: contains(matrix.TARGET, 'windows')
+      run: |
+        rustup component add rust-src --toolchain nightly-x86_64-pc-windows-msvc
+
+    # macOS, Linux only
+    - name: Update Rust (macOS, Linux)
       if: ${{ !contains(matrix.TARGET, 'windows') }}
       run: |
         rustup update
     
-    - name: Switch to MinGW (Windows)
+    # Check dependencies...
+    # Windows only
+    - name: Check all packages (Windows)    
       if: contains(matrix.TARGET, 'windows')
       run: |
-        rustup default stable-x86_64-pc-windows-gnu
-        rustup target add x86_64-pc-windows-gnu
-        rustup update
+        cargo check
+    
+    # Windows only
+    - name: Temporary solution for missing windows lib (Windows)
+      if: contains(matrix.TARGET, 'windows')
+      run: |
+        cp $HOME/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/windows_x86_64_msvc-0.48.5/lib/windows.0.48.5.lib $HOME/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/windows_x86_64_msvc-0.52.6/lib/windows.0.48.5.lib
 
-
-    # For linux
+    # Linux only
     - name: Install necessary dependencies for linux
       if: contains(matrix.TARGET, 'linux')
       run: sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev pkg-config libgtk-3-dev
 
-    - name: Build
+    # Start building...
+    # Windows only
+    - name: Build (macOS, Linux)
+      if: contains(matrix.TARGET, 'windows')
+      run: |
+        cargo +nightly build --verbose --release -Z build-std=panic_abort,std --target=${{ matrix.TARGET }}
+
+    # macOS, Linux only
+    - name: Build (macOS, Linux)
+      if: ${{ !contains(matrix.TARGET, 'windows') }}
       run: |
         cargo build --verbose --release --target=${{ matrix.TARGET }}
 
