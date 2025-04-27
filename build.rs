@@ -244,14 +244,17 @@ fn gen_name_tables() {
     if invalid_num.contains(&i) {
       continue;
     }
-    let img_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets").join("keyboard_img").join(format!("0x{:02X}.png", i));
+    let img_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+      .join("assets")
+      .join("keyboard_img")
+      .join(format!("0x{:02X}.png", i));
     let img_path_str = img_path.as_os_str().to_str().unwrap();
-    let new_str = if img_path_str.contains("\\"){
+    let new_str = if img_path_str.contains("\\") {
       img_path_str.replace("\\", "\\\\")
     } else {
       img_path_str.to_owned()
     };
-    
+
     writeln!(
       &mut file,
       "  0x{i:02X}u8 => egui::include_image!(\"{new_str}\"),"

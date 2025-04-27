@@ -69,10 +69,10 @@ jobs:
 
     # Start building...
     # Windows only
-    - name: Build (macOS, Linux)
+    - name: Build (Windows)
       if: contains(matrix.TARGET, 'windows')
       run: |
-        cargo +nightly build --verbose --release -Z build-std=panic_abort,std --target=${{ matrix.TARGET }}
+        cargo build --verbose --release -Z build-std=panic_abort,std --target=${{ matrix.TARGET }}
 
     # macOS, Linux only
     - name: Build (macOS, Linux)
