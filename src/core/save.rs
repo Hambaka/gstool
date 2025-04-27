@@ -1494,7 +1494,7 @@ pub fn convert_save_file(
   loop_start_index: usize,
   pc_name_type_option: Option<NameType>,
   build_date_type_option: Option<GameVersion>,
-) {
+)  -> Vec<u8> {
   let game_type_index = match game_type {
     GameType::TheBrokenSeal => 0,
     GameType::TheLostAge => 1,
@@ -1633,4 +1633,6 @@ pub fn convert_save_file(
         checksum_bytes[j];
     }
   }
+
+  Vec::from(raw_save_file)
 }

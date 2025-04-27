@@ -142,8 +142,8 @@ impl App {
 
   pub fn run_sav(&mut self) {
     // Convert save data.
-    convert_save_file(
-      &mut self.save_file,
+    let new_save_file = convert_save_file(
+      &mut self.save_file.clone(),
       self.save_src_type_index.unwrap().0,
       self.save_src_type_index.unwrap().2,
       self.default_name_ver,
@@ -183,7 +183,7 @@ impl App {
 
     let output_file = File::create(output_path.clone());
     if let Ok(mut file) = output_file {
-      if file.write_all(&self.save_file).is_err() {
+      if file.write_all(&new_save_file).is_err() {
         self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
         self.modal_open = true;
         return;
