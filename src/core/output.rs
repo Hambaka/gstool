@@ -1,3 +1,4 @@
+use std::fmt::Write as _;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -140,37 +141,43 @@ pub fn write_cheat_file(
     16 => PasswordGrade::Bronze,
     _ => unreachable!(),
   };
-  match cheat_version {
-    GameVersion::Germany => text.push_str(&format!(
-      "{}级别密码的金手指（适用于德版《黄金太阳 失落的时代》，亦适用于法/意版）：\n",
+  let _ = match cheat_version {
+    GameVersion::Germany => writeln!(
+      text,
+      "{}级别密码的金手指（适用于德版《黄金太阳 失落的时代》，亦适用于法/意版）：",
       password_grade.get_name()
-    )),
-    GameVersion::France => text.push_str(&format!(
-      "{}级别密码的金手指（适用于法版《黄金太阳 失落的时代》，亦适用于德/意版）：\n",
+    ),
+    GameVersion::France => writeln!(
+      text,
+      "{}级别密码的金手指（适用于法版《黄金太阳 失落的时代》，亦适用于德/意版）：",
       password_grade.get_name()
-    )),
-    GameVersion::Italy => text.push_str(&format!(
-      "{}级别密码的金手指（适用于意版《黄金太阳 失落的时代》，亦适用于德/法版）：\n",
+    ),
+    GameVersion::Italy => writeln!(
+      text,
+      "{}级别密码的金手指（适用于意版《黄金太阳 失落的时代》，亦适用于德/法版）：",
       password_grade.get_name()
-    )),
-    _ => text.push_str(&format!(
-      "{}级别密码的金手指（仅适用于{}版《黄金太阳 失落的时代》）：\n",
+    ),
+    _ => writeln!(
+      text,
+      "{}级别密码的金手指（仅适用于{}版《黄金太阳 失落的时代》）：",
       password_grade.get_name(),
       cheat_version.get_name()
-    )),
-  }
+    ),
+  };
   let size = password_bytes.len();
   let loop_num = (size - 2) / 4;
   let mut loop_count = 0;
-  text.push_str(&format!(
-    "{:08X}:{:04X}\n",
+  let _ = writeln!(
+    text,
+    "{:08X}:{:04X}",
     address,
     u16::from_le_bytes([password_bytes[0], password_bytes[1]])
-  ));
+  );
   address += 2;
   for i in (2..size).step_by(4) {
-    text.push_str(&format!(
-      "{:08X}:{:08X}\n",
+    let _ = writeln!(
+      text,
+      "{:08X}:{:08X}",
       address,
       u32::from_le_bytes([
         password_bytes[i],
@@ -178,27 +185,25 @@ pub fn write_cheat_file(
         password_bytes[i + 2],
         password_bytes[i + 3]
       ])
-    ));
+    );
     address += 4;
     loop_count += 1;
     if loop_count == loop_num {
       if size % 2 == 0 {
-        text.push_str(&format!(
-          "{:08X}:{:04X}\n",
+        let _ = writeln!(
+          text,
+          "{:08X}:{:04X}",
           address,
           u16::from_le_bytes([password_bytes[i + 4], password_bytes[i + 5]])
-        ));
+        );
       } else {
-        text.push_str(&format!(
-          "{:08X}:{:04X}\n",
+        let _ = writeln!(
+          text,
+          "{:08X}:{:04X}",
           address,
           u16::from_le_bytes([password_bytes[i + 4], password_bytes[i + 5]])
-        ));
-        text.push_str(&format!(
-          "{:08X}:{:02X}\n",
-          address + 2,
-          password_bytes[i + 6]
-        ));
+        );
+        let _ = writeln!(text, "{:08X}:{:02X}", address + 2, password_bytes[i + 6]);
       }
       break;
     }

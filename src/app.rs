@@ -255,7 +255,7 @@ impl eframe::App for App {
         ))
       }) {
         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-      };
+      }
 
       // 菜单栏
       egui::menu::bar(ui, |ui| {
@@ -376,7 +376,7 @@ impl eframe::App for App {
                 CommandEnum::Second => self.run_sav(),
                 CommandEnum::Third => self.run_name(),
               }
-            };
+            }
           } else {
             ui.add_enabled(
               false,

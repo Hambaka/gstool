@@ -1,5 +1,5 @@
 use core::f32;
-use std::{collections::HashMap, fs::File, io::Read};
+use std::{collections::HashMap, fmt::Write as _, fs::File, io::Read};
 
 use egui::{Button, Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
@@ -112,7 +112,7 @@ impl App {
                   },
               }
             }
-          };
+          }
           if self.input_file_path_c1s1.is_empty() {
             ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
           } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
@@ -223,7 +223,7 @@ impl App {
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s1 = dir.to_string_lossy().into_owned();
             }
-          };
+          }
 
           if self.out_dir_c1s1.is_empty() {
             ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
@@ -279,7 +279,7 @@ impl App {
                   },
               }
             }
-          };
+          }
           if self.input_file_path_c1s2.is_empty() {
             ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
           } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
@@ -385,7 +385,7 @@ impl App {
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s2 = dir.to_string_lossy().into_owned();
             }
-          };
+          }
           if self.out_dir_c1s2.is_empty() {
             ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
           } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked(){
@@ -438,7 +438,7 @@ impl App {
                   },
               }
             }
-          };
+          }
           if self.input_file_path_c1s3.is_empty() {
             ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
           } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
@@ -544,7 +544,7 @@ impl App {
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s3 = dir.to_string_lossy().into_owned();
             }
-          };
+          }
           if self.out_dir_c1s3.is_empty() {
             ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
           } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
@@ -656,20 +656,20 @@ impl App {
       // More detailed output logs, to improve user experience.
       // Sh*t code, but at least it works.
       self.out_log_c1s1.clear();
-      self
-        .out_log_c1s1
-        .push_str(&format!("输出目录：\n{output_dir_str}\n\n"));
+      let _ = write!(self.out_log_c1s1, "输出目录：\n{output_dir_str}\n\n");
       self.out_log_c1s1.push_str("运行概况：\n");
 
       let mut result_index = 1;
       if self.to_export_all_save {
-        self.out_log_c1s1.push_str(&format!(
-          "{result_index}. 已勾选“导出所有存档”，导出包含未通关存档在内的所有存档的数据。\n"
-        ));
+        let _ = writeln!(
+          self.out_log_c1s1,
+          "{result_index}. 已勾选“导出所有存档”，导出包含未通关存档在内的所有存档的数据。"
+        );
       } else {
-        self.out_log_c1s1.push_str(&format!(
-          "{result_index}. 未勾选“导出所有存档”，仅导出通关存档的数据。\n"
-        ));
+        let _ = writeln!(
+          self.out_log_c1s1,
+          "{result_index}. 未勾选“导出所有存档”，仅导出通关存档的数据。"
+        );
       }
 
       let password_grade_cn = self.pwd_grade_c1s1.get_name();
@@ -678,18 +678,30 @@ impl App {
         result_index += 1;
         let password_version_cn = password_version.get_name();
         if self.to_export_all_save {
-          self.out_log_c1s1.push_str(&format!("{result_index}. 已生成存档记录所对应的{password_grade_cn}级别、{password_version_cn}版的“密码文本.txt”文件。\n"));
+          let _ = writeln!(
+            self.out_log_c1s1,
+            "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别、{password_version_cn}版的“密码文本.txt”文件。"
+          );
         } else {
-          self.out_log_c1s1.push_str(&format!("{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别、{password_version_cn}版的“密码文本.txt”文件。\n"));
+          let _ = writeln!(
+            self.out_log_c1s1,
+            "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别、{password_version_cn}版的“密码文本.txt”文件。"
+          );
         }
       }
 
       if self.to_export_pwd_bin_c1s1 {
         result_index += 1;
         if self.to_export_all_save {
-          self.out_log_c1s1.push_str(&format!("{result_index}. 已生成存档记录所对应的{password_grade_cn}级别“密码内存转储.dmp”文件。\n"));
+          let _ = writeln!(
+            self.out_log_c1s1,
+            "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别“密码内存转储.dmp”文件。"
+          );
         } else {
-          self.out_log_c1s1.push_str(&format!("{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别“密码内存转储.dmp”文件。\n"));
+          let _ = writeln!(
+            self.out_log_c1s1,
+            "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别“密码内存转储.dmp”文件。"
+          );
         }
       }
 
@@ -697,20 +709,30 @@ impl App {
         result_index += 1;
         let cheat_version_cn = cheat_version.get_name();
         if self.to_export_all_save {
-          self.out_log_c1s1.push_str(&format!("{result_index}. 已生成存档记录所对应的{password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
+          let _ = writeln!(
+            self.out_log_c1s1,
+            "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
+          );
         } else {
-          self.out_log_c1s1.push_str(&format!("{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
+          let _ = writeln!(
+            self.out_log_c1s1,
+            "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
+          );
         }
       }
 
       if self.to_export_pwd_data_text_c1s1 {
         result_index += 1;
         if self.to_export_all_save {
-          self.out_log_c1s1.push_str(&format!(
-            "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别“密码数据.txt”文件\n"
-          ));
+          let _ = writeln!(
+            self.out_log_c1s1,
+            "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别“密码数据.txt”文件"
+          );
         } else {
-          self.out_log_c1s1.push_str(&format!("{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别“密码数据.txt”文件\n"));
+          let _ = writeln!(
+            self.out_log_c1s1,
+            "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别“密码数据.txt”文件"
+          );
         }
       }
     }
@@ -828,16 +850,17 @@ impl App {
     // More detailed output logs, to improve user experience.
     // Sh*t code, but at least it works.
     self.out_log_c1s2.clear();
-    self
-      .out_log_c1s2
-      .push_str(&format!("输出目录：\n{output_dir_str}\n\n"));
+    let _ = write!(self.out_log_c1s2, "输出目录：\n{output_dir_str}\n\n");
     self.out_log_c1s2.push_str("运行概况：\n");
 
     let mut result_index = 1;
     let source_password_grade_cn = self.txt_src_grade_version.unwrap().0.get_name();
     let source_password_version_cn = password_version.get_name();
 
-    self.out_log_c1s2.push_str(&format!("{result_index}. 输入的源文件为{source_password_grade_cn}级别的{source_password_version_cn}版密码文本文件。\n"));
+    let _ = writeln!(
+      self.out_log_c1s2,
+      "{result_index}. 输入的源文件为{source_password_grade_cn}级别的{source_password_version_cn}版密码文本文件。"
+    );
 
     let convert_flag_str_option = if self.to_convert_pwd_text_ver {
       Some(password_version.rev().get_name())
@@ -855,16 +878,25 @@ impl App {
       Some(convert_flag_str) => {
         if let Some(downgrade_str) = downgrade_str_option {
           result_index += 1;
-          self.out_log_c1s2.push_str(&format!("{result_index}. 已生成降级为{downgrade_str}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。\n"));
+          let _ = writeln!(
+            self.out_log_c1s2,
+            "{result_index}. 已生成降级为{downgrade_str}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。"
+          );
         } else {
           result_index += 1;
-          self.out_log_c1s2.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。\n"));
+          let _ = writeln!(
+            self.out_log_c1s2,
+            "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、转换为{convert_flag_str}版的“密码文本.txt”文件。"
+          );
         }
       }
       None => {
         if let Some(downgrade_str) = downgrade_str_option {
           result_index += 1;
-          self.out_log_c1s2.push_str(&format!("{result_index}. 已生成降级为{downgrade_str}级别的、未经版本转换的{source_password_version_cn}版“密码文本.txt”文件。\n"));
+          let _ = writeln!(
+            self.out_log_c1s2,
+            "{result_index}. 已生成降级为{downgrade_str}级别的、未经版本转换的{source_password_version_cn}版“密码文本.txt”文件。"
+          );
         }
       }
     }
@@ -872,11 +904,15 @@ impl App {
     if self.to_export_pwd_bin_c1s2 {
       result_index += 1;
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s2.push_str(&format!(
-          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码内存转储.dmp”文件。\n"
-        ));
+        let _ = writeln!(
+          self.out_log_c1s2,
+          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码内存转储.dmp”文件。"
+        );
       } else {
-        self.out_log_c1s2.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码内存转储.dmp”文件。\n"));
+        let _ = writeln!(
+          self.out_log_c1s2,
+          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码内存转储.dmp”文件。"
+        );
       }
     }
 
@@ -884,22 +920,30 @@ impl App {
       result_index += 1;
       let cheat_version_cn = cheat_version.get_name();
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s2.push_str(&format!("{result_index}. 已生成降级为{target_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
+        let _ = writeln!(
+          self.out_log_c1s2,
+          "{result_index}. 已生成降级为{target_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
+        );
       } else {
-        self.out_log_c1s2.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
+        let _ = writeln!(
+          self.out_log_c1s2,
+          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
+        );
       }
     }
 
     if self.to_export_pwd_data_text_c1s2 {
       result_index += 1;
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s2.push_str(&format!(
-          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码数据.txt”文件\n"
-        ));
+        let _ = writeln!(
+          self.out_log_c1s2,
+          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码数据.txt”文件"
+        );
       } else {
-        self.out_log_c1s2.push_str(&format!(
-          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码数据.txt”文件\n"
-        ));
+        let _ = writeln!(
+          self.out_log_c1s2,
+          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码数据.txt”文件"
+        );
       }
     }
   }
@@ -993,34 +1037,40 @@ impl App {
     // More detailed output logs, to improve user experience.
     // Sh*t code, but at least it works.
     self.out_log_c1s3.clear();
-    self
-      .out_log_c1s3
-      .push_str(&format!("输出目录：\n{output_dir_str}\n\n"));
+    let _ = write!(self.out_log_c1s3, "输出目录：\n{output_dir_str}\n\n");
     self.out_log_c1s3.push_str("运行概况：\n");
 
     let mut result_index = 1;
     let source_password_grade_cn = self.dmp_src_grade.unwrap().get_name();
-    self.out_log_c1s3.push_str(&format!(
-      "{result_index}. 输入的源文件为{source_password_grade_cn}级别的密码内存转储文件。\n"
-    ));
+    let _ = writeln!(
+      self.out_log_c1s3,
+      "{result_index}. 输入的源文件为{source_password_grade_cn}级别的密码内存转储文件。"
+    );
 
     let mut downgrade_str_option = None;
     if let Some(target_password_grade) = self.pwd_grade_c1s3 {
       result_index += 1;
       let target_password_grade_cn = target_password_grade.get_name();
       downgrade_str_option = Some(target_password_grade_cn);
-      self.out_log_c1s3.push_str(&format!(
-        "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码内存转储.dmp”文件。\n"
-      ));
+      let _ = writeln!(
+        self.out_log_c1s3,
+        "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码内存转储.dmp”文件。"
+      );
     }
 
     if let Some(password_version) = self.pwd_text_ver_c1s3 {
       result_index += 1;
       let password_version_cn = password_version.get_name();
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s3.push_str(&format!("{result_index}. 已生成降级为{target_password_grade_cn}级别的{password_version_cn}版“密码文本.txt”文件。\n"));
+        let _ = writeln!(
+          self.out_log_c1s3,
+          "{result_index}. 已生成降级为{target_password_grade_cn}级别的{password_version_cn}版“密码文本.txt”文件。"
+        );
       } else {
-        self.out_log_c1s3.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的{password_version_cn}版“密码文本.txt”文件。\n"));
+        let _ = writeln!(
+          self.out_log_c1s3,
+          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的{password_version_cn}版“密码文本.txt”文件。"
+        );
       }
     }
 
@@ -1028,22 +1078,30 @@ impl App {
       result_index += 1;
       let cheat_version_cn = cheat_version.get_name();
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s3.push_str(&format!("{result_index}. 已生成降级为{target_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
+        let _ = writeln!(
+          self.out_log_c1s3,
+          "{result_index}. 已生成降级为{target_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
+        );
       } else {
-        self.out_log_c1s3.push_str(&format!("{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。\n"));
+        let _ = writeln!(
+          self.out_log_c1s3,
+          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
+        );
       }
     }
 
     if self.to_export_pwd_data_text_c1s3 {
       result_index += 1;
       if let Some(target_password_grade_cn) = downgrade_str_option {
-        self.out_log_c1s3.push_str(&format!(
-          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码数据.txt”文件\n"
-        ));
+        let _ = writeln!(
+          self.out_log_c1s3,
+          "{result_index}. 已生成降级为{target_password_grade_cn}级别的“密码数据.txt”文件"
+        );
       } else {
-        self.out_log_c1s3.push_str(&format!(
-          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码数据.txt”文件\n"
-        ));
+        let _ = writeln!(
+          self.out_log_c1s3,
+          "{result_index}. 已生成与源文件同级的{source_password_grade_cn}级别的“密码数据.txt”文件"
+        );
       }
     }
   }
@@ -1119,7 +1177,7 @@ fn validate_txt(
   let mut password = String::new();
   if input_file.read_to_string(&mut password).is_err() {
     return Err("输入的不是有效的文本文件！");
-  };
+  }
   // If the text file is empty...
   if password.is_empty() {
     return Err("文本文件内没有任何内容！");

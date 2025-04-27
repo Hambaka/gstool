@@ -1,4 +1,5 @@
 use core::f32;
+use std::fmt::Write as _;
 
 use egui::{Button, Label, RichText, Ui, Widget};
 
@@ -73,7 +74,7 @@ impl App {
       }
 
       let pc_name = PC_NAMES[index];
-      self.out_log_c3.push_str(&format!("{pc_name}\n"));
+      let _ = writeln!(self.out_log_c3, "{pc_name}");
       let char_vec: Vec<char> = pc_name_new.chars().collect();
       let mut invalid_flag = false;
       let mut name_bytes = [0; 10];
@@ -86,7 +87,7 @@ impl App {
           name_bytes[name_index] = *num;
           name_index += 1;
 
-          self.out_log_c3.push_str(&format!("{c}：{c}\n"));
+          let _ = writeln!(self.out_log_c3, "{c}：{c}");
         } else if DAKUTEN_KANA_MAP.contains_key(&c) {
           let string_value = DAKUTEN_KANA_MAP.get(&c).unwrap();
 
@@ -96,9 +97,11 @@ impl App {
             name_index += 1;
           }
 
-          self
-            .out_log_c3
-            .push_str(&format!("{}：{}\n", c, DAKUTEN_KANA_MAP.get(&c).unwrap()));
+          let _ = writeln!(
+            self.out_log_c3,
+            "{c}：{}",
+            DAKUTEN_KANA_MAP.get(&c).unwrap()
+          );
         } else if COMMON_HANZI_MAP.contains_key(&c) {
           let string_value = COMMON_HANZI_MAP.get(&c).unwrap();
 
@@ -108,9 +111,11 @@ impl App {
             name_index += 1;
           }
 
-          self
-            .out_log_c3
-            .push_str(&format!("{}：{}\n", c, COMMON_HANZI_MAP.get(&c).unwrap()));
+          let _ = writeln!(
+            self.out_log_c3,
+            "{c}：{}",
+            COMMON_HANZI_MAP.get(&c).unwrap()
+          );
         } else if SPECIAL_HANZI_MAP.contains_key(&c) {
           let num = SPECIAL_HANZI_MAP.get(&c).unwrap();
           let num_bytes = num.to_be_bytes();
@@ -118,36 +123,33 @@ impl App {
           name_bytes[name_index + 1] = num_bytes[1];
           name_index += 2;
 
-          self.out_log_c3.push_str(&format!(
-            "{}：汉化版字库中包含该字符，但无法在起名界面中正常输入，码值为0x{:04X}\n",
-            c,
+          let _ = writeln!(
+            self.out_log_c3,
+            "{c}：汉化版字库中包含该字符，但无法在起名界面中正常输入，码值为0x{:04X}",
             SPECIAL_HANZI_MAP.get(&c).unwrap()
-          ));
+          );
         } else if SPECIAL_CHARS.contains(&c) {
           invalid_flag = true;
-          self
-            .out_log_c3
-            .push_str(&format!("{c}：汉化版的控制符，不能单独使用！\n"));
+          let _ = writeln!(self.out_log_c3, "{c}：汉化版的控制符，不能单独使用！");
         } else {
           invalid_flag = true;
-          self
-            .out_log_c3
-            .push_str(&format!("{c}：汉化版字库中不包含该字符！\n"));
+          let _ = writeln!(self.out_log_c3, "{c}：汉化版字库中不包含该字符！");
         }
       }
 
       if invalid_flag {
-        self.out_log_c3.push_str(&format!(
-          "由于存在不可用的字符，故不展示{pc_name}自定义名字所对应的十六进制值和金手指！\n"
-        ));
+        let _ = writeln!(
+          self.out_log_c3,
+          "由于存在不可用的字符，故不展示{pc_name}自定义名字所对应的十六进制值和金手指！"
+        );
       } else {
         self.out_log_c3.push_str("十六进制值：\n");
         let len = name_bytes.len();
         for (i, name_byte) in name_bytes.iter().enumerate() {
           if i + 1 == len {
-            self.out_log_c3.push_str(&format!("{name_byte:02X}\n"));
+            let _ = writeln!(self.out_log_c3, "{name_byte:02X}");
           } else {
-            self.out_log_c3.push_str(&format!("{name_byte:02X} "));
+            let _ = write!(self.out_log_c3, "{name_byte:02X} ");
           }
         }
 
@@ -157,9 +159,7 @@ impl App {
             let j = i as usize;
             let address = NAME_ADDRESS + u32::try_from(index).unwrap() * 0x14C + i * 4;
             let value = u16::from_le_bytes([name_bytes[j * 4], name_bytes[j * 4 + 1]]);
-            self
-              .out_log_c3
-              .push_str(&format!("{address:08X}:{value:04X}\n"));
+            let _ = writeln!(self.out_log_c3, "{address:08X}:{value:04X}");
           } else {
             let j = i as usize;
             let address = NAME_ADDRESS + u32::try_from(index).unwrap() * 0x14C + i * 4;
@@ -169,9 +169,7 @@ impl App {
               name_bytes[j * 4 + 2],
               name_bytes[j * 4 + 3],
             ]);
-            self
-              .out_log_c3
-              .push_str(&format!("{address:08X}:{value:08X}\n"));
+            let _ = writeln!(self.out_log_c3, "{address:08X}:{value:08X}");
           }
         }
       }

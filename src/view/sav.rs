@@ -1,5 +1,6 @@
 use core::f32;
 use std::{
+  fmt::Write as _,
   fs::{File, create_dir_all},
   io::{Read, Write},
   path::{Path, PathBuf},
@@ -55,7 +56,7 @@ impl App {
                 },
             }
           }
-        };
+        }
         if self.input_file_path_c2.is_empty() {
           ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
         } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
@@ -128,7 +129,7 @@ impl App {
           if let Some(file) = FileDialog::new().pick_folder(){
             self.out_dir_c2 = file.to_string_lossy().into_owned();
           }
-        };
+        }
         if self.out_dir_c2.is_empty() {
           ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
         } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
@@ -197,10 +198,11 @@ impl App {
     // More detailed output logs, to improve user experience.
     // Sh*t code, but at least it works.
     self.out_log_c2.clear();
-    self.out_log_c2.push_str(&format!(
+    let _ = write!(
+      self.out_log_c2,
       "输出文件：\n{}\n\n",
       output_path.to_str().unwrap()
-    ));
+    );
     self.out_log_c2.push_str("运行概况：\n");
 
     let mut result_index = 0;
@@ -209,23 +211,26 @@ impl App {
       GameType::TheBrokenSeal => "《黄金太阳 开启的封印》",
       GameType::TheLostAge => "《黄金太阳 失落的时代》",
     };
-    self.out_log_c2.push_str(&format!(
-      "{result_index}. 输入的源文件为{game_type_cn}的存档文件。\n"
-    ));
+    let _ = writeln!(
+      self.out_log_c2,
+      "{result_index}. 输入的源文件为{game_type_cn}的存档文件。"
+    );
 
     if let Some(name_type) = self.default_name_ver {
       result_index += 1;
       let name_type_cn = name_type.get_name();
-      self.out_log_c2.push_str(&format!(
-        "{result_index}. 生成的存档文件已将主角团成员的名字转换为{name_type_cn}版的默认名。\n"
-      ));
+      let _ = writeln!(
+        self.out_log_c2,
+        "{result_index}. 生成的存档文件已将主角团成员的名字转换为{name_type_cn}版的默认名。"
+      );
 
       if let Some(build_date_type) = self.build_date_ver {
         result_index += 1;
         let build_date_type_cn = build_date_type.get_name();
-        self.out_log_c2.push_str(&format!(
-          "{result_index}. 生成的存档文件已将构建日期转换为{build_date_type_cn}版。\n"
-        ));
+        let _ = writeln!(
+          self.out_log_c2,
+          "{result_index}. 生成的存档文件已将构建日期转换为{build_date_type_cn}版。"
+        );
       }
     }
   }

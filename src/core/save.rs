@@ -1,5 +1,5 @@
 use super::enums::{GameType, GameVersion, NameType, PasswordGrade};
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Write as _};
 
 /* Links to other Golden Sun reference guide (save editing):
 https://gamefaqs.gamespot.com/gba/468548-golden-sun/faqs/43776
@@ -1295,9 +1295,9 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("============开始============\n");
   for (i, level) in save_data.levels.iter().enumerate() {
     if i < save_data.levels.len() - 1 {
-      exported_text.push_str(&format!("{level}\t"));
+      let _ = write!(exported_text, "{level}\t");
     } else {
-      exported_text.push_str(&format!("{level}\n"));
+      let _ = write!(exported_text, "{level}");
     }
   }
   exported_text.push_str("============结束============\n\n\n\n");
@@ -1346,9 +1346,9 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   for (i, event) in save_data.events.iter().enumerate() {
     if i == 2 {
       let inverted_event = (event ^ 1) & 1;
-      exported_text.push_str(&format!("{inverted_event}\n"));
+      let _ = writeln!(exported_text, "{inverted_event}");
     } else {
-      exported_text.push_str(&format!("{event}\n"));
+      let _ = writeln!(exported_text, "{event}");
     }
   }
   exported_text.push_str("====结束====\n\n\n\n");
@@ -1368,10 +1368,10 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
   for i in 0..6 {
-    exported_text.push_str(&format!("{}\t", save_data.stats[0][i]));
-    exported_text.push_str(&format!("{}\t", save_data.stats[1][i]));
-    exported_text.push_str(&format!("{}\t", save_data.stats[2][i]));
-    exported_text.push_str(&format!("{}\n", save_data.stats[3][i]));
+    let _ = write!(exported_text, "{}\t", save_data.stats[0][i]);
+    let _ = write!(exported_text, "{}\t", save_data.stats[1][i]);
+    let _ = write!(exported_text, "{}\t", save_data.stats[2][i]);
+    let _ = writeln!(exported_text, "{}", save_data.stats[3][i]);
   }
   exported_text.push_str("============结束============\n\n\n\n");
 
@@ -1389,22 +1389,26 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
   for i in 0..6 {
-    exported_text.push_str(&format!(
+    let _ = write!(
+      exported_text,
       "{}\t",
       (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as u32
-    ));
-    exported_text.push_str(&format!(
+    );
+    let _ = write!(
+      exported_text,
       "{}\t",
       (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as u32
-    ));
-    exported_text.push_str(&format!(
+    );
+    let _ = write!(
+      exported_text,
       "{}\t",
       (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as u32
-    ));
-    exported_text.push_str(&format!(
-      "{}\n",
+    );
+    let _ = writeln!(
+      exported_text,
+      "{}",
       (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as u32
-    ));
+    );
   }
   exported_text.push_str("============结束============\n\n\n\n");
 
@@ -1420,7 +1424,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       let isaac_item_index = (isaac_item_id - 1) as usize;
       exported_text.push_str(ALL_ITEM_NAMES[isaac_item_index]);
       if STACKABLE_ITEMS.contains(&isaac_item_id) {
-        exported_text.push_str(&format!("*{}", (isaac_item >> 11) + 1));
+        let _ = write!(exported_text, "*{}", (isaac_item >> 11) + 1);
       }
     }
     exported_text.push('\t');
@@ -1431,7 +1435,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       let garet_item_index = (garet_item_id - 1) as usize;
       exported_text.push_str(ALL_ITEM_NAMES[garet_item_index]);
       if STACKABLE_ITEMS.contains(&garet_item_id) {
-        exported_text.push_str(&format!("*{}", (garet_item >> 11) + 1));
+        let _ = write!(exported_text, "*{}", (garet_item >> 11) + 1);
       }
     }
     exported_text.push('\t');
@@ -1442,7 +1446,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       let ivan_item_index = (ivan_item_id - 1) as usize;
       exported_text.push_str(ALL_ITEM_NAMES[ivan_item_index]);
       if STACKABLE_ITEMS.contains(&ivan_item_id) {
-        exported_text.push_str(&format!("*{}", (ivan_item >> 11) + 1));
+        let _ = write!(exported_text, "*{}", (ivan_item >> 11) + 1);
       }
     }
     exported_text.push('\t');
@@ -1453,7 +1457,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       let mia_item_index = (mia_item_id - 1) as usize;
       exported_text.push_str(ALL_ITEM_NAMES[mia_item_index]);
       if STACKABLE_ITEMS.contains(&mia_item_id) {
-        exported_text.push_str(&format!("*{}", (mia_item >> 11) + 1));
+        let _ = write!(exported_text, "*{}", (mia_item >> 11) + 1);
       }
     }
     exported_text.push('\n');
@@ -1464,7 +1468,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   // Coins
   exported_text.push_str("金币\n表格中的范围 -> D28\n");
   exported_text.push_str("====开始====\n");
-  exported_text.push_str(&format!("{}\n", save_data.coins));
+  let _ = writeln!(exported_text, "{}", save_data.coins);
   exported_text.push_str("====结束====\n");
 
   exported_text
@@ -1494,7 +1498,7 @@ pub fn convert_save_file(
   loop_start_index: usize,
   pc_name_type_option: Option<NameType>,
   build_date_type_option: Option<GameVersion>,
-)  -> Vec<u8> {
+) -> Vec<u8> {
   let game_type_index = match game_type {
     GameType::TheBrokenSeal => 0,
     GameType::TheLostAge => 1,
