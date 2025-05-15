@@ -48,19 +48,6 @@ jobs:
       if: ${{ !contains(matrix.TARGET, 'windows') }}
       run: |
         rustup update
-    
-    # Check dependencies...
-    # Windows only
-    - name: Check all packages (Windows)    
-      if: contains(matrix.TARGET, 'windows')
-      run: |
-        cargo check
-    
-    # Windows only
-    - name: Temporary solution for missing windows lib (Windows)
-      if: contains(matrix.TARGET, 'windows')
-      run: |
-        cp $HOME/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/windows_x86_64_msvc-0.48.5/lib/windows.0.48.5.lib $HOME/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/windows_x86_64_msvc-0.52.6/lib/windows.0.48.5.lib
 
     # Linux only
     - name: Install necessary dependencies for linux
