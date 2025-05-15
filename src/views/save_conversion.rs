@@ -12,11 +12,11 @@ use rfd::FileDialog;
 use crate::{
   App,
   app::GAME_VERSIONS,
+  components::buttons::{reset_btn, select_dir_btn, select_file_btn},
   core::{
     enums::{GameType, GameVersion, NameType},
     save::{convert_save_file, get_game_type_with_loop_start_index_option},
   },
-  widgets::{reset_btn, select_dir_btn, select_file_btn},
 };
 
 const DESC_C2: &str = r#"使用该功能可转换《黄金太阳 开启的封印》或《黄金太阳 失落的时代》存档的版本：
@@ -29,7 +29,7 @@ const DESC_C2: &str = r#"使用该功能可转换《黄金太阳 开启的封印
 （3）《黄金太阳 开启的封印》新汉化版基于日版制作，所以 ROM 中的构建日期同日版。"#;
 
 impl App {
-  pub fn show_sav(&mut self, ui: &mut Ui) {
+  pub fn show_c2(&mut self, ui: &mut Ui) {
     // 正式界面
     Label::new(DESC_C2).selectable(false).ui(ui);
 
@@ -41,7 +41,7 @@ impl App {
           if let Some(file) = FileDialog::new().pick_file(){
             let new_file_path = file.to_string_lossy().into_owned();
             // 验证存档文件
-            let result = validate_save_conv(&new_file_path);
+            let result = validate_input_file(&new_file_path);
             match result {
                 Ok(o) => {
                   self.input_file_path_c2 = new_file_path;
@@ -142,7 +142,7 @@ impl App {
     });
   }
 
-  pub fn run_sav(&mut self) {
+  pub fn run_c2(&mut self) {
     // Convert save data.
     let new_save_file = convert_save_file(
       &mut self.save_file.clone(),
@@ -236,12 +236,12 @@ impl App {
     }
   }
 
-  pub fn show_log_sav(&mut self, ui: &mut Ui) {
+  pub fn show_log_c2(&mut self, ui: &mut Ui) {
     Label::new(&self.out_log_c2).selectable(false).ui(ui);
   }
 }
 
-fn validate_save_conv(
+fn validate_input_file(
   path_str: &str,
 ) -> Result<(Vec<u8>, GameType, GameVersion, usize), &'static str> {
   // Read save file.

@@ -4,7 +4,7 @@ use egui::{Align2, Button, Id, Modal, RichText, Shadow, Sides, Widget};
 use egui_notify::{Anchor, Toasts};
 
 use crate::{
-  colors::{DANGER, LIGHT, SECONDARY, SUCCESS},
+  components::colors::{DANGER, LIGHT, SECONDARY, SUCCESS},
   core::{
     enums::{GameType, GameVersion, NameType, PasswordGrade, PasswordVersion},
     save::{BitArray, RawSaveData},
@@ -293,9 +293,9 @@ impl eframe::App for App {
         });
         // 显示对应的功能页面
         match self.command {
-          CommandEnum::First => self.show_pwd(ui),
-          CommandEnum::Second => self.show_sav(ui),
-          CommandEnum::Third => self.show_name(ui),
+          CommandEnum::First => self.show_c1(ui),
+          CommandEnum::Second => self.show_c2(ui),
+          CommandEnum::Third => self.show_c3(ui),
         }
         ui.separator();
 
@@ -372,9 +372,9 @@ impl eframe::App for App {
               .clicked()
             {
               match self.command {
-                CommandEnum::First => self.run_pwd(),
-                CommandEnum::Second => self.run_sav(),
-                CommandEnum::Third => self.run_name(),
+                CommandEnum::First => self.run_c1(),
+                CommandEnum::Second => self.run_c2(),
+                CommandEnum::Third => self.run_c3(),
               }
             }
           } else {
@@ -411,9 +411,9 @@ impl eframe::App for App {
         // 显示输出日志（概要）
         if enable_copy_button {
           match self.command {
-            CommandEnum::First => self.show_log_pwd(ui),
-            CommandEnum::Second => self.show_log_sav(ui),
-            CommandEnum::Third => self.show_log_name(ui),
+            CommandEnum::First => self.show_log_c1(ui),
+            CommandEnum::Second => self.show_log_c2(ui),
+            CommandEnum::Third => self.show_log_c3(ui),
           }
         }
       });
