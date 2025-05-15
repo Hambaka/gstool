@@ -6,37 +6,38 @@ use std::{
   path::{Path, PathBuf},
 };
 
-use egui::{Button, ComboBox, Label, RichText, Ui, Widget};
+use egui::{ComboBox, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
 
 use crate::{
   App,
   app::GAME_VERSIONS,
-  colors::{DARK, LIGHT, PRIMARY, WARNING},
   core::{
     enums::{GameType, GameVersion, NameType},
     save::{convert_save_file, get_game_type_with_loop_start_index_option},
   },
+  widgets::{reset_btn, select_dir_btn, select_file_btn},
 };
+
+const DESC_C2: &str = r#"使用该功能可转换《黄金太阳 开启的封印》或《黄金太阳 失落的时代》存档的版本：
+（1）修改主角团所有成员的名字为指定语言版本的默认名
+（2）通过修改存档中的游戏构建日期来转换存档版本
+
+注：
+（1）如果存档中的构建日期与游戏 ROM 中的构建日期不匹配，游戏将强制玩家从神殿开始游戏。
+（2）Mobile&Elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，所以 ROM 中的构建日期同美版。
+（3）《黄金太阳 开启的封印》新汉化版基于日版制作，所以 ROM 中的构建日期同日版。"#;
 
 impl App {
   pub fn show_sav(&mut self, ui: &mut Ui) {
     // 正式界面
-    Label::new(
-      "使用该功能可转换《黄金太阳 开启的封印》或《黄金太阳 失落的时代》存档的版本：\n\
-      （1）修改主角团所有成员的名字为指定语言版本的默认名\n\
-      （2）通过修改存档中的游戏构建日期来转换存档版本\n\n\
-      注：\n\
-      （1）如果存档中的构建日期与游戏 ROM 中的构建日期不匹配，游戏将强制玩家从神殿开始游戏。\n\
-      （2）Mobile&Elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，所以 ROM 中的构建日期同美版。\n\
-      （3）《黄金太阳 开启的封印》新汉化版基于日版制作，所以 ROM 中的构建日期同日版。"
-    ).selectable(false).ui(ui);
+    Label::new(DESC_C2).selectable(false).ui(ui);
 
     egui::Grid::new("（2）存档转换功能").num_columns(2).spacing([40.0, 4.0]).striped(true).show(ui, |ui|{
       // 第1行 -> 输入文件路径  【选择文件】【重置】
       Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳 开启的封印》或《黄金太阳 失落的时代》的存档文件");
       ui.horizontal(|ui|{
-        if ui.add(Button::new(RichText::new("🖹 选择文件").color(LIGHT)).fill(PRIMARY)).clicked() {
+        if ui.add(select_file_btn()).clicked() {
           if let Some(file) = FileDialog::new().pick_file(){
             let new_file_path = file.to_string_lossy().into_owned();
             // 验证存档文件
@@ -58,8 +59,8 @@ impl App {
           }
         }
         if self.input_file_path_c2.is_empty() {
-          ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
-        } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
+          ui.add_enabled(false, reset_btn());
+        } else if ui.add(reset_btn()).clicked() {
           self.input_file_path_c2.clear();
           self.save_file.clear();
           self.save_src_type_index = None;
@@ -125,14 +126,14 @@ impl App {
       // 第4行 -> 指定输出文件保存目录  【选择目录】【重置】
       Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出的存档文件路径（推荐留空），若留空则将转换后的存档文件保存到输入文件的同目录下。");
       ui.horizontal(|ui|{
-        if ui.add(Button::new(RichText::new("🗁 选择目录").color(LIGHT)).fill(PRIMARY)).clicked() {
+        if ui.add(select_dir_btn()).clicked() {
           if let Some(file) = FileDialog::new().pick_folder(){
             self.out_dir_c2 = file.to_string_lossy().into_owned();
           }
         }
         if self.out_dir_c2.is_empty() {
-          ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
-        } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
+          ui.add_enabled(false, reset_btn());
+        } else if ui.add(reset_btn()).clicked() {
           self.out_dir_c2.clear();
         }
         ui.add(egui::TextEdit::singleline(&mut self.out_dir_c2).interactive(false).hint_text("存档文件输出路径").desired_width(f32::INFINITY));

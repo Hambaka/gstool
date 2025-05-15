@@ -1,19 +1,19 @@
 use core::f32;
 use std::{collections::HashMap, fmt::Write as _, fs::File, io::Read};
 
-use egui::{Button, Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
+use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
 
 use crate::{
   App,
   app::{CommandEnum, GAME_VERSIONS},
-  colors::{DARK, LIGHT, PRIMARY, WARNING},
   core::{
     convert,
     enums::{PasswordGrade, PasswordVersion},
     output,
     save::{self, BitArray, RawSaveData},
   },
+  widgets::{reset_btn, select_dir_btn, select_file_btn},
 };
 
 const PASSWORD_GRADES: [PasswordGrade; 3] = [
@@ -24,18 +24,22 @@ const PASSWORD_GRADES: [PasswordGrade; 3] = [
 const PASSWORD_VERSIONS: [PasswordVersion; 2] =
   [PasswordVersion::Japanese, PasswordVersion::English];
 
-const DESC_C1: &str = "使用该功能可导出密码，可导出以下几类文件：\n\
-        （1）密码的文本文件（支持导出日文版/英文版密码）\n\
-        （2）密码的内存转储文件\n\
-        （3）密码的金手指文本文件，可以在《黄金太阳 失落的时代》中使用（支持日/美/德/西/法/意版本）\n\
-        （4）密码数据的文本文件，可结合 Dyrati 的“Golden Sun Password Generator”表格使用\n\n\
-        注：Mobile&Elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，因此金手指版本选择美版即可。";
-const DESC_C1S1: &str = "“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。\n\
-      程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项。";
-const DESC_C1S2: &str = "“密码级别”，“转换密码版本”，“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。\n\
-      以上五项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
-const DESC_C1S3: &str = "“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。\n\
-      以上四项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
+const DESC_C1: &str = r#"使用该功能可导出密码，可导出以下几类文件：
+（1）密码的文本文件（支持导出日文版/英文版密码）
+（2）密码的内存转储文件
+（3）密码的金手指文本文件，可以在《黄金太阳 失落的时代》中使用（支持日/美/德/西/法/意版本）
+（4）密码数据的文本文件，可结合 Dyrati 的“Golden Sun Password Generator”表格使用
+
+注：Mobile&Elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，因此金手指版本选择美版即可。"#;
+
+const DESC_C1S1: &str = r#"“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
+程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项。"#;
+
+const DESC_C1S2: &str = r#"“密码级别”，“转换密码版本”，“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
+以上五项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。"#;
+
+const DESC_C1S3: &str = r#"“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。
+以上四项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。"#;
 
 impl App {
   pub fn show_pwd(&mut self, ui: &mut Ui) {
@@ -71,7 +75,7 @@ impl App {
 
     ui.add_space(16.0);
 
-    Grid::new("(1.1)使用存档文件")
+    Grid::new("（1.1）使用存档文件")
       .num_columns(2)
       .spacing([20.0, 5.0])
       .striped(true)
@@ -90,7 +94,7 @@ impl App {
         // 第2行
         Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳 开启的封印》的存档文件。");
         ui.horizontal(|ui| {
-          if ui.add(Button::new(RichText::new("🖹 选择文件").color(LIGHT)).fill(PRIMARY)).clicked() {
+          if ui.add(select_file_btn()).clicked() {
             if let Some(file) = FileDialog::new().pick_file(){
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证存档文件
@@ -114,8 +118,8 @@ impl App {
             }
           }
           if self.input_file_path_c1s1.is_empty() {
-            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
-          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked() {
             self.to_export_all_save= false;
             self.input_file_path_c1s1.clear();
             self.save_data_map = None;
@@ -219,15 +223,15 @@ impl App {
         // 第8行
         Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
         ui.horizontal(|ui| {
-          if ui.add(Button::new(RichText::new("🗁 选择目录").color(LIGHT)).fill(PRIMARY)).clicked() {
+          if ui.add(select_dir_btn()).clicked() {
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s1 = dir.to_string_lossy().into_owned();
             }
           }
 
           if self.out_dir_c1s1.is_empty() {
-            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
-          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked() {
             self.out_dir_c1s1.clear();
           }
           ui.add(
@@ -246,7 +250,7 @@ impl App {
 
     ui.add_space(16.0);
 
-    Grid::new("(1.2)使用密码文本文件")
+    Grid::new("（1.2）使用密码文本文件")
       .num_columns(2)
       .spacing([20.0, 5.0])
       .striped(true)
@@ -254,7 +258,7 @@ impl App {
         // 第1行
         Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳》的密码文本文件。");
         ui.horizontal(|ui| {
-          if ui.add(Button::new(RichText::new("🖹 选择文件").color(LIGHT)).fill(PRIMARY)).clicked(){
+          if ui.add(select_file_btn()).clicked(){
             if let Some(file) = FileDialog::new().pick_file(){
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证密码文本文件
@@ -281,8 +285,8 @@ impl App {
             }
           }
           if self.input_file_path_c1s2.is_empty() {
-            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
-          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked() {
             self.input_file_path_c1s2.clear();
             self.txt_file.clear();
             self.txt_bytes.clear();
@@ -381,14 +385,14 @@ impl App {
         // 第7行
         Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
         ui.horizontal(|ui| {
-          if ui.add(Button::new(RichText::new("🗁 选择目录").color(LIGHT)).fill(PRIMARY)).clicked(){
+          if ui.add(select_dir_btn()).clicked(){
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s2 = dir.to_string_lossy().into_owned();
             }
           }
           if self.out_dir_c1s2.is_empty() {
-            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
-          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked(){
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked(){
             self.out_dir_c1s2.clear();
           }
           ui.add(
@@ -415,7 +419,7 @@ impl App {
         // 第1行
         Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("黄金太阳的密码内存转储文件");
         ui.horizontal(|ui| {
-          if ui.add(Button::new(RichText::new("🖹 选择文件").color(LIGHT)).fill(PRIMARY)).clicked() {
+          if ui.add(select_file_btn()).clicked() {
             if let Some(file) = FileDialog::new().pick_file(){
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证内存转储文件
@@ -440,8 +444,8 @@ impl App {
             }
           }
           if self.input_file_path_c1s3.is_empty() {
-            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
-          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked() {
             self.input_file_path_c1s3.clear();
             self.dmp_bytes.clear();
             self.dmp_bits = None;
@@ -540,14 +544,14 @@ impl App {
         // 第6行
         Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
         ui.horizontal(|ui| {
-          if ui.add(Button::new(RichText::new("🗁 选择目录").color(LIGHT)).fill(PRIMARY)).clicked() {
+          if ui.add(select_dir_btn()).clicked() {
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s3 = dir.to_string_lossy().into_owned();
             }
           }
           if self.out_dir_c1s3.is_empty() {
-            ui.add_enabled(false, Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING));
-          } else if ui.add(Button::new(RichText::new("⟳ 重置").color(DARK)).fill(WARNING)).clicked() {
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked() {
             self.out_dir_c1s3.clear();
           }
           ui.add(
