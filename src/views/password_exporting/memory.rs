@@ -18,8 +18,8 @@ use crate::{
 
 use super::shared_view::{PASSWORD_GRADES, PASSWORD_VERSIONS};
 
-const DESC_C1S3: &str = r#"“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。
-以上四项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。"#;
+const DESC_C1S3: &str = r"“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。
+以上四项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
 
 impl App {
   pub fn show_c1s3(&mut self, ui: &mut Ui) {

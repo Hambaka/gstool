@@ -17,8 +17,8 @@ use crate::{
 
 use super::shared_view::{PASSWORD_GRADES, PASSWORD_VERSIONS};
 
-const DESC_C1S1: &str = r#"“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
-程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项。"#;
+const DESC_C1S1: &str = r"“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
+程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项。";
 
 impl App {
   pub fn show_c1s1(&mut self, ui: &mut Ui) {
