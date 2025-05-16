@@ -12,11 +12,11 @@ use rfd::FileDialog;
 use crate::{
   App,
   app::GAME_VERSIONS,
-  components::buttons::{reset_btn, select_dir_btn, select_file_btn},
   core::{
     enums::{GameType, GameVersion, NameType},
     save::{convert_save_file, get_game_type_with_loop_start_index_option},
   },
+  widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };
 
 const DESC_C2: &str = r"使用该功能可转换《黄金太阳 开启的封印》或《黄金太阳 失落的时代》存档的版本：

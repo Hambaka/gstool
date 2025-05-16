@@ -139,20 +139,20 @@ fn gen_pwd_tables() {
 fn gen_name_tables() {
   // val -> u8
   let base_characters = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    r"res/json/base_characters.json"
+    r"resources/json/base_characters.json"
   ))
   .unwrap();
   // val -> u16
   let special_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    r"res/json/special_hanzi.json"
+    r"resources/json/special_hanzi.json"
   ))
   .unwrap();
   let common_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    r"res/json/common_hanzi.json"
+    r"resources/json/common_hanzi.json"
   ))
   .unwrap();
   let dakuten_kana = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    r"res/json/dakuten_kana.json"
+    r"resources/json/dakuten_kana.json"
   ))
   .unwrap();
 

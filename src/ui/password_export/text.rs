@@ -7,13 +7,13 @@ use rfd::FileDialog;
 use crate::{
   App,
   app::GAME_VERSIONS,
-  components::buttons::{reset_btn, select_dir_btn, select_file_btn},
   core::{
     convert,
     enums::{PasswordGrade, PasswordVersion},
     output,
     save::{self, BitArray},
   },
+  widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };
 
 use super::shared_view::PASSWORD_GRADES;

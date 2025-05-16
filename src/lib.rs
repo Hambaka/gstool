@@ -1,7 +1,7 @@
 #![warn(clippy::pedantic)]
 
 mod app;
-mod components {
+mod widgets {
   pub mod buttons;
   pub mod colors;
 }
@@ -11,14 +11,14 @@ mod core {
   pub mod output;
   pub mod save;
 }
-mod views {
-  mod password_exporting {
+mod ui {
+  mod password_export {
     mod memory;
     mod save;
     mod shared_view;
     mod text;
   }
-  mod name_customization;
-  mod save_conversion;
+  mod custom_names;
+  mod save_convert;
 }
 pub use app::App;

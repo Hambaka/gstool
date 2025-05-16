@@ -4,11 +4,11 @@ use egui::{Align2, Button, Id, Modal, RichText, Shadow, Sides, Widget};
 use egui_notify::{Anchor, Toasts};
 
 use crate::{
-  components::colors::{DANGER, LIGHT, SECONDARY, SUCCESS},
   core::{
     enums::{GameType, GameVersion, NameType, PasswordGrade, PasswordVersion},
     save::{BitArray, RawSaveData},
   },
+  widgets::colors::{DANGER, LIGHT, SECONDARY, SUCCESS},
 };
 
 pub const GAME_VERSIONS: [GameVersion; 6] = [
