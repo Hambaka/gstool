@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::env;
-use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::fs::{File, read_dir};
+use std::io::{BufWriter, Read, Write};
 use std::path::Path;
 
 #[rustfmt::skip]
@@ -83,6 +83,7 @@ const VALID_PASSWORD_CHARS_EN_BYTE: [(char, u8); 64] = [
 fn main() {
   gen_pwd_tables();
   gen_name_tables();
+  compress_font();
 }
 
 fn gen_pwd_tables() {
@@ -262,4 +263,44 @@ fn gen_name_tables() {
     .unwrap();
   }
   writeln!(&mut file, "}};").unwrap();
+}
+
+fn compress_font() {
+  // Find font
+  let paths = read_dir("assets/font").unwrap();
+  let mut input_path = None;
+
+  // Pick the font file in the folder.
+  for ele in paths {
+    let path = ele.unwrap().path();
+    if path.is_file()  {
+      if let Some(os_str) = path.extension() {
+        match os_str.to_str().unwrap() {
+          "otf" | "ttf" => {
+            input_path = Some(path);
+            break;
+          },
+          _ => continue,
+        }
+      }
+    }
+  }
+
+  if input_path.is_none() {
+    eprintln!("Font file not found!")
+  }
+
+  // Load font.
+  let input_font_path = input_path.unwrap();
+  let mut input_file = File::open(input_font_path).expect("Failed to open the font file!");
+  let mut input_vec = Vec::new();
+  input_file.read_to_end(&mut input_vec).unwrap();
+  
+  // Compress with zstd and write.
+  let compressed_font = zstd::encode_all(input_vec.as_slice(), 3).unwrap();
+  let output_path = Path::new(&env::var("OUT_DIR").unwrap()).join("font.zstd");
+  let mut output_file = File::create(output_path).expect("Create \"font.zstd\" failed!");
+  output_file
+    .write_all(&compressed_font)
+    .expect("Write to \"font.zstd\" failed!");
 }

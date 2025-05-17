@@ -159,13 +159,14 @@ impl App {
   }
 
   pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    // 解压内嵌字体
+    let compressed_font = include_bytes!(concat!(env!("OUT_DIR"), "/font.zstd"));
+    let decompressed_font = zstd::decode_all(compressed_font.as_ref()).unwrap();
     // 替换默认字体以支持显示CJK等字符
     let mut fonts = egui::FontDefinitions::default();
     fonts.font_data.insert(
       "unifont".to_owned(),
-      std::sync::Arc::new(egui::FontData::from_static(include_bytes!(
-        "../assets/font/unifont-16.0.02.otf"
-      ))),
+      std::sync::Arc::new(egui::FontData::from_owned(decompressed_font)),
     );
     fonts
       .families
