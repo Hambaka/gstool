@@ -160,8 +160,7 @@ fn gen_name_tables() {
   let path = Path::new(&env::var("OUT_DIR").unwrap()).join("codegen_name.rs");
   let mut file = BufWriter::new(File::create(&path).unwrap());
 
-  writeln!(&mut file, "use phf::phf_map;").unwrap();
-  writeln!(&mut file, "use eframe::egui::ImageSource;\n").unwrap();
+  writeln!(&mut file, "use phf::phf_map;\n").unwrap();
 
   // BASE_CHARACTERS_MAP
   writeln!(
@@ -228,7 +227,7 @@ fn gen_name_tables() {
   // keyboard images
   writeln!(
     &mut file,
-    "static KEYBOARD_IMG_MAP: phf::Map<u8, ImageSource> = phf_map! {{"
+    "static KEYBOARD_IMG_MAP: phf::Map<u8, &'static [u8]> = phf_map! {{"
   )
   .unwrap();
 
@@ -256,11 +255,7 @@ fn gen_name_tables() {
       img_path_str.to_owned()
     };
 
-    writeln!(
-      &mut file,
-      "  0x{i:02X}u8 => egui::include_image!(\"{new_str}\"),"
-    )
-    .unwrap();
+    writeln!(&mut file, "  0x{i:02X}u8 => include_bytes!(\"{new_str}\"),").unwrap();
   }
   writeln!(&mut file, "}};").unwrap();
 }
@@ -273,13 +268,13 @@ fn compress_font() {
   // Pick the font file in the folder.
   for ele in paths {
     let path = ele.unwrap().path();
-    if path.is_file()  {
+    if path.is_file() {
       if let Some(os_str) = path.extension() {
         match os_str.to_str().unwrap() {
           "otf" | "ttf" => {
             input_path = Some(path);
             break;
-          },
+          }
           _ => continue,
         }
       }
@@ -295,7 +290,7 @@ fn compress_font() {
   let mut input_file = File::open(input_font_path).expect("Failed to open the font file!");
   let mut input_vec = Vec::new();
   input_file.read_to_end(&mut input_vec).unwrap();
-  
+
   // Compress with zstd and write.
   let compressed_font = zstd::encode_all(input_vec.as_slice(), 3).unwrap();
   let output_path = Path::new(&env::var("OUT_DIR").unwrap()).join("font.zstd");

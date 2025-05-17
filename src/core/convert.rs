@@ -115,7 +115,7 @@ pub fn contains_invalid_byte(password_bytes: &[u8]) -> bool {
 
 /// Convert password text string to bytes (memory dump).
 pub fn txt_to_dmp(password: &str, password_version: PasswordVersion) -> Vec<u8> {
-  let dmp_bytes = match password_version {
+  match password_version {
     PasswordVersion::Japanese => password
       .chars()
       .map(|x| *(VALID_PASSWORD_CHARS_JP_BYTE_MAP.get(&x).unwrap()))
@@ -124,13 +124,12 @@ pub fn txt_to_dmp(password: &str, password_version: PasswordVersion) -> Vec<u8> 
       .chars()
       .map(|x| *(VALID_PASSWORD_CHARS_EN_BYTE_MAP.get(&x).unwrap()))
       .collect(),
-  };
-  dmp_bytes
+  }
 }
 
 /// Convert password text string to another version.
 pub fn txt_to_another_version(password: &str, password_version: PasswordVersion) -> String {
-  let converted_password = match password_version {
+  match password_version {
     PasswordVersion::English => password
       .chars()
       .map(|x| VALID_PASSWORD_CHARS_EN_JP_MAP.get(&x).unwrap())
@@ -139,13 +138,12 @@ pub fn txt_to_another_version(password: &str, password_version: PasswordVersion)
       .chars()
       .map(|x| VALID_PASSWORD_CHARS_JP_EN_MAP.get(&x).unwrap())
       .collect(),
-  };
-  converted_password
+  }
 }
 
 /// Convert password bytes (memory dump) to text string.
 pub fn dmp_to_txt(password_bytes: &[u8], password_version: PasswordVersion) -> String {
-  let password = match password_version {
+  match password_version {
     PasswordVersion::Japanese => password_bytes
       .iter()
       .map(|x| VALID_PASSWORD_CHARS_JP[usize::from(*x)])
@@ -154,6 +152,5 @@ pub fn dmp_to_txt(password_bytes: &[u8], password_version: PasswordVersion) -> S
       .iter()
       .map(|x| VALID_PASSWORD_CHARS_EN[usize::from(*x)])
       .collect(),
-  };
-  password
+  }
 }

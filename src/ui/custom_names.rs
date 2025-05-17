@@ -1,7 +1,11 @@
 use core::f32;
-use std::fmt::Write as _;
+use std::{fmt::Write as _, io::Cursor};
 
-use egui::{Button, Label, RichText, Ui, Widget};
+use egui::{
+  Button, ColorImage, Image, Label, RichText, TextureHandle, TextureOptions, Ui, Vec2, Widget,
+  load::SizedTexture,
+};
+use image::ImageReader;
 
 use crate::{
   App,
@@ -196,8 +200,11 @@ impl App {
             ui.add(Button::new(RichText::new(char_btn).color(DARK)).fill(INFO))
               .on_hover_ui(|ui| {
                 let char_index = BASE_CHARACTERS_MAP.get(&char_btn).unwrap();
-                let char_img = KEYBOARD_IMG_MAP.get(char_index).unwrap();
-                ui.add(egui::Image::new(char_img.clone()).max_height(208.0));
+                let (tex, size) = get_keyboard_img(ui.ctx(), *char_index);
+                let width = size[0] * 2.0;
+                let height = size[1] * 2.0;
+                let a = SizedTexture::new(tex.id(), Vec2::new(width, height));
+                ui.add(Image::new(a).max_height(208.0));
               });
           }
         });
@@ -206,4 +213,24 @@ impl App {
       }
     }
   }
+}
+
+fn get_keyboard_img(ctx: &egui::Context, char_index: u8) -> (TextureHandle, [f32; 2]) {
+  let raw_data = *KEYBOARD_IMG_MAP.get(&char_index).unwrap();
+  let mut reader = ImageReader::new(Cursor::new(raw_data));
+  reader.set_format(image::ImageFormat::Png);
+  let image = reader.decode().unwrap();
+  let size = [image.width() as _, image.height() as _];
+  let image_buffer = image.to_rgba8();
+  let pixels = image_buffer.as_flat_samples();
+
+  let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+  (
+    ctx.load_texture(
+      format!("kbd_{char_index:02X}"),
+      color_image,
+      TextureOptions::NEAREST,
+    ),
+    [size[0] as f32, size[1] as f32],
+  )
 }
