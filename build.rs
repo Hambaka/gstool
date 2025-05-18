@@ -291,8 +291,30 @@ fn compress_font() {
   let mut input_vec = Vec::new();
   input_file.read_to_end(&mut input_vec).unwrap();
 
+  /*
+  1, 3, 7, 11
+
+  Use ZSTD compression levels - Amazon Athena
+  https://docs.aws.amazon.com/athena/latest/ug/compression-support-zstd-levels.html
+  https://docs.aws.amazon.com/zh_cn/athena/latest/ug/compression-support-zstd-levels.html
+
+  ------------
+
+  ZSTD Decompression Speed vs Compression Level #4091
+  https://github.com/facebook/zstd/issues/4091
+
+  VipulGarg869 opened on Jul 5, 2024
+  "...The documentation states that the decompression speed doesn't change much with the compression level.
+  While that is roughly the case, I was still able to find that the decompression speed decreases up till compression level 6.
+  Beyond level 6, it increases. What is the reason for this?"
+
+  Cyan4973 on Jul 5, 2024 · edited by Cyan4973
+  "A variation in the number of sequences produced.
+  Best decompression speed is typically achieved at level 15,
+  though some sources may prefer level 1."
+  */
   // Compress with zstd and write.
-  let compressed_font = zstd::encode_all(input_vec.as_slice(), 3).unwrap();
+  let compressed_font = zstd::encode_all(input_vec.as_slice(), 22).unwrap();
   let output_path = Path::new(&env::var("OUT_DIR").unwrap()).join("font.zstd");
   let mut output_file = File::create(output_path).expect("Create \"font.zstd\" failed!");
   output_file
