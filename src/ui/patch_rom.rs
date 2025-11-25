@@ -232,7 +232,8 @@ fn get_bps_patch(input_rom_checksum: u32) -> Vec<u8> {
   let (mut start_index, file_size) = *BPS_FILE_INDEX_MAP.get(&patch_checksum).unwrap();
   let mut result = Vec::with_capacity(file_size);
 
-  let decompressed_bps = zstd::decode_all(ALL_BPS.as_ref()).unwrap();
+  // TODO: Do I really have to decompress the BPS file every time?
+  let decompressed_bps = zstd::decode_all(ALL_BPS).unwrap();
   for _ in 0..file_size {
     result.push(decompressed_bps[start_index]);
     start_index += 1;
