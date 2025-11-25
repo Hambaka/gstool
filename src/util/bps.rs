@@ -1,4 +1,4 @@
-// Please check
+// Converted to Rust from byuu/near's reference implementation.
 
 struct BPS {
   beat: Vec<u8>,
