@@ -11,6 +11,9 @@ mod core {
   pub mod output;
   pub mod save;
 }
+mod util {
+  pub mod bps;
+}
 mod ui {
   mod password_export {
     mod memory;
@@ -19,6 +22,7 @@ mod ui {
     mod text;
   }
   mod custom_names;
+  mod patch_rom;
   mod save_convert;
 }
 pub use app::App;

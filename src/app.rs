@@ -25,13 +25,21 @@ pub enum CommandEnum {
   First,
   Second,
   Third,
+  Fourth,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum SubCommandEnum {
+  First,
+  Second,
+  Third,
 }
 
 pub struct App {
   window_open: bool,
   toasts: Toasts,
   command: CommandEnum,
-  pub subcommand: CommandEnum,
+  pub subcommand: SubCommandEnum,
   pub modal_open: bool,
   pub err_msg: String,
   // 1. 密码导出功能部分
@@ -82,6 +90,11 @@ pub struct App {
   /// 主角团7人的自定义名字
   pub new_pc_names: Vec<String>,
   pub out_log_c3: String,
+  // 4. 打汉化补丁功能部分
+  pub input_file_path_c4: String,
+  pub input_file_crc32: Option<u32>,
+  pub out_dir_c4: String,
+  pub out_log_c4: String,
 }
 
 impl Default for App {
@@ -97,7 +110,7 @@ impl Default for App {
           color: egui::Color32::from_black_alpha(70),
         }),
       command: CommandEnum::First,
-      subcommand: CommandEnum::First,
+      subcommand: SubCommandEnum::First,
       modal_open: false,
       err_msg: String::new(),
       // 1. 密码导出功能部分
@@ -147,6 +160,11 @@ impl Default for App {
       // 3. 自定义角色名部分
       new_pc_names: vec![String::new(); 7],
       out_log_c3: String::new(),
+      // 4. 打汉化补丁功能部分
+      input_file_path_c4: String::new(),
+      input_file_crc32: None,
+      out_dir_c4: String::new(),
+      out_log_c4: String::new(),
     }
   }
 }
@@ -160,7 +178,7 @@ impl App {
 
   pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
     // 解压内嵌字体
-    let compressed_font = include_bytes!(concat!(env!("OUT_DIR"), "/font.zstd"));
+    let compressed_font = include_bytes!(concat!(env!("OUT_DIR"), "/font.zst"));
     let decompressed_font = zstd::decode_all(compressed_font.as_ref()).unwrap();
     // 替换默认字体以支持显示CJK等字符
     let mut fonts = egui::FontDefinitions::default();
@@ -287,16 +305,18 @@ impl eframe::App for App {
     egui::CentralPanel::default().show(ctx, |ui| {
       egui::ScrollArea::vertical().show(ui, |ui| {
         // 功能选择“标签”页
-        ui.columns(3, |columns| {
+        ui.columns(4, |columns| {
           columns[0].selectable_value(&mut self.command, CommandEnum::First, "（1）密码导出功能");
           columns[1].selectable_value(&mut self.command, CommandEnum::Second, "（2）存档转换功能");
           columns[2].selectable_value(&mut self.command, CommandEnum::Third, "（3）自定义角色名");
+          columns[3].selectable_value(&mut self.command, CommandEnum::Fourth, "（4）应用汉化补丁");
         });
         // 显示对应的功能页面
         match self.command {
           CommandEnum::First => self.show_c1(ui),
           CommandEnum::Second => self.show_c2(ui),
           CommandEnum::Third => self.show_c3(ui),
+          CommandEnum::Fourth => self.show_c4(ui),
         }
         ui.separator();
 
@@ -305,7 +325,7 @@ impl eframe::App for App {
           // 1. 密码导出功能部分
           CommandEnum::First => match self.subcommand {
             // 1.1 使用存档文件
-            CommandEnum::First => {
+            SubCommandEnum::First => {
               let bool1 = self.save_data_map.is_some();
               let bool2 = self.pwd_text_ver_c1s1.is_some()
                 || self.to_export_pwd_bin_c1s1
@@ -315,7 +335,7 @@ impl eframe::App for App {
               bool1 && bool2
             }
             // 1.2 使用密码文本文件
-            CommandEnum::Second => {
+            SubCommandEnum::Second => {
               let bool1 = self.txt_bits.is_some();
               let bool2 = self.pwd_grade_c1s2.is_some()
                 || self.to_convert_pwd_text_ver
@@ -326,7 +346,7 @@ impl eframe::App for App {
               bool1 && bool2
             }
             // 1.3 使用内存转储文件
-            CommandEnum::Third => {
+            SubCommandEnum::Third => {
               let bool1 = self.dmp_bits.is_some();
               let bool2 = self.pwd_grade_c1s3.is_some()
                 || self.pwd_text_ver_c1s3.is_some()
@@ -353,17 +373,19 @@ impl eframe::App for App {
             }
             bool1
           }
+          CommandEnum::Fourth => !self.input_file_path_c4.is_empty(),
         };
 
         // 判断是否可以点击输出按钮
         let enable_copy_button = !match self.command {
           CommandEnum::First => match self.subcommand {
-            CommandEnum::First => self.out_log_c1s1.is_empty(),
-            CommandEnum::Second => self.out_log_c1s2.is_empty(),
-            CommandEnum::Third => self.out_log_c1s3.is_empty(),
+            SubCommandEnum::First => self.out_log_c1s1.is_empty(),
+            SubCommandEnum::Second => self.out_log_c1s2.is_empty(),
+            SubCommandEnum::Third => self.out_log_c1s3.is_empty(),
           },
           CommandEnum::Second => self.out_log_c2.is_empty(),
           CommandEnum::Third => self.out_log_c3.is_empty(),
+          CommandEnum::Fourth => self.out_log_c4.is_empty(),
         };
 
         ui.vertical_centered(|ui| {
@@ -371,11 +393,13 @@ impl eframe::App for App {
             if ui
               .add(Button::new(RichText::new("⏵ 运行").color(LIGHT)).fill(SUCCESS))
               .clicked()
+              || ui.input(|i| i.key_pressed(egui::Key::Enter))
             {
               match self.command {
                 CommandEnum::First => self.run_c1(),
                 CommandEnum::Second => self.run_c2(),
                 CommandEnum::Third => self.run_c3(),
+                CommandEnum::Fourth => self.run_c4(),
               }
             }
           } else {
@@ -394,12 +418,13 @@ impl eframe::App for App {
           {
             let log = match self.command {
               CommandEnum::First => match self.subcommand {
-                CommandEnum::First => &self.out_log_c1s1,
-                CommandEnum::Second => &self.out_log_c1s2,
-                CommandEnum::Third => &self.out_log_c1s3,
+                SubCommandEnum::First => &self.out_log_c1s1,
+                SubCommandEnum::Second => &self.out_log_c1s2,
+                SubCommandEnum::Third => &self.out_log_c1s3,
               },
               CommandEnum::Second => &self.out_log_c2,
               CommandEnum::Third => &self.out_log_c3,
+              CommandEnum::Fourth => &self.out_log_c4,
             };
             ctx.copy_text(log.to_string());
             self
@@ -415,6 +440,7 @@ impl eframe::App for App {
             CommandEnum::First => self.show_log_c1(ui),
             CommandEnum::Second => self.show_log_c2(ui),
             CommandEnum::Third => self.show_log_c3(ui),
+            CommandEnum::Fourth => self.show_log_c4(ui),
           }
         }
       });

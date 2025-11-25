@@ -1297,7 +1297,7 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
     if i < save_data.levels.len() - 1 {
       let _ = write!(exported_text, "{level}\t");
     } else {
-      let _ = write!(exported_text, "{level}");
+      let _ = write!(exported_text, "{level}\n");
     }
   }
   exported_text.push_str("============结束============\n\n\n\n");
@@ -1321,14 +1321,17 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       exported_text.push_str(VENUS_DJINN_NAMES[i]);
     }
     exported_text.push('\t');
+
     if mars_djinn_bits.bits[6 - i] == 1 {
       exported_text.push_str(MARS_DJINN_NAMES[i]);
     }
     exported_text.push('\t');
+    
     if jupiter_djinn_bits.bits[6 - i] == 1 {
       exported_text.push_str(JUPITER_DJINN_NAMES[i]);
     }
     exported_text.push('\t');
+    
     if mercury_djinn_bits.bits[6 - i] == 1 {
       exported_text.push_str(MERCURY_DJINN_NAMES[i]);
     }
