@@ -183,8 +183,8 @@ impl App {
 
   pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
     // 解压内嵌字体
-    let compressed_font = include_bytes!(concat!(env!("OUT_DIR"), "/font.zst"));
-    let decompressed_font = zstd::decode_all(compressed_font.as_ref()).unwrap();
+    let decompressed_font =
+      zstd::decode_all(include_bytes!(concat!(env!("OUT_DIR"), "/font.zst")).as_slice()).unwrap();
     // 替换默认字体以支持显示CJK等字符
     let mut fonts = egui::FontDefinitions::default();
     fonts.font_data.insert(
