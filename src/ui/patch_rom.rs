@@ -25,20 +25,19 @@ const ALL_BPS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst"));
 
 const DESC_C4: &str = r"使用该功能可为日版的《黄金太阳 开启的封印》应用最新版的汉化补丁。
 除了使用日版，该功能也对其他的部分版本做了支持：
-（1）其他的所有官方版本ROM（美/德/西/法/意）
-（2）部分网络公开的且流传度较高的其他较老的中文汉化版ROM（CGP汉化组/CGP+elffinal/润色美化版）
+⒈ 其他的所有官方版本ROM（美/德/西/法/意）
+⒉ 部分网络公开的且流传度较高的其他较老的中文汉化版ROM（CGP汉化组/CGP+elffinal/润色美化版）
 
 注：
-（1）其他汉化版的来源多种多样，无法做到全部支持。
-（2）不支持使用各类基于汉化版制作的改版ROM。";
-
+⒈ 其他汉化版的来源多种多样，无法做到全部支持。
+⒉ 不支持使用各类基于汉化版制作的改版ROM。";
 
 impl App {
   pub fn show_c4(&mut self, ui: &mut Ui) {
     // 正式界面
     Label::new(DESC_C4).selectable(false).ui(ui);
 
-    egui::Grid::new("（4）应用汉化补丁").num_columns(2).spacing([40.0, 4.0]).striped(true).show(ui, |ui|{
+    egui::Grid::new("ID_GRID_C4").num_columns(2).spacing([40.0, 4.0]).striped(true).show(ui, |ui|{
       // 第1行 -> 输入文件路径  【选择文件】【重置】
       Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳 开启的封印》的ROM文件");
       ui.horizontal(|ui|{
@@ -62,12 +61,12 @@ impl App {
                   self.input_file_path_c4 = new_file_path;
                 } else {
                   "输入的是已经应用了最新版汉化补丁的ROM文件！".clone_into(&mut self.err_msg);
-                  self.modal_open = true;
+                  self.err_modal_open = true;
                 }
               },
               Err(e) => {
                 e.clone_into(&mut self.err_msg);
-                self.modal_open = true;
+                self.err_modal_open = true;
               },
             }
           }
@@ -105,7 +104,7 @@ impl App {
     let result = patch_rom(&self.input_file_path_c4);
     if let Err(e) = result {
       e.clone_into(&mut self.err_msg);
-      self.modal_open = true;
+      self.err_modal_open = true;
       self.input_file_path_c4.clear();
       self.input_file_crc32 = None;
       return;
@@ -132,7 +131,7 @@ impl App {
     } else {
       if create_dir_all(self.out_dir_c4.clone()).is_err() {
         "创建目录失败！".clone_into(&mut self.err_msg);
-        self.modal_open = true;
+        self.err_modal_open = true;
         return;
       }
       output_path = PathBuf::from(self.out_dir_c4.clone()).join(file_name_str);
@@ -142,12 +141,12 @@ impl App {
     if let Ok(mut file) = output_file {
       if file.write_all(&new_rom_file).is_err() {
         self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-        self.modal_open = true;
+        self.err_modal_open = true;
         return;
       }
     } else {
       self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-      self.modal_open = true;
+      self.err_modal_open = true;
       return;
     }
 

@@ -255,7 +255,7 @@ fn gen_name_tables() {
     }
     let img_path = Path::new(env!("CARGO_MANIFEST_DIR"))
       .join("assets")
-      .join("keyboard_img")
+      .join("name_kbd_img")
       .join(format!("0x{:02X}.png", i));
     let img_path_str = img_path.as_os_str().to_str().unwrap();
     let new_str = if img_path_str.contains("\\") {

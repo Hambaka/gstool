@@ -20,20 +20,20 @@ use crate::{
 };
 
 const DESC_C2: &str = r"使用该功能可转换《黄金太阳 开启的封印》或《黄金太阳 失落的时代》存档的版本：
-（1）修改主角团所有成员的名字为指定语言版本的默认名
-（2）通过修改存档中的游戏构建日期来转换存档版本
+⒈ 修改主角团所有成员的名字为指定语言版本的默认名
+⒉ 通过修改存档中的游戏构建日期来转换存档版本
 
 注：
-（1）如果存档中的构建日期与游戏 ROM 中的构建日期不匹配，游戏将强制玩家从神殿开始游戏。
-（2）Mobile&elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，所以 ROM 中的构建日期同美版。
-（3）《黄金太阳 开启的封印》新汉化版基于日版制作，所以 ROM 中的构建日期同日版。";
+⒈ 如果存档中的构建日期与游戏 ROM 中的构建日期不匹配，游戏将强制玩家从神殿开始游戏。
+⒉ Mobile&elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，所以 ROM 中的构建日期同美版。
+⒊ 《黄金太阳 开启的封印》新汉化版基于日版制作，所以 ROM 中的构建日期同日版。";
 
 impl App {
   pub fn show_c2(&mut self, ui: &mut Ui) {
     // 正式界面
     Label::new(DESC_C2).selectable(false).ui(ui);
 
-    egui::Grid::new("（2）存档转换功能").num_columns(2).spacing([40.0, 4.0]).striped(true).show(ui, |ui|{
+    egui::Grid::new("ID_GRID_C2").num_columns(2).spacing([40.0, 4.0]).striped(true).show(ui, |ui|{
       // 第1行 -> 输入文件路径  【选择文件】【重置】
       Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳 开启的封印》或《黄金太阳 失落的时代》的存档文件");
       ui.horizontal(|ui|{
@@ -53,7 +53,7 @@ impl App {
                 },
                 Err(e) => {
                   e.clone_into(&mut self.err_msg);
-                  self.modal_open = true;
+                  self.err_modal_open = true;
                 },
             }
           }
@@ -75,7 +75,7 @@ impl App {
       // 第2行 -> 名字版本
       if let Some(val_result) = self.save_src_type_index {
         Label::new("名字版本").selectable(false).ui(ui).on_hover_text("若选择了值，则将存档中的主角团所有成员的名字转换至指定版本的默认名；若留空则不修改。");
-        ComboBox::from_id_salt("名字版本").width(100.0).selected_text(match &self.default_name_ver {
+        ComboBox::from_id_salt("ID_CB_C2_名字版本").width(100.0).selected_text(match &self.default_name_ver {
             Some(name_type) => {name_type.get_name()},
             None => {"无"},
         }).show_ui(ui, |ui|{
@@ -96,7 +96,7 @@ impl App {
       } else {
         Label::new(RichText::new("名字版本").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则将存档中的主角团所有成员的名字转换至指定版本的默认名；若留空则不修改。");
         ui.add_enabled_ui(false, |ui|{
-          ComboBox::from_id_salt("名字版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
+          ComboBox::from_id_salt("ID_CB_C2_名字版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
         });
       }
       ui.end_row();
@@ -104,7 +104,7 @@ impl App {
       // 第3行 -> 构建日期版本
       if let Some(val_result) = self.save_src_type_index {
         Label::new("构建日期版本").selectable(false).ui(ui).on_hover_text("若选择了值，则将存档中的构建日期转换至指定版本的构建日期；若留空则不修改。");
-        ComboBox::from_id_salt("构建日期版本").width(100.0).selected_text(match &self.build_date_ver{
+        ComboBox::from_id_salt("ID_CB_C2_构建日期版本").width(100.0).selected_text(match &self.build_date_ver{
           Some(version_enum) => {version_enum.get_name()},
           None => {"无"},
         }).show_ui(ui, |ui|{
@@ -118,7 +118,7 @@ impl App {
       } else {
         Label::new(RichText::new("构建日期版本").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则将存档中的构建日期转换至指定版本的构建日期；若留空则不修改。");
         ui.add_enabled_ui(false, |ui|{
-          ComboBox::from_id_salt("构建日期版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
+          ComboBox::from_id_salt("ID_CB_C2_构建日期版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
         });
       }
       ui.end_row();
@@ -177,7 +177,7 @@ impl App {
     } else {
       if create_dir_all(self.out_dir_c2.clone()).is_err() {
         "创建目录失败！".clone_into(&mut self.err_msg);
-        self.modal_open = true;
+        self.err_modal_open = true;
         return;
       }
       output_path = PathBuf::from(self.out_dir_c2.clone()).join(file_name_str);
@@ -187,12 +187,12 @@ impl App {
     if let Ok(mut file) = output_file {
       if file.write_all(&new_save_file).is_err() {
         self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-        self.modal_open = true;
+        self.err_modal_open = true;
         return;
       }
     } else {
       self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-      self.modal_open = true;
+      self.err_modal_open = true;
       return;
     }
 

@@ -36,11 +36,11 @@ pub enum SubCommandEnum {
 }
 
 pub struct App {
-  window_open: bool,
+  about_window_open: bool,
   toasts: Toasts,
   command: CommandEnum,
   pub subcommand: SubCommandEnum,
-  pub modal_open: bool,
+  pub err_modal_open: bool,
   pub err_msg: String,
   // 1. 密码导出功能部分
   // 1.1 使用存档文件
@@ -100,7 +100,7 @@ pub struct App {
 impl Default for App {
   fn default() -> Self {
     Self {
-      window_open: false,
+      about_window_open: false,
       toasts: Toasts::default()
         .with_anchor(Anchor::BottomRight)
         .with_shadow(Shadow {
@@ -111,7 +111,7 @@ impl Default for App {
         }),
       command: CommandEnum::First,
       subcommand: SubCommandEnum::First,
-      modal_open: false,
+      err_modal_open: false,
       err_msg: String::new(),
       // 1. 密码导出功能部分
       // 1.1 使用存档文件
@@ -183,19 +183,14 @@ impl App {
     // 替换默认字体以支持显示CJK等字符
     let mut fonts = egui::FontDefinitions::default();
     fonts.font_data.insert(
-      "unifont".to_owned(),
+      "simplified_chinese_font".to_owned(),
       std::sync::Arc::new(egui::FontData::from_owned(decompressed_font)),
     );
     fonts
       .families
       .entry(egui::FontFamily::Proportional)
       .or_default()
-      .insert(0, "unifont".to_owned());
-    fonts
-      .families
-      .entry(egui::FontFamily::Monospace)
-      .or_default()
-      .push("unifont".to_owned());
+      .insert(0,  "simplified_chinese_font".to_owned());
     cc.egui_ctx.set_fonts(fonts);
 
     Default::default()
@@ -205,12 +200,12 @@ impl App {
 impl eframe::App for App {
   fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     // “关于”窗口
-    if self.window_open {
+    if self.about_window_open {
       egui::Window::new("关于")
         .collapsible(false)
         .resizable(false)
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .open(&mut self.window_open)
+        .open(&mut self.about_window_open)
         .show(ctx, |ui| {
           ui.vertical_centered(|ui| {
             ui.heading(format!("GSTool - {}", env!("CARGO_PKG_VERSION")));
@@ -228,7 +223,7 @@ impl eframe::App for App {
 
             ui.horizontal(|ui| {
               ui.label("界面字体：");
-              ui.hyperlink_to("unifont", "https://unifoundry.com/unifont/index.html");
+              ui.hyperlink_to("更纱黑体", "https://github.com/be5invis/Sarasa-Gothic");
             });
 
             ui.separator();
@@ -239,8 +234,8 @@ impl eframe::App for App {
     }
 
     // 错误信息显示窗口
-    if self.modal_open {
-      let modal = Modal::new(Id::new("Modal_Error_Msg")).show(ctx, |ui| {
+    if self.err_modal_open {
+      let modal = Modal::new(Id::new("ID_MODAL_ERROR_MSG")).show(ctx, |ui| {
         ui.set_width(250.0);
         ui.heading("错误！");
         ui.add_space(16.0);
@@ -253,19 +248,19 @@ impl eframe::App for App {
             if ui.button("关闭").clicked() {
               // 新版本中应使用
               // ui.close()
-              self.modal_open = false;
+              self.err_modal_open = false;
             }
           },
         );
       });
 
       if modal.should_close() {
-        self.modal_open = false;
+        self.err_modal_open = false;
       }
     }
 
     // 顶部面板，主要用于实现菜单栏
-    egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+    egui::TopBottomPanel::top("ID_MENU_BAR").show(ctx, |ui| {
       // 定义快捷键
       if ui.ctx().input_mut(|input| {
         input.consume_shortcut(&egui::KeyboardShortcut::new(
@@ -277,11 +272,11 @@ impl eframe::App for App {
       }
 
       // 菜单栏
-      egui::menu::bar(ui, |ui| {
+      egui::MenuBar::new().ui(ui, |ui| {
         ui.menu_button("🗀 文件", |ui| {
           if ui.button("❓ 关于").clicked() {
-            self.window_open = !self.window_open;
-            ui.close_menu();
+            self.about_window_open = !self.about_window_open;
+            ui.close();
           }
 
           ui.separator();
@@ -306,10 +301,10 @@ impl eframe::App for App {
       egui::ScrollArea::vertical().show(ui, |ui| {
         // 功能选择“标签”页
         ui.columns(4, |columns| {
-          columns[0].selectable_value(&mut self.command, CommandEnum::First, "（1）密码导出功能");
-          columns[1].selectable_value(&mut self.command, CommandEnum::Second, "（2）存档转换功能");
-          columns[2].selectable_value(&mut self.command, CommandEnum::Third, "（3）自定义角色名");
-          columns[3].selectable_value(&mut self.command, CommandEnum::Fourth, "（4）应用汉化补丁");
+          columns[0].selectable_value(&mut self.command, CommandEnum::First, "❶ 密码导出功能");
+          columns[1].selectable_value(&mut self.command, CommandEnum::Second, "❷ 存档转换功能");
+          columns[2].selectable_value(&mut self.command, CommandEnum::Third, "❸ 自定义角色名");
+          columns[3].selectable_value(&mut self.command, CommandEnum::Fourth, "❹ 应用汉化补丁");
         });
         // 显示对应的功能页面
         match self.command {

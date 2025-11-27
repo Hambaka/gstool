@@ -15,10 +15,10 @@ pub const PASSWORD_VERSIONS: [PasswordVersion; 2] =
   [PasswordVersion::Japanese, PasswordVersion::English];
 
 const DESC_C1: &str = r"使用该功能可导出密码，可导出以下几类文件：
-（1）密码的文本文件（支持导出日文版/英文版密码）
-（2）密码的内存转储文件
-（3）密码的金手指文本文件，可以在《黄金太阳 失落的时代》中使用（支持日/美/德/西/法/意版本）
-（4）密码数据的文本文件，可结合 Dyrati 的“Golden Sun Password Generator”表格使用
+⒈ 密码的文本文件（支持导出日文版/英文版密码）
+⒉ 密码的内存转储文件
+⒊ 密码的金手指文本文件，可以在《黄金太阳 失落的时代》中使用（支持日/美/德/西/法/意版本）
+⒋ 密码数据的文本文件，可结合 Dyrati 的“Golden Sun Password Generator”表格使用
 
 注：Mobile&elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，因此金手指版本选择美版即可。";
 
@@ -30,17 +30,17 @@ impl App {
       columns[0].selectable_value(
         &mut self.subcommand,
         SubCommandEnum::First,
-        "（1.1）使用存档文件",
+        "🅰 使用存档文件",
       );
       columns[1].selectable_value(
         &mut self.subcommand,
         SubCommandEnum::Second,
-        "（1.2）使用密码文本文件",
+        "🅱 使用密码文本文件",
       );
       columns[2].selectable_value(
         &mut self.subcommand,
         SubCommandEnum::Third,
-        "（1.3）使用内存转储文件",
+        "🅲 使用内存转储文件",
       );
     });
 

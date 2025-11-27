@@ -27,7 +27,7 @@ impl App {
 
     ui.add_space(16.0);
 
-    Grid::new("（1.3）使用内存转储文件")
+    Grid::new("ID_GRID_C1S3")
       .num_columns(2)
       .spacing([20.0, 5.0])
       .striped(true)
@@ -54,7 +54,7 @@ impl App {
                   },
                   Err(e) => {
                     e.clone_into(&mut self.err_msg);
-                    self.modal_open = true;
+                    self.err_modal_open = true;
                   },
               }
             }
@@ -83,7 +83,7 @@ impl App {
         // 第2行
         if let Some(source_grade) = self.dmp_src_grade {
           Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
-          ComboBox::from_id_salt("（1.3）密码级别")
+          ComboBox::from_id_salt("ID_CB_C1S3_密码级别")
             .width(100.0)
             .selected_text(match &self.pwd_grade_c1s3 {
               Some(password_grade_enum) => password_grade_enum.get_name(),
@@ -100,14 +100,14 @@ impl App {
         } else {
           Label::new(RichText::new("密码级别").weak()).selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
           ui.add_enabled_ui(false, |ui|{
-            ComboBox::from_id_salt("（1.3）密码级别（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
+            ComboBox::from_id_salt("ID_CB_C1S3_密码级别（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
         }
         ui.end_row();
         // 第3行
         if self.dmp_src_grade.is_some(){
           Label::new("密码文本版本").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的密码文本文件。");
-          ComboBox::from_id_salt("（1.3）密码文本版本")
+          ComboBox::from_id_salt("ID_CB_C1S3_密码文本版本")
             .width(100.0)
             .selected_text(match &self.pwd_text_ver_c1s3 {
               Some(password_version_enum) => password_version_enum.get_name(),
@@ -122,14 +122,14 @@ impl App {
         } else {
           Label::new(RichText::new("密码文本版本").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的密码文本文件。");
           ui.add_enabled_ui(false, |ui|{
-            ComboBox::from_id_salt("（1.3）密码文本版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
+            ComboBox::from_id_salt("ID_CB_C1S3_密码文本版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
         }
         ui.end_row();
         // 第4行
         if self.dmp_src_grade.is_some(){
           Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
-          ComboBox::from_id_salt("（1.3）生成密码金手指")
+          ComboBox::from_id_salt("ID_CB_C1S3_生成密码金手指")
             .width(100.0)
             .selected_text(match &self.pwd_cheat_ver_c1s3 {
               Some(version_enum) => version_enum.get_name(),
@@ -144,7 +144,7 @@ impl App {
         } else {
           Label::new(RichText::new("生成密码金手指").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
           ui.add_enabled_ui(false, |ui|{
-            ComboBox::from_id_salt("（1.3）生成密码金手指（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
+            ComboBox::from_id_salt("ID_CB_C1S3_生成密码金手指（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
           });
         }
         ui.end_row();
@@ -198,7 +198,7 @@ impl App {
         Ok(o) => o,
         Err(e) => {
           e.clone_into(&mut self.err_msg);
-          self.modal_open = true;
+          self.err_modal_open = true;
           return;
         }
       }
@@ -207,7 +207,7 @@ impl App {
         Ok(o) => o,
         Err(e) => {
           e.clone_into(&mut self.err_msg);
-          self.modal_open = true;
+          self.err_modal_open = true;
           return;
         }
       }
@@ -217,7 +217,7 @@ impl App {
     if self.pwd_grade_c1s3.is_some() {
       if let Err(e) = output::write_memory_dump_file(&target_password_bytes, &output_dir_str) {
         e.clone_into(&mut self.err_msg);
-        self.modal_open = true;
+        self.err_modal_open = true;
         return;
       }
     }
@@ -229,7 +229,7 @@ impl App {
         &output_dir_str,
       ) {
         e.clone_into(&mut self.err_msg);
-        self.modal_open = true;
+        self.err_modal_open = true;
         return;
       }
     }
@@ -239,7 +239,7 @@ impl App {
         output::write_cheat_file(&target_password_bytes, cheat_version, &output_dir_str)
       {
         e.clone_into(&mut self.err_msg);
-        self.modal_open = true;
+        self.err_modal_open = true;
         return;
       }
     }
@@ -251,7 +251,7 @@ impl App {
           &output_dir_str,
         ) {
           e.clone_into(&mut self.err_msg);
-          self.modal_open = true;
+          self.err_modal_open = true;
           return;
         }
       } else if let Err(e) = output::write_game_data_text_file(
@@ -262,7 +262,7 @@ impl App {
         &output_dir_str,
       ) {
         e.clone_into(&mut self.err_msg);
-        self.modal_open = true;
+        self.err_modal_open = true;
         return;
       }
     }

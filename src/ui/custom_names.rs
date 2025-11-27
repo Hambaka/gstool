@@ -36,15 +36,15 @@ const DESC_C3: &str = r"该功能仅支持《黄金太阳 开启的封印》新�
 请在输入框中输入至少一个角色的名字，再点击“运行”即可在下方的输出区域展示如何输入自定义名。
 
 注：
-（1）在“运行”后点击“复制”按钮，输出内容将会复制到剪贴板，之后便可粘贴到记事本进行查看。
-（2）若想命名初代主角团其他的三位成员，请在起名界面连按三下“Select”键，成功后可听到提示音。
-（3）若想命名最后的三位角色，请接着上条继续输入⬆⬇⬆⬇⬅➡⬅➡⬆➡⬇⬅⬆和“Select”，成功后可听到提示音。";
+⒈ 在“运行”后点击“复制”按钮，输出内容将会复制到剪贴板，之后便可粘贴到记事本进行查看。
+⒉ 若想命名初代主角团其他的三位成员，请在起名界面连按三下“Select”键，成功后可听到提示音。
+⒊ 若想命名最后的三位角色，请接着上条继续输入⬆⬇⬆⬇⬅➡⬅➡⬆➡⬇⬅⬆和“Select”，成功后可听到提示音。";
 
 impl App {
   pub fn show_c3(&mut self, ui: &mut Ui) {
     Label::new(DESC_C3).selectable(false).ui(ui);
 
-    egui::Grid::new("自定义角色名")
+    egui::Grid::new("ID_GRID_C3")
       .num_columns(2)
       .spacing([40.0, 4.0])
       .striped(true)
@@ -200,7 +200,7 @@ impl App {
             ui.add(Button::new(RichText::new(char_btn).color(DARK)).fill(INFO))
               .on_hover_ui(|ui| {
                 let char_index = BASE_CHARACTERS_MAP.get(&char_btn).unwrap();
-                let (tex, size) = get_keyboard_img(ui.ctx(), *char_index);
+                let (tex, size) = get_name_keyboard_img(ui.ctx(), *char_index);
                 let width = size[0] * 2.0;
                 let height = size[1] * 2.0;
                 let a = SizedTexture::new(tex.id(), Vec2::new(width, height));
@@ -215,7 +215,7 @@ impl App {
   }
 }
 
-fn get_keyboard_img(ctx: &egui::Context, char_index: u8) -> (TextureHandle, [f32; 2]) {
+fn get_name_keyboard_img(ctx: &egui::Context, char_index: u8) -> (TextureHandle, [f32; 2]) {
   let raw_data = *KEYBOARD_IMG_MAP.get(&char_index).unwrap();
   let mut reader = ImageReader::new(Cursor::new(raw_data));
   reader.set_format(image::ImageFormat::Png);
@@ -227,7 +227,7 @@ fn get_keyboard_img(ctx: &egui::Context, char_index: u8) -> (TextureHandle, [f32
   let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
   (
     ctx.load_texture(
-      format!("kbd_{char_index:02X}"),
+      format!("name_kbd_{char_index:02X}"),
       color_image,
       TextureOptions::NEAREST,
     ),
