@@ -393,7 +393,12 @@ impl eframe::App for App {
             if ui
               .add(Button::new(RichText::new("⏵ 运行").color(LIGHT)).fill(SUCCESS))
               .clicked()
-              || ui.input(|i| i.key_pressed(egui::Key::Enter))
+              || ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&egui::KeyboardShortcut::new(
+                  egui::Modifiers::COMMAND,
+                  egui::Key::Enter,
+                ))
+              })
             {
               match self.command {
                 CommandEnum::First => self.run_c1(),
