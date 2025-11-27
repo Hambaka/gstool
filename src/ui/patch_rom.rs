@@ -21,8 +21,6 @@ enum RomVersion {
   LatestChinese,
 }
 
-const ALL_BPS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst"));
-
 const DESC_C4: &str = r"使用该功能可为日版的《黄金太阳 开启的封印》应用最新版的汉化补丁。
 除了使用日版，该功能也对其他的部分版本做了支持：
 ⒈ 其他的所有官方版本ROM（美/德/西/法/意）
@@ -101,7 +99,7 @@ impl App {
   }
 
   pub fn run_c4(&mut self) {
-    let result = patch_rom(&self.input_file_path_c4);
+    let result = patch_rom(&self.input_file_path_c4, &self.decompressed_bps);
     if let Err(e) = result {
       e.clone_into(&mut self.err_msg);
       self.err_modal_open = true;
@@ -226,13 +224,11 @@ fn validate_input_file(
   };
 }
 
-fn get_bps_patch(input_rom_checksum: u32) -> Vec<u8> {
+fn get_bps_patch(input_rom_checksum: u32, decompressed_bps: &[u8]) -> Vec<u8> {
   let patch_checksum = *BPS_CRC32_MAP.get(&input_rom_checksum).unwrap();
   let (mut start_index, file_size) = *BPS_FILE_INDEX_MAP.get(&patch_checksum).unwrap();
   let mut result = Vec::with_capacity(file_size);
 
-  // TODO: Do I really have to decompress the BPS file every time?
-  let decompressed_bps = zstd::decode_all(ALL_BPS).unwrap();
   for _ in 0..file_size {
     result.push(decompressed_bps[start_index]);
     start_index += 1;
@@ -241,7 +237,7 @@ fn get_bps_patch(input_rom_checksum: u32) -> Vec<u8> {
   result
 }
 
-fn patch_rom(path_str: &str) -> Result<(Vec<u8>, u32), &'static str> {
+fn patch_rom(path_str: &str, decompressed_bps: &[u8]) -> Result<(Vec<u8>, u32), &'static str> {
   match validate_input_file(path_str, true) {
     Ok((rom_version, rom_bytes)) => match rom_version {
       RomVersion::Others(crc32) => {
@@ -249,7 +245,8 @@ fn patch_rom(path_str: &str) -> Result<(Vec<u8>, u32), &'static str> {
         let mut patched_rom = rom_bytes.unwrap();
         let mut target_crc32 = crc32;
         loop {
-          (patched_rom, target_crc32) = apply_bps_patch(&patched_rom, &get_bps_patch(target_crc32));
+          (patched_rom, target_crc32) =
+            apply_bps_patch(&patched_rom, &get_bps_patch(target_crc32, decompressed_bps));
           if target_crc32 == LATEST_CHS_CHECKSUM {
             latest_chs_rom = patched_rom;
             break;

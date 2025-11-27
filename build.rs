@@ -503,7 +503,9 @@ fn get_non_jpn_rom_info(file_stem: &str) -> &'static str {
     // Fan translation - Chinese (old)
     "CHS_TC_Xmas" | "CHS_TC" => "黄金太阳 - 开启的封印 (简) [CGP]",
     "CHS_TCnE_O" | "CHS_TCnE_TB" | "CHS_TCnE" => "黄金太阳 - 开启的封印 (简) [CGP&elffinal]",
-    "CHS_CM_TB" | "CHS_CM" | "CHS_CM_QO" | "CHS_CM_QFC" | "CHS_CM_QFC2" => "黄金太阳 - 开启的封印 (简) (润色美化版) [冷血无情Keroro]",
+    "CHS_CM_TB" | "CHS_CM" | "CHS_CM_QO" | "CHS_CM_QFC" | "CHS_CM_QFC2" => {
+      "黄金太阳 - 开启的封印 (简) (润色美化版) [冷血无情Keroro]"
+    }
     "CHS_CM_U_Pre" => "黄金太阳 - 开启的封印 (简) (美版汉化预览版) [冷血无情Keroro]",
     // Fan translation - Other languages
     "POL" => "黄金太阳 - 开启的封印 (波兰文) [Rykuzushi]",

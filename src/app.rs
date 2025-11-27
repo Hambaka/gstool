@@ -91,6 +91,7 @@ pub struct App {
   pub new_pc_names: Vec<String>,
   pub out_log_c3: String,
   // 4. 打汉化补丁功能部分
+  pub decompressed_bps: Vec<u8>,
   pub input_file_path_c4: String,
   pub input_file_crc32: Option<u32>,
   pub out_dir_c4: String,
@@ -161,6 +162,10 @@ impl Default for App {
       new_pc_names: vec![String::new(); 7],
       out_log_c3: String::new(),
       // 4. 打汉化补丁功能部分
+      decompressed_bps: {
+        zstd::decode_all(include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice())
+          .unwrap()
+      },
       input_file_path_c4: String::new(),
       input_file_crc32: None,
       out_dir_c4: String::new(),
@@ -190,7 +195,7 @@ impl App {
       .families
       .entry(egui::FontFamily::Proportional)
       .or_default()
-      .insert(0,  "simplified_chinese_font".to_owned());
+      .insert(0, "simplified_chinese_font".to_owned());
     cc.egui_ctx.set_fonts(fonts);
 
     Default::default()

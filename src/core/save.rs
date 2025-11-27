@@ -1326,12 +1326,12 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
       exported_text.push_str(MARS_DJINN_NAMES[i]);
     }
     exported_text.push('\t');
-    
+
     if jupiter_djinn_bits.bits[6 - i] == 1 {
       exported_text.push_str(JUPITER_DJINN_NAMES[i]);
     }
     exported_text.push('\t');
-    
+
     if mercury_djinn_bits.bits[6 - i] == 1 {
       exported_text.push_str(MERCURY_DJINN_NAMES[i]);
     }
