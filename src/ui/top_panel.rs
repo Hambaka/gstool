@@ -3,17 +3,17 @@ use egui::Widget;
 use crate::App;
 
 impl App {
-  pub fn show_top_panel(&mut self, ctx: &egui::Context) {
+  pub fn show_top_panel(&mut self, ui: &mut egui::Ui) {
     // 顶部面板，主要用于实现菜单栏
-    egui::TopBottomPanel::top("ID_TOP_PANEL").show(ctx, |ui| {
+    egui::Panel::top("ID_TOP_PANEL").show_inside(ui, |ui| {
       // 定义快捷键
-      if ctx.input_mut(|input| {
+      if ui.input_mut(|input| {
         input.consume_shortcut(&egui::KeyboardShortcut::new(
           egui::Modifiers::COMMAND,
           egui::Key::Q,
         ))
       }) {
-        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        ui.send_viewport_cmd(egui::ViewportCommand::Close);
       }
 
       // 菜单栏
@@ -27,14 +27,14 @@ impl App {
           ui.separator();
 
           if egui::Button::new("🚪 退出")
-            .shortcut_text(ctx.format_shortcut(&egui::KeyboardShortcut::new(
+            .shortcut_text(ui.format_shortcut(&egui::KeyboardShortcut::new(
               egui::Modifiers::COMMAND,
               egui::Key::Q,
             )))
             .ui(ui)
             .clicked()
           {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            ui.send_viewport_cmd(egui::ViewportCommand::Close);
           }
         });
 

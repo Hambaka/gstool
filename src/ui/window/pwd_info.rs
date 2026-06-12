@@ -101,12 +101,12 @@ impl PreviewData {
 }
 
 impl App {
-  pub fn show_pwd_info_window(&mut self, ctx: &egui::Context) {
+  pub fn show_pwd_info_window(&mut self, ui: &mut egui::Ui) {
     egui::Window::new("密码数据预览")
       .open(&mut self.pwd_info_window_open)
       .resizable(false)
       .default_width(450.0)
-      .show(ctx, |ui| {
+      .show(ui, |ui| {
         ui.columns_const(|[col_1, col_2, col_3]| {
           if self.preview_data[0].is_some() {
             col_1.selectable_value(&mut self.preview_slot, SaveSlotEnum::First, "存档 ❶");

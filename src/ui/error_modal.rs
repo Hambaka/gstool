@@ -3,8 +3,8 @@ use egui::{Id, Modal, Sides};
 use crate::App;
 
 impl App {
-  pub fn show_error_modal(&mut self, ctx: &egui::Context) {
-    let modal = Modal::new(Id::new("ID_MODAL_ERROR_MSG")).show(ctx, |ui| {
+  pub fn show_error_modal(&mut self, ui: &mut egui::Ui) {
+    let modal = Modal::new(Id::new("ID_MODAL_ERROR_MSG")).show(ui, |ui| {
       ui.set_width(250.0);
       ui.heading("错误！");
       ui.add_space(16.0);

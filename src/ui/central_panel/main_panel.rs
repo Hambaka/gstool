@@ -9,8 +9,8 @@ use crate::{
 };
 
 impl App {
-  pub fn show_main_panel(&mut self, ctx: &egui::Context) {
-    egui::CentralPanel::default().show(ctx, |ui| {
+  pub fn show_main_panel(&mut self, ui: &mut egui::Ui) {
+    egui::CentralPanel::default().show_inside(ui, |ui| {
       egui::ScrollArea::vertical().show(ui, |ui| {
         // 功能选择“标签”页
         ui.columns_const(|[col_1, col_2, col_3, col_4]| {
@@ -101,7 +101,7 @@ impl App {
             if ui
               .add(Button::new(RichText::new("⏵ 运行").color(LIGHT)).fill(SUCCESS))
               .clicked()
-              || ctx.input_mut(|input| {
+              || ui.input_mut(|input| {
                 input.consume_shortcut(&egui::KeyboardShortcut::new(
                   egui::Modifiers::COMMAND,
                   egui::Key::Enter,
@@ -139,7 +139,7 @@ impl App {
               CommandEnum::Third => &self.out_log_c3,
               CommandEnum::Fourth => &self.out_log_c4,
             };
-            ctx.copy_text(log.to_string());
+            ui.copy_text(log.to_string());
             self
               .toasts
               .success("已复制输出内容至剪贴板！")

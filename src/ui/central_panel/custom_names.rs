@@ -200,7 +200,7 @@ impl App {
             ui.add(Button::new(RichText::new(char_btn).color(DARK)).fill(INFO))
               .on_hover_ui(|ui| {
                 let char_index = BASE_CHARACTERS_MAP.get(&char_btn).unwrap();
-                let (tex, size) = get_name_keyboard_img(ui.ctx(), *char_index);
+                let (tex, size) = get_name_keyboard_img(ui, *char_index);
                 let width = size[0] * 2.0;
                 let height = size[1] * 2.0;
                 let a = SizedTexture::new(tex.id(), Vec2::new(width, height));
@@ -215,7 +215,7 @@ impl App {
   }
 }
 
-fn get_name_keyboard_img(ctx: &egui::Context, char_index: u8) -> (TextureHandle, [f32; 2]) {
+fn get_name_keyboard_img(ui: &egui::Ui, char_index: u8) -> (TextureHandle, [f32; 2]) {
   let raw_data = *KEYBOARD_IMG_MAP.get(&char_index).unwrap();
   let mut reader = ImageReader::new(Cursor::new(raw_data));
   reader.set_format(image::ImageFormat::Png);
@@ -226,7 +226,7 @@ fn get_name_keyboard_img(ctx: &egui::Context, char_index: u8) -> (TextureHandle,
 
   let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
   (
-    ctx.load_texture(
+    ui.load_texture(
       format!("name_kbd_{char_index:02X}"),
       color_image,
       TextureOptions::NEAREST,

@@ -3,13 +3,13 @@ use egui::Align2;
 use crate::App;
 
 impl App {
-  pub fn show_about_window(&mut self, ctx: &egui::Context) {
+  pub fn show_about_window(&mut self, ui: &mut egui::Ui) {
     egui::Window::new("关于")
       .collapsible(false)
       .resizable(false)
       .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
       .open(&mut self.about_window_open)
-      .show(ctx, |ui| {
+      .show(ui, |ui| {
         ui.vertical_centered(|ui| {
           ui.heading(format!("GSTool - {}", env!("CARGO_PKG_VERSION")));
           ui.label("为 GBA 的《黄金太阳》系列游戏准备的小工具！");

@@ -229,19 +229,19 @@ impl App {
 }
 
 impl eframe::App for App {
-  fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+  fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
     // “关于”窗口
-    self.show_about_window(ctx);
+    self.show_about_window(ui);
     // 密码信息窗口
-    self.show_pwd_info_window(ctx);
+    self.show_pwd_info_window(ui);
     // 错误信息显示模态窗口
     if self.err_modal_open {
-      self.show_error_modal(ctx);
+      self.show_error_modal(ui);
     }
     // 顶部面板，主要用于菜单栏。
-    self.show_top_panel(ctx);
+    self.show_top_panel(ui);
     // 主面板，核心功能区。
-    self.show_main_panel(ctx);
-    self.toasts.show(ctx);
+    self.show_main_panel(ui);
+    self.toasts.show(ui);
   }
 }
