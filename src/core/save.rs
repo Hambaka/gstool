@@ -1,3 +1,5 @@
+use crate::core::data::{ALL_DJINN_NAMES, DYRATI_ITEM_NAMES, Language};
+
 use super::enums::{GameType, GameVersion, NameType, PasswordGrade};
 use std::{collections::HashMap, fmt::Write as _};
 
@@ -211,7 +213,7 @@ const HEADER_PRIORITY_LOCATION_INDEX: [usize; 2] = [0x0A, 0x0B];
 /// CD: Cloak Ball
 /// CE: Carry Stone
 /// CF: Catch Beads
-const PSYNERGY_ITEMS: [u16; 8] = [0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF];
+pub const PSYNERGY_ITEMS: [u16; 8] = [0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF];
 
 /// Valid stackable items in TBS
 ///
@@ -238,7 +240,7 @@ const PSYNERGY_ITEMS: [u16; 8] = [0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF
 /// EF: Weasel's Claw
 /// F0: Bramble Seed
 /// F1: Crystal Powder
-const STACKABLE_ITEMS: [u16; 23] = [
+pub const STACKABLE_ITEMS: [u16; 23] = [
   0xB4, 0xB5, 0xB6, 0xB7, 0xBA, 0xBB, 0xBC, 0xBD, 0xBF, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xE2, 0xE3,
   0xE4, 0xE5, 0xEC, 0xEE, 0xEF, 0xF0, 0xF1,
 ];
@@ -259,23 +261,6 @@ const CHECKSUM_INDEX: [usize; 26] = [
   207, 216, 225, 234,
 ];
 
-/// All Venus djinn in Golden Sun.
-const VENUS_DJINN_NAMES: [&str; 7] = [
-  "Flint", "Granite", "Quartz", "Vine", "Sap", "Ground", "Bane",
-];
-
-/// All Mercury djinn in Golden Sun.
-const MERCURY_DJINN_NAMES: [&str; 7] = ["Fizz", "Sleet", "Mist", "Spritz", "Hail", "Tonic", "Dew"];
-
-/// All Mars djinn in Golden Sun.
-const MARS_DJINN_NAMES: [&str; 7] = [
-  "Forge", "Fever", "Corona", "Scorch", "Ember", "Flash", "Torch",
-];
-
-/// All Jupiter djinn in Golden Sun.
-const JUPITER_DJINN_NAMES: [&str; 7] =
-  ["Gust", "Breeze", "Zephyr", "Smog", "Kite", "Squall", "Luff"];
-
 /// These default classes are:
 /// Squire (Isaac), Guard (Garet), Wind Seer (Ivan), Water Seer (Mia)
 #[rustfmt::skip]
@@ -284,58 +269,6 @@ const DEFAULT_CLASS_MULTIPLIERS: [[f64; 6]; 4] = [
   [1.1, 0.8, 1.0, 1.1, 0.7, 1.0],
   [0.8, 1.4, 0.8, 0.9, 1.3, 1.1],
   [0.9, 1.3, 0.9, 1.0, 0.8, 1.3],
-];
-
-/// All items in Golden Sun and Golden Sun: The Lost Age.
-/// Though this long array looks not good...
-#[rustfmt::skip]
-const ALL_ITEM_NAMES: [&str; 460] = [
-  "Long Sword", "Broad Sword", "Claymore", "Great Sword", "Shamshir", "Silver Blade", "Fire Brand", "Arctic Blade", "Gaia Blade", "Sol Blade",
-  "Muramasa", "?", "?", "?", "Machete", "Short Sword", "Hunter's Sword", "Battle Rapier", "Master Rapier", "Ninja Blade",
-  "Swift Sword", "Elven Rapier", "Assassin Blade", "Mystery Blade", "Kikuichimonji", "Masamune", "Bandit's Sword", "?", "?", "?",
-  "Battle Axe", "Broad Axe", "Great Axe", "Dragon Axe", "Giant Axe", "Vulcan Axe", "Burning Axe", "Demon Axe", "?", "?",
-  "?", "?", "Mace", "Heavy Mace", "Battle Mace", "War Mace", "Righteous Mace", "Grievous Mace", "Blessed Mace", "Wicked Mace",
-  "?", "?", "?", "?", "Wooden Stick", "Magic Rod", "Witch's Wand", "Blessed Ankh", "Psynergy Rod", "Frost Wand",
-  "Angelic Ankh", "Demonic Staff", "Crystal Rod", "Zodiac Wand", "Shaman's Rod", "?", "?", "?", "?", "?",
-  "?", "?", "?", "?", "Leather Armor", "Psynergy Armor", "Chain Mail", "Armored Shell", "Plate Mail", "Steel Armor",
-  "Spirit Armor", "Dragon Scales", "Demon Mail", "Asura's Armor", "Spiked Armor", "?", "?", "?", "Cotton Shirt", "Travel Vest",
-  "Fur Coat", "Adept's Clothes", "Elven Shirt", "Silver Vest", "Water Jacket", "Storm Gear", "Kimono", "Ninja Garb", "?", "?",
-  "?", "?", "One-Piece Dress", "Travel Robe", "Silk Robe", "China Dress", "Jerkin", "Cocktail Dress", "Blessed Robe", "Magical Cassock",
-  "Mysterious Robe", "Feathered Robe", "Oracle's Robe", "?", "?", "?", "?", "Wooden Shield", "Bronze Shield", "Iron Shield",
-  "Knight's Shield", "Mirrored Shield", "Dragon Shield", "Earth Shield", "?", "?", "Padded Gloves", "Leather Gloves", "Gauntlets", "Vambrace",
-  "War Gloves", "Spirit Gloves", "Battle Gloves", "Aura Gloves", "?", "Leather Armlet", "Armlet", "Heavy Armlet", "Silver Armlet", "Spirit Armlet",
-  "Virtuous Armlet", "Guardian Armlet", "?", "?", "Open Helm", "Bronze Helm", "Iron Helm", "Steel Helm", "Silver Helm", "Knight's Helm",
-  "Warrior's Helm", "Adept's Helm", "?", "?", "?", "Leather Cap", "Wooden Cap", "Mail Cap", "Jeweled Crown", "Ninja Hood",
-  "Lucky Cap", "Thunder Crown", "Prophet's Hat", "Lure Cap", "?", "Circlet", "Silver Circlet", "Guardian Circlet", "Platinum Circlet", "Mythril Circlet",
-  "Glittering Tiara", "?", "?", "?", "?", "?", "?", "?", "?", "Herb",
-  "Nut", "Vial", "Potion", "Hermes' Water", "Empty Bottle", "Psy Crystal", "Antidote", "Elixir", "Water of Life", "Mist Potion",
-  "Power Bread", "Cookie", "Apple", "Hard Nut", "Mint", "Lucky Pepper", "?", "Lash Pebble", "Pound Cube", "Orb of Force",
-  "Douse Drop", "Frost Jewel", "Lifting Gem", "Halt Gem", "Cloak Ball", "Carry Stone", "Catch Beads", "Tremor Bit", "Scoop Gem", "Cyclone Chip",
-  "?", "?", "Burst Brooch", "Grindstone", "Hover Jade", "?", "Teleport Lapis", "?", "?", "Venus Star",
-  "Mercury Star", "Mars Star", "Jupiter Star", "Mythril Bag", "Small Jewel", "Smoke Bomb", "Sleep Bomb", "Game Ticket", "Lucky Medal", "Dragon's Eye",
-  "Bone", "Anchor Charm", "Corn", "Cell Key", "Boat Ticket", "Sacred Feather", "Mystic Draught", "Oil Drop", "Weasel's Claw", "Bramble Seed",
-  "Crystal Powder", "Black Orb", "Red Key", "Blue Key", "Mythril Bag", "Jupiter Star", "Mars Star", "?", "?", "Mythril Shirt",
-  "Silk Shirt", "Running Shirt", "?", "?", "?", "Hyper Boots", "Quick Boots", "Fur Boots", "Turtle Boots", "?",
-  "?", "Adept Ring", "War Ring", "Sleep Ring", "Healing Ring", "Unicorn Ring", "Fairy Ring", "Cleric's Ring", "?", "?",
-  "?", "Huge Sword", "Mythril Blade", "Levatine", "Darksword", "Excalibur", "Robber's Blade", "Soul Brand", "Storm Brand", "Hestia Blade",
-  "Lightning Sword", "Rune Blade", "Cloud Brand", "?", "Sylph Rapier", "Burning Sword", "Pirate's Sword", "Corsair's Edge", "Pirate's Sabre", "Hypnos' Sword",
-  "Mist Sabre", "Phaeton's Blade", "Tisiphone Edge", "?", "Apollo's Axe", "Gaia's Axe", "Stellar Axe", "Captain's Axe", "Viking Axe", "Disk Axe",
-  "Themis' Axe", "Mighty Axe", "Tartarus Axe", "?", "Comet Mace", "Tungsten Mace", "Demon Mace", "Hagbone Mace", "Blow Mace", "Rising Mace",
-  "Thanatos Mace", "?", "Cloud Wand", "Salamander Rod", "Nebula Wand", "Dracomace", "Glower Staff", "Goblin's Rod", "Meditation Rod", "Fireman's Pole",
-  "Atropos' Rod", "Lachesis' Rule", "Clotho's Distaff", "Staff of Anubis", "?", "Trident", "?", "Planet Armor", "Dragon Mail", "Chronos Mail",
-  "Stealth Armor", "Xylion Armor", "Ixion Mail", "Phantasmal Mail", "Erebus Armor", "Valkyrie Mail", "?", "Faery Vest", "Mythril Clothes", "Full Metal Vest",
-  "Wild Coat", "Floral Dress", "Festival Coat", "Erinyes Tunic", "Triton's Ward", "?", "Dragon Robe", "Ardagh Robe", "Muni Robe", "Aeolian Cassock",
-  "Iris Robe", "?", "Luna Shield", "Dragon Shield", "Flame Shield", "Terra Shield", "Cosmos Shield", "Fujin Shield", "Aegis Shield", "?",
-  "Aerial Gloves", "Titan Gloves", "Big Bang Gloves", "Crafted Gloves", "Riot Gloves", "Spirit Gloves", "?", "Clear Bracelet", "Mythril Armlet", "Bone Armlet",
-  "Jester's Armlet", "Leda's Bracelet", "?", "Dragon Helm", "Mythril Helm", "Fear Helm", "Millenium Helm", "Viking Helm", "Gloria Helm", "Minerva Helm",
-  "?", "Floating Hat", "Nurse's Cap", "Thorn Crown", "Otafuku Mask", "Hiotoko Mask", "Crown of Glory", "Alastor's Hood", "?", "Pure Circlet",
-  "Astral Circlet", "Psychic Circlet", "Demon Circlet", "Clarity Circlet", "Brilliant Circlet", "Berserker Band", "?", "Divine Camisole", "Herbed Shirt", "Golden Shirt",
-  "Casual Shirt", "Leather Boots", "Dragon Boots", "Safety Boots", "Knight's Greave", "Silver Greave", "Ninja Sandals", "Golden Boots", "Spirit Ring", "Stardust Ring",
-  "Aroma Ring", "Rainbow Ring", "Soul Ring", "Guardian Ring", "Golden Ring", "?", "Rusty Sword", "Rusty Sword", "Rusty Sword", "Rusty Sword",
-  "Rusty Axe", "Rusty Axe", "Rusty Mace", "Rusty Mace", "Rusty Staff", "Rusty Staff", "Rusty Staff", "?", "Tear Stone", "Star Dust",
-  "Sylph Feather", "Dragon Skin", "Salamander Tail", "Golem Core", "Mythril Silver", "Dark Matter", "Orihalcon", "?", "Right Prong", "Left Prong",
-  "Center Prong", "?", "Mysterious Card", "Trainer's Whip", "Tomegathericon", "?", "?", "Healing Fungus", "Laughing Fungus", "Signal Whistle",
-  "Dancing Idol", "Pretty Stone", "Red Cloth", "Milk", "Li'l Turtle", "Aquarius Stone", "Large Bread", "Sea God's Tear", "Ruin Key", "Magma Ball"
 ];
 
 /// In TBS, it should be 0 -> Robin (Isaac)
@@ -410,6 +343,52 @@ pub struct SaveData {
   stats: [[u16; 6]; 4],
   items: [[u16; 15]; 4],
   coins: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct PasswordInfo {
+  levels: [u8; 4],
+  djinn: [[bool; 7]; 4],
+  events: [bool; 6],
+  base_stats: [[u16; 6]; 4],
+  stats: [[u16; 6]; 4],
+  psy_items: [bool; 8],
+  items: [[(u16, u8); 15]; 4],
+  coins: u32,
+}
+
+impl PasswordInfo {
+  pub fn get_levels(&self) -> [u8; 4] {
+    self.levels
+  }
+
+  pub fn get_djinn(&self) -> [[bool; 7]; 4] {
+    self.djinn
+  }
+
+  pub fn get_events(&self) -> [bool; 6] {
+    self.events
+  }
+
+  pub fn get_base_stats(&self) -> [[u16; 6]; 4] {
+    self.base_stats
+  }
+
+  pub fn get_stats(&self) -> [[u16; 6]; 4] {
+    self.stats
+  }
+
+  pub fn get_psy_items(&self) -> [bool; 8] {
+    self.psy_items
+  }
+
+  pub fn get_items(&self) -> [[(u16, u8); 15]; 4] {
+    self.items
+  }
+
+  pub fn get_coins(&self) -> u32 {
+    self.coins
+  }
 }
 
 // Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
@@ -1277,7 +1256,7 @@ pub fn get_password_bytes_with_save_data(
   gen_password_bytes_with_save_data(target_grade, save_data)
 }
 
-fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> String {
+fn gen_exported_data_for_dyrati_sheet_with_info(pwd_info: &PasswordInfo) -> String {
   let mut exported_text = String::new();
   // Text start
   exported_text.push_str("用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件\n");
@@ -1293,8 +1272,8 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   // Levels
   exported_text.push_str("等级\n罗宾，杰拉德，伊万，梅雅莉\n表格中的范围 -> C8:F8\n");
   exported_text.push_str("============开始============\n");
-  for (i, level) in save_data.levels.iter().enumerate() {
-    if i < save_data.levels.len() - 1 {
+  for (i, level) in pwd_info.levels.iter().enumerate() {
+    if i < pwd_info.levels.len() - 1 {
       let _ = write!(exported_text, "{level}\t");
     } else {
       let _ = write!(exported_text, "{level}\n");
@@ -1305,37 +1284,18 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   // Djinn
   exported_text.push_str("精灵\n维纳斯（地/金星），玛尔斯（火/火星），朱庇特（风/木星），墨丘利（水/水星）\n表格中的范围 -> C12:F18\n");
   exported_text.push_str("====================开始====================\n");
-  let mut venus_djinn_bits = BitArray::new();
-  let mut mercury_djinn_bits = BitArray::new();
-  let mut mars_djinn_bits = BitArray::new();
-  let mut jupiter_djinn_bits = BitArray::new();
 
-  venus_djinn_bits.push_bits(save_data.djinn[0], 7);
-  mercury_djinn_bits.push_bits(save_data.djinn[1], 7);
-  mars_djinn_bits.push_bits(save_data.djinn[2], 7);
-  jupiter_djinn_bits.push_bits(save_data.djinn[3], 7);
-
-  // Reversed order
   for i in 0..7 {
-    if venus_djinn_bits.bits[6 - i] == 1 {
-      exported_text.push_str(VENUS_DJINN_NAMES[i]);
+    for j in 0..4 {
+      if pwd_info.djinn[0][i] {
+        exported_text.push_str(ALL_DJINN_NAMES[j][i].get_name(Language::English));
+      }
+      if j == 3 {
+        exported_text.push('\n');
+      } else {
+        exported_text.push('\t');
+      }
     }
-    exported_text.push('\t');
-
-    if mars_djinn_bits.bits[6 - i] == 1 {
-      exported_text.push_str(MARS_DJINN_NAMES[i]);
-    }
-    exported_text.push('\t');
-
-    if jupiter_djinn_bits.bits[6 - i] == 1 {
-      exported_text.push_str(JUPITER_DJINN_NAMES[i]);
-    }
-    exported_text.push('\t');
-
-    if mercury_djinn_bits.bits[6 - i] == 1 {
-      exported_text.push_str(MERCURY_DJINN_NAMES[i]);
-    }
-    exported_text.push('\n');
   }
   exported_text.push_str("====================结束====================\n\n\n\n");
 
@@ -1346,13 +1306,8 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("　　表格版密码生成器为了方便理解，与其他事件进行了同步，即用1表示完成了该事件，用0表示未完成该事件。\n\n");
   exported_text.push_str("表格中的范围 -> E21:E26\n");
   exported_text.push_str("====开始====\n");
-  for (i, event) in save_data.events.iter().enumerate() {
-    if i == 2 {
-      let inverted_event = (event ^ 1) & 1;
-      let _ = writeln!(exported_text, "{inverted_event}");
-    } else {
-      let _ = writeln!(exported_text, "{event}");
-    }
+  for event in pwd_info.events {
+    let _ = writeln!(exported_text, "{}", if event { "1" } else { "0" });
   }
   exported_text.push_str("====结束====\n\n\n\n");
 
@@ -1371,10 +1326,10 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
   for i in 0..6 {
-    let _ = write!(exported_text, "{}\t", save_data.stats[0][i]);
-    let _ = write!(exported_text, "{}\t", save_data.stats[1][i]);
-    let _ = write!(exported_text, "{}\t", save_data.stats[2][i]);
-    let _ = writeln!(exported_text, "{}", save_data.stats[3][i]);
+    let _ = write!(exported_text, "{}\t", pwd_info.base_stats[0][i]);
+    let _ = write!(exported_text, "{}\t", pwd_info.base_stats[1][i]);
+    let _ = write!(exported_text, "{}\t", pwd_info.base_stats[2][i]);
+    let _ = writeln!(exported_text, "{}", pwd_info.base_stats[3][i]);
   }
   exported_text.push_str("============结束============\n\n\n\n");
 
@@ -1392,26 +1347,10 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
   for i in 0..6 {
-    let _ = write!(
-      exported_text,
-      "{}\t",
-      (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as u32
-    );
-    let _ = write!(
-      exported_text,
-      "{}\t",
-      (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as u32
-    );
-    let _ = write!(
-      exported_text,
-      "{}\t",
-      (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as u32
-    );
-    let _ = writeln!(
-      exported_text,
-      "{}",
-      (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as u32
-    );
+    let _ = write!(exported_text, "{}\t", pwd_info.stats[0][i]);
+    let _ = write!(exported_text, "{}\t", pwd_info.stats[1][i]);
+    let _ = write!(exported_text, "{}\t", pwd_info.stats[2][i]);
+    let _ = writeln!(exported_text, "{}", pwd_info.stats[3][i]);
   }
   exported_text.push_str("============结束============\n\n\n\n");
 
@@ -1421,46 +1360,42 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
     "========================================开始========================================\n",
   );
   for i in 0..15 {
-    let isaac_item = save_data.items[0][i];
-    let isaac_item_id = isaac_item & 0x1FF;
+    let (isaac_item_id, item_count) = pwd_info.items[0][i];
     if isaac_item_id != 0 {
       let isaac_item_index = (isaac_item_id - 1) as usize;
-      exported_text.push_str(ALL_ITEM_NAMES[isaac_item_index]);
+      exported_text.push_str(DYRATI_ITEM_NAMES[isaac_item_index]);
       if STACKABLE_ITEMS.contains(&isaac_item_id) {
-        let _ = write!(exported_text, "*{}", (isaac_item >> 11) + 1);
+        let _ = write!(exported_text, "*{}", item_count);
       }
     }
     exported_text.push('\t');
 
-    let garet_item = save_data.items[1][i];
-    let garet_item_id = garet_item & 0x1FF;
+    let (garet_item_id, item_count) = pwd_info.items[1][i];
     if garet_item_id != 0 {
       let garet_item_index = (garet_item_id - 1) as usize;
-      exported_text.push_str(ALL_ITEM_NAMES[garet_item_index]);
+      exported_text.push_str(DYRATI_ITEM_NAMES[garet_item_index]);
       if STACKABLE_ITEMS.contains(&garet_item_id) {
-        let _ = write!(exported_text, "*{}", (garet_item >> 11) + 1);
+        let _ = write!(exported_text, "*{}", item_count);
       }
     }
     exported_text.push('\t');
 
-    let ivan_item = save_data.items[2][i];
-    let ivan_item_id = ivan_item & 0x1FF;
+    let (ivan_item_id, item_count) = pwd_info.items[2][i];
     if ivan_item_id != 0 {
       let ivan_item_index = (ivan_item_id - 1) as usize;
-      exported_text.push_str(ALL_ITEM_NAMES[ivan_item_index]);
+      exported_text.push_str(DYRATI_ITEM_NAMES[ivan_item_index]);
       if STACKABLE_ITEMS.contains(&ivan_item_id) {
-        let _ = write!(exported_text, "*{}", (ivan_item >> 11) + 1);
+        let _ = write!(exported_text, "*{}", item_count);
       }
     }
     exported_text.push('\t');
 
-    let mia_item = save_data.items[3][i];
-    let mia_item_id = mia_item & 0x1FF;
+    let (mia_item_id, item_count) = pwd_info.items[3][i];
     if mia_item_id != 0 {
       let mia_item_index = (mia_item_id - 1) as usize;
-      exported_text.push_str(ALL_ITEM_NAMES[mia_item_index]);
+      exported_text.push_str(DYRATI_ITEM_NAMES[mia_item_index]);
       if STACKABLE_ITEMS.contains(&mia_item_id) {
-        let _ = write!(exported_text, "*{}", (mia_item >> 11) + 1);
+        let _ = write!(exported_text, "*{}", item_count);
       }
     }
     exported_text.push('\n');
@@ -1471,19 +1406,20 @@ fn gen_exported_data_for_dyrati_sheet_with_save_data(save_data: &SaveData) -> St
   // Coins
   exported_text.push_str("金币\n表格中的范围 -> D28\n");
   exported_text.push_str("====开始====\n");
-  let _ = writeln!(exported_text, "{}", save_data.coins);
+  let _ = writeln!(exported_text, "{}", pwd_info.coins);
   exported_text.push_str("====结束====\n");
 
   exported_text
 }
 
 pub fn get_exported_data_for_dyrati_sheet_with_raw_save_bytes(raw_save: &[u8]) -> String {
-  let save_data = gen_save_data_with_raw_save_bytes(raw_save);
-  gen_exported_data_for_dyrati_sheet_with_save_data(&save_data)
+  let pwd_info = gen_password_info_with_raw_save_bytes(raw_save);
+  gen_exported_data_for_dyrati_sheet_with_info(&pwd_info)
 }
 
 pub fn get_exported_data_for_dyrati_sheet_by_save_data(save_data: &SaveData) -> String {
-  gen_exported_data_for_dyrati_sheet_with_save_data(save_data)
+  let pwd_info = gen_password_info_with_save_data(save_data);
+  gen_exported_data_for_dyrati_sheet_with_info(&pwd_info)
 }
 
 pub fn get_exported_data_for_dyrati_sheet_by_bytes(
@@ -1492,7 +1428,151 @@ pub fn get_exported_data_for_dyrati_sheet_by_bytes(
 ) -> String {
   let mut password_bits = get_valid_password_bits_option(password_bytes, false).unwrap();
   let save_data = gen_save_data_with_password_bits(&mut password_bits, target_grade);
-  gen_exported_data_for_dyrati_sheet_with_save_data(&save_data)
+  let pwd_info = gen_password_info_with_save_data(&save_data);
+  gen_exported_data_for_dyrati_sheet_with_info(&pwd_info)
+}
+
+pub fn gen_password_info_with_raw_save_bytes(raw_save: &[u8]) -> PasswordInfo {
+  let save_data = gen_save_data_with_raw_save_bytes(raw_save);
+  gen_password_info_with_save_data(&save_data)
+}
+
+pub fn gen_password_info_with_save_data(save_data: &SaveData) -> PasswordInfo {
+  // Levels
+  let levels = save_data.levels;
+  // Djinn
+  let mut venus_djinn_bits = BitArray::new();
+  let mut mercury_djinn_bits = BitArray::new();
+  let mut mars_djinn_bits = BitArray::new();
+  let mut jupiter_djinn_bits = BitArray::new();
+  venus_djinn_bits.push_bits(save_data.djinn[0], 7);
+  mercury_djinn_bits.push_bits(save_data.djinn[1], 7);
+  mars_djinn_bits.push_bits(save_data.djinn[2], 7);
+  jupiter_djinn_bits.push_bits(save_data.djinn[3], 7);
+  let mut venus_djinn = [false; 7];
+  let mut mercury_djinn = [false; 7];
+  let mut mars_djinn = [false; 7];
+  let mut jupiter_djinn = [false; 7];
+  // Reversed order
+  for i in 0..7 {
+    if venus_djinn_bits.bits[6 - i] == 1 {
+      venus_djinn[i] = true;
+    }
+    if mars_djinn_bits.bits[6 - i] == 1 {
+      mars_djinn[i] = true;
+    }
+    if jupiter_djinn_bits.bits[6 - i] == 1 {
+      jupiter_djinn[i] = true;
+    }
+    if mercury_djinn_bits.bits[6 - i] == 1 {
+      mercury_djinn[i] = true;
+    }
+  }
+  //let djinn = [venus_djinn, mercury_djinn, mars_djinn, jupiter_djinn];
+  let djinn = [venus_djinn, mars_djinn, jupiter_djinn, mercury_djinn];
+
+  // Events
+  let mut events = [false; 6];
+  for (i, event) in save_data.events.iter().enumerate() {
+    if i == 2 {
+      let inverted_event = (event ^ 1) & 1;
+      events[i] = inverted_event == 1;
+    } else {
+      events[i] = *event == 1;
+    }
+  }
+  // Base Stats
+  let base_stats = save_data.stats;
+  // Stats
+  let mut stats = [[0; 6]; 4];
+  for i in 0..6 {
+    stats[0][i] =
+      (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as u16;
+    stats[1][i] =
+      (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as u16;
+    stats[2][i] =
+      (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as u16;
+    stats[3][i] =
+      (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as u16;
+  }
+
+  let mut psy_items = [false; 8];
+  // Items
+  let mut items = [[(0, 0); 15]; 4];
+  for i in 0..15 {
+    let isaac_item = save_data.items[0][i];
+    let isaac_item_id = isaac_item & 0x1FF;
+    if isaac_item_id != 0 {
+      let item_count = if STACKABLE_ITEMS.contains(&isaac_item_id) {
+        (isaac_item >> 11) + 1
+      } else {
+        1
+      };
+      items[0][i] = (isaac_item_id, item_count as u8);
+
+      if PSYNERGY_ITEMS.contains(&isaac_item_id) {
+        psy_items[(isaac_item_id - PSYNERGY_ITEMS[0]) as usize] = true;
+      }
+    }
+
+    let garet_item = save_data.items[1][i];
+    let garet_item_id = garet_item & 0x1FF;
+    if garet_item_id != 0 {
+      let item_count = if STACKABLE_ITEMS.contains(&garet_item_id) {
+        (garet_item >> 11) + 1
+      } else {
+        1
+      };
+      items[1][i] = (garet_item_id, item_count as u8);
+
+      if PSYNERGY_ITEMS.contains(&garet_item_id) {
+        psy_items[(garet_item_id - PSYNERGY_ITEMS[0]) as usize] = true;
+      }
+    }
+
+    let ivan_item = save_data.items[2][i];
+    let ivan_item_id = ivan_item & 0x1FF;
+    if ivan_item_id != 0 {
+      let item_count = if STACKABLE_ITEMS.contains(&ivan_item_id) {
+        (ivan_item >> 11) + 1
+      } else {
+        1
+      };
+      items[2][i] = (ivan_item_id, item_count as u8);
+
+      if PSYNERGY_ITEMS.contains(&ivan_item_id) {
+        psy_items[(ivan_item_id - PSYNERGY_ITEMS[0]) as usize] = true;
+      }
+    }
+
+    let mia_item = save_data.items[3][i];
+    let mia_item_id = mia_item & 0x1FF;
+    if mia_item_id != 0 {
+      let item_count = if STACKABLE_ITEMS.contains(&mia_item_id) {
+        (mia_item >> 11) + 1
+      } else {
+        1
+      };
+      items[3][i] = (mia_item_id, item_count as u8);
+
+      if PSYNERGY_ITEMS.contains(&mia_item_id) {
+        psy_items[(mia_item_id - PSYNERGY_ITEMS[0]) as usize] = true;
+      }
+    }
+  }
+  // Coins
+  let coins = save_data.coins;
+
+  PasswordInfo {
+    levels,
+    djinn,
+    events,
+    base_stats,
+    stats,
+    psy_items,
+    items,
+    coins,
+  }
 }
 
 pub fn convert_save_file(
@@ -1502,10 +1582,7 @@ pub fn convert_save_file(
   pc_name_type_option: Option<NameType>,
   build_date_type_option: Option<GameVersion>,
 ) -> Vec<u8> {
-  let game_type_index = match game_type {
-    GameType::TheBrokenSeal => 0,
-    GameType::TheLostAge => 1,
-  };
+  let game_type_index = game_type as usize;
 
   for i in loop_start_index..MAX_LOOP_COUNT[game_type_index] {
     // Skip "invalid" save data.
@@ -1526,16 +1603,7 @@ pub fn convert_save_file(
     }
 
     if let Some(pc_name_type) = pc_name_type_option {
-      let pc_name_type_index = match pc_name_type {
-        NameType::Japanese => 0,
-        NameType::English => 1,
-        NameType::German => 2,
-        NameType::Spanish => 3,
-        NameType::French => 4,
-        NameType::Italian => 5,
-        NameType::ChineseFanTranslationMobileTeam => 6,
-        NameType::ChineseFanTranslation2023Team => 7,
-      };
+      let pc_name_type_index = pc_name_type as usize;
 
       let mut is_main_leader = true;
       /* The party leader name.
@@ -1606,16 +1674,7 @@ pub fn convert_save_file(
     the game will force player to start from sanctum after loading save.
     Every language version has a different build date. */
     if let Some(build_date_type) = build_date_type_option {
-      let build_date_type_index = match build_date_type {
-        GameVersion::Japan => 0,
-        GameVersion::USA => 1,
-        GameVersion::Germany => 2,
-        GameVersion::Spain => 3,
-        GameVersion::France => 4,
-        GameVersion::Italy => 5,
-      };
-
-      let build_date = GS_BUILD_DATE[game_type_index][build_date_type_index].to_le_bytes();
+      let build_date = GS_BUILD_DATE[game_type_index][build_date_type as usize].to_le_bytes();
       for j in 0..2 {
         raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
           + BUILD_DATE_LOCATION_INDEX[game_type_index][0][j]] = build_date[j];

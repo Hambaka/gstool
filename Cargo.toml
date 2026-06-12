@@ -20,7 +20,7 @@ egui_extras = { version = "0.33", default-features = false, features = ["image"]
 image = { version = "0.25", default-features = false, features = ["png"] }
 egui-notify = "0.21"
 phf = { version = "0.13", features = ["macros"] }
-rfd = "0.16"
+rfd = "0.17"
 zstd = "0.13"
 crc32fast = "1.5"
 

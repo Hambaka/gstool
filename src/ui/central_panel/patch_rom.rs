@@ -42,7 +42,7 @@ impl App {
         if ui.add(select_file_btn()).clicked() {
           if let Some(file) = FileDialog::new().pick_file(){
             let new_file_path = file.to_string_lossy().into_owned();
-            // 验证存档文件
+            // 验证ROM文件
             let result  = validate_input_file(&new_file_path, false);
             match result {
               Ok((rom_version, _)) => {

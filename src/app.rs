@@ -1,14 +1,15 @@
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
 
-use egui::{Align2, Button, Id, Modal, RichText, Shadow, Sides, Widget};
+use egui::Shadow;
 use egui_notify::{Anchor, Toasts};
 
 use crate::{
   core::{
+    data::Language,
     enums::{GameType, GameVersion, NameType, PasswordGrade, PasswordVersion},
     save::{BitArray, RawSaveData},
   },
-  widgets::colors::{DANGER, LIGHT, SECONDARY, SUCCESS},
+  ui::window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
 };
 
 pub const GAME_VERSIONS: [GameVersion; 6] = [
@@ -36,9 +37,23 @@ pub enum SubCommandEnum {
 }
 
 pub struct App {
-  about_window_open: bool,
-  toasts: Toasts,
-  command: CommandEnum,
+  pub preview_data: [Option<PreviewData>; 3],
+  pub preview_current: Option<PreviewData>,
+  pub preview_slot: SaveSlotEnum,
+  pub preview_page: PreviewPageEnum,
+  /// 全属性（金、银），仅等级（铜）
+  pub char_page_mode: PreviewModeEnum,
+  /// 基础属性，属性
+  pub stats_mode: PreviewModeEnum,
+  /// 全道具（金），仅精神力道具（银、铜）
+  pub item_page_mode: PreviewModeEnum,
+  pub item_preview_lang: Language,
+  pub djinn_preview_lang: Language,
+
+  pub about_window_open: bool,
+  pub pwd_info_window_open: bool,
+  pub toasts: Toasts,
+  pub command: CommandEnum,
   pub subcommand: SubCommandEnum,
   pub err_modal_open: bool,
   pub err_msg: String,
@@ -101,7 +116,18 @@ pub struct App {
 impl Default for App {
   fn default() -> Self {
     Self {
+      preview_data: [None, None, None],
+      preview_current: None,
+      preview_slot: SaveSlotEnum::First,
+      preview_page: PreviewPageEnum::Character,
+      char_page_mode: PreviewModeEnum::Main,
+      stats_mode: PreviewModeEnum::Main,
+      item_page_mode: PreviewModeEnum::Main,
+      item_preview_lang: Language::ChineseTBS,
+      djinn_preview_lang: Language::ChineseTBS,
+
       about_window_open: false,
+      pwd_info_window_open: false,
       toasts: Toasts::default()
         .with_anchor(Anchor::BottomRight)
         .with_shadow(Shadow {
@@ -205,252 +231,17 @@ impl App {
 impl eframe::App for App {
   fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     // “关于”窗口
-    if self.about_window_open {
-      egui::Window::new("关于")
-        .collapsible(false)
-        .resizable(false)
-        .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .open(&mut self.about_window_open)
-        .show(ctx, |ui| {
-          ui.vertical_centered(|ui| {
-            ui.heading(format!("GSTool - {}", env!("CARGO_PKG_VERSION")));
-            ui.label("为 GBA 的《黄金太阳》系列游戏准备的小工具！");
-            ui.separator();
-            ui.label("鸣谢");
-
-            ui.horizontal(|ui| {
-              ui.label("密码算法：");
-              ui.hyperlink_to(
-                "Golden-Sun-Password-Transfer",
-                "https://github.com/Dyrati/Golden-Sun-Password-Transfer",
-              );
-            });
-
-            ui.horizontal(|ui| {
-              ui.label("界面字体：");
-              ui.hyperlink_to("更纱黑体", "https://github.com/be5invis/Sarasa-Gothic");
-            });
-
-            ui.separator();
-            ui.label("© 2025 ♥ Hambaka");
-            ui.hyperlink_to("Powered by egui", "https://www.egui.rs/");
-          })
-        });
-    }
-
-    // 错误信息显示窗口
+    self.show_about_window(ctx);
+    // 密码信息窗口
+    self.show_pwd_info_window(ctx);
+    // 错误信息显示模态窗口
     if self.err_modal_open {
-      let modal = Modal::new(Id::new("ID_MODAL_ERROR_MSG")).show(ctx, |ui| {
-        ui.set_width(250.0);
-        ui.heading("错误！");
-        ui.add_space(16.0);
-        ui.label(self.err_msg.clone());
-        ui.separator();
-        Sides::new().show(
-          ui,
-          |_ui| {},
-          |ui| {
-            if ui.button("关闭").clicked() {
-              // 新版本中应使用
-              // ui.close()
-              self.err_modal_open = false;
-            }
-          },
-        );
-      });
-
-      if modal.should_close() {
-        self.err_modal_open = false;
-      }
+      self.show_error_modal(ctx);
     }
-
-    // 顶部面板，主要用于实现菜单栏
-    egui::TopBottomPanel::top("ID_MENU_BAR").show(ctx, |ui| {
-      // 定义快捷键
-      if ui.ctx().input_mut(|input| {
-        input.consume_shortcut(&egui::KeyboardShortcut::new(
-          egui::Modifiers::COMMAND,
-          egui::Key::Q,
-        ))
-      }) {
-        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-      }
-
-      // 菜单栏
-      egui::MenuBar::new().ui(ui, |ui| {
-        ui.menu_button("🗀 文件", |ui| {
-          if ui.button("❓ 关于").clicked() {
-            self.about_window_open = !self.about_window_open;
-            ui.close();
-          }
-
-          ui.separator();
-
-          if egui::Button::new("🚪 退出")
-            .shortcut_text(ui.ctx().format_shortcut(&egui::KeyboardShortcut::new(
-              egui::Modifiers::COMMAND,
-              egui::Key::Q,
-            )))
-            .ui(ui)
-            .clicked()
-          {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-          }
-        });
-        ui.add_space(16.0);
-      });
-    });
-
-    // 功能区
-    egui::CentralPanel::default().show(ctx, |ui| {
-      egui::ScrollArea::vertical().show(ui, |ui| {
-        // 功能选择“标签”页
-        ui.columns(4, |columns| {
-          columns[0].selectable_value(&mut self.command, CommandEnum::First, "❶ 密码导出功能");
-          columns[1].selectable_value(&mut self.command, CommandEnum::Second, "❷ 存档转换功能");
-          columns[2].selectable_value(&mut self.command, CommandEnum::Third, "❸ 自定义角色名");
-          columns[3].selectable_value(&mut self.command, CommandEnum::Fourth, "❹ 应用汉化补丁");
-        });
-        // 显示对应的功能页面
-        match self.command {
-          CommandEnum::First => self.show_c1(ui),
-          CommandEnum::Second => self.show_c2(ui),
-          CommandEnum::Third => self.show_c3(ui),
-          CommandEnum::Fourth => self.show_c4(ui),
-        }
-        ui.separator();
-
-        // 判断是否可以点击运行按钮
-        let enable_run_button = match self.command {
-          // 1. 密码导出功能部分
-          CommandEnum::First => match self.subcommand {
-            // 1.1 使用存档文件
-            SubCommandEnum::First => {
-              let bool1 = self.save_data_map.is_some();
-              let bool2 = self.pwd_text_ver_c1s1.is_some()
-                || self.to_export_pwd_bin_c1s1
-                || self.pwd_cheat_ver_c1s1.is_some()
-                || self.to_export_pwd_data_text_c1s1;
-
-              bool1 && bool2
-            }
-            // 1.2 使用密码文本文件
-            SubCommandEnum::Second => {
-              let bool1 = self.txt_bits.is_some();
-              let bool2 = self.pwd_grade_c1s2.is_some()
-                || self.to_convert_pwd_text_ver
-                || self.to_export_pwd_bin_c1s2
-                || self.pwd_cheat_ver_c1s2.is_some()
-                || self.to_export_pwd_data_text_c1s2;
-
-              bool1 && bool2
-            }
-            // 1.3 使用内存转储文件
-            SubCommandEnum::Third => {
-              let bool1 = self.dmp_bits.is_some();
-              let bool2 = self.pwd_grade_c1s3.is_some()
-                || self.pwd_text_ver_c1s3.is_some()
-                || self.pwd_cheat_ver_c1s3.is_some()
-                || self.to_export_pwd_data_text_c1s3;
-
-              bool1 && bool2
-            }
-          },
-          // 2. 存档转换功能部分
-          CommandEnum::Second => {
-            let bool1 = self.save_src_type_index.is_some();
-            let bool2 = self.default_name_ver.is_some() || self.build_date_ver.is_some();
-
-            bool1 && bool2
-          }
-          // 3. 自定义角色名部分
-          CommandEnum::Third => {
-            let mut bool1 = false;
-            for ele in self.new_pc_names.clone() {
-              if !ele.is_empty() {
-                bool1 = true;
-              }
-            }
-            bool1
-          }
-          CommandEnum::Fourth => !self.input_file_path_c4.is_empty(),
-        };
-
-        // 判断是否可以点击输出按钮
-        let enable_copy_button = !match self.command {
-          CommandEnum::First => match self.subcommand {
-            SubCommandEnum::First => self.out_log_c1s1.is_empty(),
-            SubCommandEnum::Second => self.out_log_c1s2.is_empty(),
-            SubCommandEnum::Third => self.out_log_c1s3.is_empty(),
-          },
-          CommandEnum::Second => self.out_log_c2.is_empty(),
-          CommandEnum::Third => self.out_log_c3.is_empty(),
-          CommandEnum::Fourth => self.out_log_c4.is_empty(),
-        };
-
-        ui.vertical_centered(|ui| {
-          if enable_run_button {
-            if ui
-              .add(Button::new(RichText::new("⏵ 运行").color(LIGHT)).fill(SUCCESS))
-              .clicked()
-              || ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&egui::KeyboardShortcut::new(
-                  egui::Modifiers::COMMAND,
-                  egui::Key::Enter,
-                ))
-              })
-            {
-              match self.command {
-                CommandEnum::First => self.run_c1(),
-                CommandEnum::Second => self.run_c2(),
-                CommandEnum::Third => self.run_c3(),
-                CommandEnum::Fourth => self.run_c4(),
-              }
-            }
-          } else {
-            ui.add_enabled(
-              false,
-              Button::new(RichText::new("❌ 运行").color(LIGHT)).fill(DANGER),
-            );
-          }
-          // 输出按钮
-          if ui
-            .add_enabled(
-              enable_copy_button,
-              Button::new(RichText::new("🗐 复制").color(LIGHT)).fill(SECONDARY),
-            )
-            .clicked()
-          {
-            let log = match self.command {
-              CommandEnum::First => match self.subcommand {
-                SubCommandEnum::First => &self.out_log_c1s1,
-                SubCommandEnum::Second => &self.out_log_c1s2,
-                SubCommandEnum::Third => &self.out_log_c1s3,
-              },
-              CommandEnum::Second => &self.out_log_c2,
-              CommandEnum::Third => &self.out_log_c3,
-              CommandEnum::Fourth => &self.out_log_c4,
-            };
-            ctx.copy_text(log.to_string());
-            self
-              .toasts
-              .success("已复制输出内容至剪贴板！")
-              .duration(Some(Duration::from_secs(5)));
-          }
-        });
-
-        // 显示输出日志（概要）
-        if enable_copy_button {
-          match self.command {
-            CommandEnum::First => self.show_log_c1(ui),
-            CommandEnum::Second => self.show_log_c2(ui),
-            CommandEnum::Third => self.show_log_c3(ui),
-            CommandEnum::Fourth => self.show_log_c4(ui),
-          }
-        }
-      });
-    });
-
+    // 顶部面板，主要用于菜单栏。
+    self.show_top_panel(ctx);
+    // 主面板，核心功能区。
+    self.show_main_panel(ctx);
     self.toasts.show(ctx);
   }
 }

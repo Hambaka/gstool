@@ -11,9 +11,10 @@ use crate::{
     convert,
     enums::{PasswordGrade, PasswordVersion},
     output,
-    save::{self, BitArray},
+    save::{self, BitArray, gen_password_info_with_save_data},
   },
-  widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
+  ui::window::pwd_info::{PreviewData, PreviewModeEnum, SaveSlotEnum},
+  widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
 use super::shared_view::PASSWORD_GRADES;
@@ -151,12 +152,44 @@ impl App {
         }
         ui.end_row();
         // 第6行
-        if self.txt_src_grade_version.is_some(){
+        if self.txt_src_grade_version.is_some() {
           Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件");
-          Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2).ui(ui);
+          ui.horizontal(|ui|{
+            Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2).ui(ui);
+            if ui.add(pwd_info_btn()).clicked() {
+              self.preview_data = [None, None, None];
+              let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
+              let src_grade = self.txt_src_grade_version.unwrap().0;
+              let save_data = save::get_save_data_with_password_bits(&mut password_bits, src_grade);
+              let pwd_info = gen_password_info_with_save_data(&save_data);
+              self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
+              self.preview_slot  = SaveSlotEnum::First;
+              self.preview_current = self.preview_data[0].clone();
+
+              match src_grade {
+                PasswordGrade::Gold => {
+                  self.char_page_mode = PreviewModeEnum::Main;
+                  self.item_page_mode = PreviewModeEnum::Main;
+                },
+                PasswordGrade::Silver => {
+                  self.char_page_mode = PreviewModeEnum::Main;
+                  self.item_page_mode = PreviewModeEnum::Alt;
+                },
+                PasswordGrade::Bronze => {
+                  self.char_page_mode = PreviewModeEnum::Alt;
+                  self.item_page_mode = PreviewModeEnum::Alt;
+                },
+              }
+
+              self.pwd_info_window_open = true;
+            };
+          });
         }else {
           Label::new(RichText::new("导出密码数据至文本文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件");
-          ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2));
+          ui.horizontal(|ui|{
+            ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2));
+            ui.add_enabled(false, pwd_info_btn());
+          });
         }
         ui.end_row();
         // 第7行

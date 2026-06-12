@@ -10,9 +10,10 @@ use crate::{
   core::{
     enums::{PasswordGrade, PasswordVersion},
     output,
-    save::{self, RawSaveData},
+    save::{self, RawSaveData, gen_password_info_with_raw_save_bytes},
   },
-  widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
+  ui::window::pwd_info::{PreviewData, PreviewModeEnum, SaveSlotEnum},
+  widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
 use super::shared_view::{PASSWORD_GRADES, PASSWORD_VERSIONS};
@@ -165,10 +166,32 @@ impl App {
         // 第7行
         if self.save_data_map.is_some() {
           Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-          Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1).ui(ui);
+          ui.horizontal(|ui|{
+            Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1).ui(ui);
+            if ui.add(pwd_info_btn()).clicked() {
+              if let Some(map) = &self.save_data_map {
+                self.preview_data = [None, None, None];
+                let mut temp = Vec::new();
+                for (index, raw_save) in map {
+                  temp.push(*index);
+                  let pwd_info = gen_password_info_with_raw_save_bytes(raw_save.get_data());
+                  self.preview_data[*index as usize] = Some(PreviewData::new(PasswordGrade::Gold, pwd_info));
+                }
+                let min_slot = if temp.len() > 1 {*temp.iter().min().unwrap()} else {temp[0]} as usize;
+                self.preview_slot  = SaveSlotEnum::from(min_slot);
+                self.preview_current = self.preview_data[min_slot].clone();
+              }
+              self.char_page_mode = PreviewModeEnum::Main;
+              self.item_page_mode = PreviewModeEnum::Main;
+              self.pwd_info_window_open = true;
+            };
+          });
         } else {
           Label::new(RichText::new("导出密码数据至文本文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-          ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1));
+          ui.horizontal(|ui|{
+            ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1));
+            ui.add_enabled(false, pwd_info_btn());
+          });
         }
         ui.end_row();
         // 第8行
