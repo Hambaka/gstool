@@ -1220,10 +1220,9 @@ fn gen_save_data_with_password_bits(
             stackable_item_quantity_start_index + i * 115 + stackable_item_index * 5,
             stackable_item_quantity_start_index + 4 + i * 115 + stackable_item_index * 5,
           );
-          if item_quantity > 0 {
-            let quantity_part = u16::from(item_quantity) << 11;
-            *item = quantity_part + item_id;
-          }
+          // The minimium value of "item quantity" is 0 (0 -> 1 in-game)
+          let quantity_part = u16::from(item_quantity) << 11;
+          *item = quantity_part + item_id;
         } else {
           *item = item_id;
         }
