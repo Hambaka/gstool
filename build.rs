@@ -1,9 +1,10 @@
 use std::env;
 
-use crate::build::{compress_font, gen_bps, gen_db, gen_name, gen_pwd};
+use crate::build::{compress_font, gen_bin, gen_bps, gen_db, gen_name, gen_pwd};
 
 mod build {
   pub mod compress_font;
+  pub mod gen_bin;
   pub mod gen_bps;
   pub mod gen_db;
   pub mod gen_name;
@@ -23,4 +24,5 @@ fn main() {
   compress_font::run(level);
   gen_bps::run(level);
   gen_db::run();
+  gen_bin::run();
 }

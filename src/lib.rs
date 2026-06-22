@@ -15,8 +15,8 @@ mod core {
 mod util {
   pub mod bps;
 }
-mod ui {
-  mod central_panel {
+pub mod ui {
+  pub mod central_panel {
     mod password_export {
       mod memory;
       mod save;
@@ -24,6 +24,7 @@ mod ui {
       mod text;
     }
     mod custom_names;
+    pub mod inject_pwd;
     mod main_panel;
     mod patch_rom;
     mod save_convert;

@@ -1301,7 +1301,9 @@ fn gen_exported_data_for_dyrati_sheet_with_info(pwd_info: &PasswordInfo) -> Stri
   // Events
   exported_text.push_str("剧情事件\n从上至下的顺序为：\n（1）营救哈梅特，（2）竞技大赛获胜（最终决战获胜），（3）帮忙救助乌鲁木齐，（4）打败塔罗斯（宝岛最终Boss），（5）重返海迪亚（获悉罗宾母亲生病），（6）重返库普阿普（获悉小偷越狱逃跑）。\n\n");
   exported_text.push_str("注：在 Paulygon 开发的“黄金太阳密码生成器”中，“帮忙救助乌鲁木齐”（事件 #3）的值与表格中的相反，\n");
-  exported_text.push_str("　　即在“黄金太阳密码生成器”中，勾选了“事件 #3”反而表示未完成该事件，而不勾选“事件 #3”才表示完成了该事件，不过这与游戏使用的实际数值对应。\n");
+  exported_text.push_str(
+    "　　即在“黄金太阳密码生成器”中，勾选了“事件 #3”反而表示未完成该事件，而不勾选“事件 #3”才表示完成了该事件，不过这与游戏使用的实际数值对应。\n",
+  );
   exported_text.push_str("　　表格版密码生成器为了方便理解，与其他事件进行了同步，即用1表示完成了该事件，用0表示未完成该事件。\n\n");
   exported_text.push_str("表格中的范围 -> E21:E26\n");
   exported_text.push_str("====开始====\n");
@@ -1313,7 +1315,9 @@ fn gen_exported_data_for_dyrati_sheet_with_info(pwd_info: &PasswordInfo) -> Stri
   // Base Stats
   exported_text.push_str("基础能力状态属性\n罗宾，杰拉德，伊万，梅雅莉\n");
   exported_text.push_str("从上至下的顺序为：\nHP, EP, 攻击, 防御, 敏捷, 幸运\n\n");
-  exported_text.push_str("注：“基础能力状态属性”即\"Base stats\"，是不装备任何物品，没有附身任何精灵，也没有乘上角色默认职业的各属性倍率进行修正的角色能力属性值。\n");
+  exported_text.push_str(
+    "注：“基础能力状态属性”即\"Base stats\"，是不装备任何物品，没有附身任何精灵，也没有乘上角色默认职业的各属性倍率进行修正的角色能力属性值。\n",
+  );
   exported_text.push_str(
     "　　每个角色都拥有默认的基础职业，并且在游戏中基础属性值会乘上职业对应的属性倍率,\n",
   );
@@ -1335,7 +1339,8 @@ fn gen_exported_data_for_dyrati_sheet_with_info(pwd_info: &PasswordInfo) -> Stri
   // Stats, there may be some problems in this.
   exported_text.push_str("能力状态属性\n罗宾，杰拉德，伊万，梅雅莉\n");
   exported_text.push_str("从上至下的顺序为：\nHP, EP, 攻击, 防御, 敏捷, 幸运\n\n");
-  exported_text.push_str("注：“能力状态属性”即\"Stats\"，是不装备任何物品，没有附身任何精灵，但是有乘上角色默认职业的各属性倍率进行修正的角色能力属性值。\n");
+  exported_text
+    .push_str("注：“能力状态属性”即\"Stats\"，是不装备任何物品，没有附身任何精灵，但是有乘上角色默认职业的各属性倍率进行修正的角色能力属性值。\n");
   exported_text.push_str("　　换句话说，这些属性值是可以在游戏里亲自确认到的，只要卸下所有装备，待命所有精灵就能看到。\n");
   exported_text
     .push_str("　　如果要使用“能力状态属性”来生成密码，记得把 J3 单元格选为\"Stats\"。\n");

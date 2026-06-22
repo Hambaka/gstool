@@ -8,7 +8,7 @@ use super::convert::dmp_to_txt;
 use super::enums::{GameVersion, PasswordGrade, PasswordVersion};
 
 pub fn create_sav_sub_dir(
-  slot_num: u8,
+  slot_num: usize,
   is_clear_data: bool,
   output_dir_str: &str,
 ) -> Result<String, &'static str> {
@@ -126,7 +126,7 @@ pub fn write_cheat_file(
   sub_dir_str: &str,
 ) -> Result<(), &'static str> {
   // The address for password input screen in Golden Sun: The Lost Age
-  let mut address = cheat_version.get_address();
+  let mut address = cheat_version.get_tla_pwd_buffer_address();
   let mut text = String::new();
   text.push_str("注意事项：\n");
   text.push_str("1. 密码金手指请最好只在输入密码时开启，如果一直启用密码金手指会产生意料之外的问题，例如进入游戏后对话卡死无法继续游戏，");

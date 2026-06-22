@@ -6,18 +6,15 @@ use rfd::FileDialog;
 
 use crate::{
   App,
-  app::GAME_VERSIONS,
+  app::SubCommandEnum,
   core::{
     convert,
-    enums::{PasswordGrade, PasswordVersion},
+    enums::{GameVersion, PasswordGrade, PasswordVersion},
     output,
-    save::{self, BitArray, gen_password_info_with_save_data},
+    save::{self, BitArray},
   },
-  ui::window::pwd_info::{PreviewData, PreviewModeEnum, SaveSlotEnum},
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
-
-use super::shared_view::PASSWORD_GRADES;
 
 const DESC_C1S2: &str = r"“密码级别”，“转换密码版本”，“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
 以上五项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
@@ -76,6 +73,13 @@ impl App {
             self.to_export_pwd_bin_c1s2 = false;
             self.pwd_cheat_ver_c1s2 = None;
             self.to_export_pwd_data_text_c1s2 = false;
+
+            for i in 0..3 {
+              if self.pwd_src[i] == Some(SubCommandEnum::Second) {
+                self.pwd_src[i] = None;
+                self.pwd_src_slot[i] = None;
+              }
+            }
           }
           ui.add(
             egui::TextEdit::singleline(&mut self.input_file_path_c1s2)
@@ -97,7 +101,7 @@ impl App {
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_grade_c1s2, None, "无");
               if let Some((source_grade, _)) = self.txt_src_grade_version {
-                for ele in PASSWORD_GRADES {
+                for ele in PasswordGrade::PASSWORD_GRADES {
                   ui.add_enabled_ui(source_grade.get_priority() < ele.get_priority(), |ui|{
                     ui.selectable_value(&mut self.pwd_grade_c1s2, Some(ele), ele.get_name());
                   });
@@ -140,7 +144,7 @@ impl App {
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_cheat_ver_c1s2, None, "无");
-              for ele in GAME_VERSIONS {
+              for ele in GameVersion::GAME_VERSIONS {
                 ui.selectable_value(&mut self.pwd_cheat_ver_c1s2, Some(ele), ele.get_name());
               }
             });
@@ -157,32 +161,8 @@ impl App {
           ui.horizontal(|ui|{
             Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2).ui(ui);
             if ui.add(pwd_info_btn()).clicked() {
-              self.preview_data = [None, None, None];
-              let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
-              let src_grade = self.txt_src_grade_version.unwrap().0;
-              let save_data = save::get_save_data_with_password_bits(&mut password_bits, src_grade);
-              let pwd_info = gen_password_info_with_save_data(&save_data);
-              self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
-              self.preview_slot  = SaveSlotEnum::First;
-              self.preview_current = self.preview_data[0].clone();
-
-              match src_grade {
-                PasswordGrade::Gold => {
-                  self.char_page_mode = PreviewModeEnum::Main;
-                  self.item_page_mode = PreviewModeEnum::Main;
-                },
-                PasswordGrade::Silver => {
-                  self.char_page_mode = PreviewModeEnum::Main;
-                  self.item_page_mode = PreviewModeEnum::Alt;
-                },
-                PasswordGrade::Bronze => {
-                  self.char_page_mode = PreviewModeEnum::Alt;
-                  self.item_page_mode = PreviewModeEnum::Alt;
-                },
-              }
-
-              self.pwd_info_window_open = true;
-            };
+              self.read_from(SubCommandEnum::Second);
+            }
           });
         }else {
           Label::new(RichText::new("导出密码数据至文本文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件");

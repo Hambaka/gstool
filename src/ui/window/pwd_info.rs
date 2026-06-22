@@ -2,10 +2,14 @@ use egui::{Button, ComboBox, Label, RichText, Widget};
 
 use crate::{
   App,
+  app::SubCommandEnum,
   core::{
     data::{ALL_DJINN_NAMES, ITEM_NAMES, Language},
     enums::PasswordGrade,
-    save::{PSYNERGY_ITEMS, PasswordInfo, STACKABLE_ITEMS},
+    save::{
+      self, BitArray, PSYNERGY_ITEMS, PasswordInfo, STACKABLE_ITEMS,
+      gen_password_info_with_raw_save_bytes, gen_password_info_with_save_data,
+    },
   },
 };
 
@@ -29,6 +33,20 @@ pub enum SaveSlotEnum {
 }
 
 impl SaveSlotEnum {
+  pub const SAVE_SLOTS: [SaveSlotEnum; 3] = [
+    SaveSlotEnum::First,
+    SaveSlotEnum::Second,
+    SaveSlotEnum::Third,
+  ];
+
+  pub fn get_name(&self) -> &str {
+    match self {
+      Self::First => "存档 ❶",
+      Self::Second => "存档 ❷",
+      Self::Third => "存档 ❸",
+    }
+  }
+
   pub fn from(value: usize) -> Self {
     match value {
       0 => Self::First,
@@ -205,7 +223,7 @@ impl App {
                           PreviewModeEnum::Main => current_data.get_base_stats(i, j),
                           PreviewModeEnum::Alt => current_data.get_stats(i, j),
                         };
-                        Label::new(format!("{}", value)).selectable(false).ui(ui);
+                        Label::new(format!("{value}")).selectable(false).ui(ui);
                       }
                       ui.end_row();
                     }
@@ -252,9 +270,8 @@ impl App {
                           } else {
                             if STACKABLE_ITEMS.contains(&id) {
                               &format!(
-                                "{}×{}",
-                                ITEM_NAMES[id as usize - 1].get_name(self.item_preview_lang),
-                                amount
+                                "{}×{amount}",
+                                ITEM_NAMES[id as usize - 1].get_name(self.item_preview_lang)
                               )
                             } else {
                               &format!(
@@ -378,5 +395,86 @@ impl App {
           }
         }
       });
+  }
+
+  pub fn read_from(&mut self, sub_command: SubCommandEnum) {
+    match sub_command {
+      SubCommandEnum::First => {
+        self.preview_data = [None, None, None];
+        let mut is_first_element = true;
+        let mut min_slot = 0;
+        for (index, ele) in self.raw_save_data.iter().enumerate() {
+          if let Some(raw_save) = ele {
+            if is_first_element {
+              min_slot = index;
+              is_first_element = false;
+            }
+
+            let pwd_info = gen_password_info_with_raw_save_bytes(raw_save.get_data());
+            self.preview_data[index] = Some(PreviewData::new(PasswordGrade::Gold, pwd_info));
+          }
+        }
+        self.preview_slot = SaveSlotEnum::from(min_slot);
+        self.preview_current = self.preview_data[min_slot].clone();
+
+        self.char_page_mode = PreviewModeEnum::Main;
+        self.item_page_mode = PreviewModeEnum::Main;
+        self.pwd_info_window_open = true;
+      }
+      SubCommandEnum::Second => {
+        self.preview_data = [None, None, None];
+        let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
+        let src_grade = self.txt_src_grade_version.unwrap().0;
+        let save_data = save::get_save_data_with_password_bits(&mut password_bits, src_grade);
+        let pwd_info = gen_password_info_with_save_data(&save_data);
+        self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
+        self.preview_slot = SaveSlotEnum::First;
+        self.preview_current = self.preview_data[0].clone();
+
+        match src_grade {
+          PasswordGrade::Gold => {
+            self.char_page_mode = PreviewModeEnum::Main;
+            self.item_page_mode = PreviewModeEnum::Main;
+          }
+          PasswordGrade::Silver => {
+            self.char_page_mode = PreviewModeEnum::Main;
+            self.item_page_mode = PreviewModeEnum::Alt;
+          }
+          PasswordGrade::Bronze => {
+            self.char_page_mode = PreviewModeEnum::Alt;
+            self.item_page_mode = PreviewModeEnum::Alt;
+          }
+        }
+
+        self.pwd_info_window_open = true;
+      }
+      SubCommandEnum::Third => {
+        self.preview_data = [None, None, None];
+        let mut password_bits = BitArray::from(&self.dmp_bits.as_ref().unwrap().get_bits());
+        let src_grade = self.dmp_src_grade.unwrap();
+        let save_data = save::get_save_data_with_password_bits(&mut password_bits, src_grade);
+        let pwd_info = gen_password_info_with_save_data(&save_data);
+        self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
+        self.preview_slot = SaveSlotEnum::First;
+        self.preview_current = self.preview_data[0].clone();
+
+        match src_grade {
+          PasswordGrade::Gold => {
+            self.char_page_mode = PreviewModeEnum::Main;
+            self.item_page_mode = PreviewModeEnum::Main;
+          }
+          PasswordGrade::Silver => {
+            self.char_page_mode = PreviewModeEnum::Main;
+            self.item_page_mode = PreviewModeEnum::Alt;
+          }
+          PasswordGrade::Bronze => {
+            self.char_page_mode = PreviewModeEnum::Alt;
+            self.item_page_mode = PreviewModeEnum::Alt;
+          }
+        }
+
+        self.pwd_info_window_open = true;
+      }
+    }
   }
 }

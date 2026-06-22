@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use egui::Shadow;
 use egui_notify::{Anchor, Toasts};
 
@@ -12,28 +10,59 @@ use crate::{
   ui::window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
 };
 
-pub const GAME_VERSIONS: [GameVersion; 6] = [
-  GameVersion::Japan,
-  GameVersion::USA,
-  GameVersion::Germany,
-  GameVersion::Spain,
-  GameVersion::France,
-  GameVersion::Italy,
-];
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CommandEnum {
   First,
   Second,
   Third,
   Fourth,
+  Fifth,
 }
 
-#[derive(Debug, PartialEq)]
+impl CommandEnum {
+  pub const COMMANDS: [CommandEnum; 5] = [
+    CommandEnum::First,
+    CommandEnum::Second,
+    CommandEnum::Third,
+    CommandEnum::Fourth,
+    CommandEnum::Fifth,
+  ];
+
+  pub fn get_name(self) -> &'static str {
+    match self {
+      CommandEnum::First => "❶ 密码导出功能",
+      CommandEnum::Second => "❷ 存档转换功能",
+      CommandEnum::Third => "❸ 自定义角色名",
+      CommandEnum::Fourth => "❹ 应用汉化补丁",
+      CommandEnum::Fifth => "❺ 注入密码功能",
+    }
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SubCommandEnum {
+  /// ❶ 密码导出功能 -> 🅰 游戏存档文件
   First,
+  /// ❶ 密码导出功能 -> 🅱 密码文本文件
   Second,
+  /// ❶ 密码导出功能 -> 🅲 内存转储文件
   Third,
+}
+
+impl SubCommandEnum {
+  pub const SUB_COMMANDS: [SubCommandEnum; 3] = [
+    SubCommandEnum::First,
+    SubCommandEnum::Second,
+    SubCommandEnum::Third,
+  ];
+
+  pub fn get_name(self) -> &'static str {
+    match self {
+      SubCommandEnum::First => "🅰 游戏存档文件",
+      SubCommandEnum::Second => "🅱 密码文本文件",
+      SubCommandEnum::Third => "🅲 内存转储文件",
+    }
+  }
 }
 
 pub struct App {
@@ -61,7 +90,8 @@ pub struct App {
   // 1.1 使用存档文件
   pub to_export_all_save: bool,
   pub input_file_path_c1s1: String,
-  pub save_data_map: Option<HashMap<u8, RawSaveData>>,
+  pub save_is_available: Option<usize>,
+  pub raw_save_data: [Option<RawSaveData>; 3],
   pub pwd_grade_c1s1: PasswordGrade,
   pub pwd_text_ver_c1s1: Option<PasswordVersion>,
   pub to_export_pwd_bin_c1s1: bool,
@@ -111,6 +141,12 @@ pub struct App {
   pub input_file_crc32: Option<u32>,
   pub out_dir_c4: String,
   pub out_log_c4: String,
+  // 5. 注入密码功能部分
+  pub input_file_path_c5: String,
+  pub pwd_src: [Option<SubCommandEnum>; 3],
+  pub pwd_src_slot: [Option<SaveSlotEnum>; 3],
+  pub out_dir_c5: String,
+  pub out_log_c5: String,
 }
 
 impl Default for App {
@@ -144,7 +180,8 @@ impl Default for App {
       // 1.1 使用存档文件
       to_export_all_save: false,
       input_file_path_c1s1: String::new(),
-      save_data_map: None,
+      save_is_available: None,
+      raw_save_data: [None, None, None],
       pwd_grade_c1s1: PasswordGrade::Gold,
       pwd_text_ver_c1s1: Some(PasswordVersion::English),
       to_export_pwd_bin_c1s1: false,
@@ -196,6 +233,12 @@ impl Default for App {
       input_file_crc32: None,
       out_dir_c4: String::new(),
       out_log_c4: String::new(),
+      // 5. 注入密码功能部分
+      input_file_path_c5: String::new(),
+      pwd_src: [None, None, None],
+      pwd_src_slot: [None, None, None],
+      out_dir_c5: String::new(),
+      out_log_c5: String::new(),
     }
   }
 }

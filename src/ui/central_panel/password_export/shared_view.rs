@@ -1,18 +1,6 @@
 use egui::{Label, Ui, Widget};
 
-use crate::{
-  App,
-  app::SubCommandEnum,
-  core::enums::{PasswordGrade, PasswordVersion},
-};
-
-pub const PASSWORD_GRADES: [PasswordGrade; 3] = [
-  PasswordGrade::Gold,
-  PasswordGrade::Silver,
-  PasswordGrade::Bronze,
-];
-pub const PASSWORD_VERSIONS: [PasswordVersion; 2] =
-  [PasswordVersion::Japanese, PasswordVersion::English];
+use crate::{App, app::SubCommandEnum};
 
 const DESC_C1: &str = r"使用该功能可导出密码，可导出以下几类文件：
 ⒈ 密码的文本文件（支持导出日文版/英文版密码）
@@ -26,23 +14,17 @@ impl App {
   pub fn show_c1(&mut self, ui: &mut Ui) {
     Label::new(DESC_C1).selectable(false).ui(ui);
     ui.separator();
-    ui.columns(3, |columns| {
-      columns[0].selectable_value(
-        &mut self.subcommand,
-        SubCommandEnum::First,
-        "🅰 使用存档文件",
-      );
-      columns[1].selectable_value(
-        &mut self.subcommand,
-        SubCommandEnum::Second,
-        "🅱 使用密码文本文件",
-      );
-      columns[2].selectable_value(
-        &mut self.subcommand,
-        SubCommandEnum::Third,
-        "🅲 使用内存转储文件",
-      );
-    });
+    ui.columns_const(
+      |columns: &mut [egui::Ui; SubCommandEnum::SUB_COMMANDS.len()]| {
+        for i in 0..SubCommandEnum::SUB_COMMANDS.len() {
+          columns[i].selectable_value(
+            &mut self.subcommand,
+            SubCommandEnum::SUB_COMMANDS[i],
+            SubCommandEnum::SUB_COMMANDS[i].get_name(),
+          );
+        }
+      },
+    );
 
     match self.subcommand {
       SubCommandEnum::First => self.show_c1s1(ui),

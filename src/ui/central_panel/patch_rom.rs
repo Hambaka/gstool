@@ -35,67 +35,85 @@ impl App {
     // 正式界面
     Label::new(DESC_C4).selectable(false).ui(ui);
 
-    egui::Grid::new("ID_GRID_C4").num_columns(2).spacing([40.0, 4.0]).striped(true).show(ui, |ui|{
-      // 第1行 -> 输入文件路径  【选择文件】【重置】
-      Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳 开启的封印》的ROM文件");
-      ui.horizontal(|ui|{
-        if ui.add(select_file_btn()).clicked() {
-          if let Some(file) = FileDialog::new().pick_file(){
-            let new_file_path = file.to_string_lossy().into_owned();
-            // 验证ROM文件
-            let result  = validate_input_file(&new_file_path, false);
-            match result {
-              Ok((rom_version, _)) => {
-                let can_patch = match rom_version {
-                  RomVersion::Others(crc32) => {
-                    self.input_file_crc32 = Some(crc32);
-                    true
-                  },
-                  RomVersion::LatestChinese => {
-                    false
-                  },
-                };
-                if can_patch {
-                  self.input_file_path_c4 = new_file_path;
-                } else {
-                  "输入的是已经应用了最新版汉化补丁的ROM文件！".clone_into(&mut self.err_msg);
+    egui::Grid::new("ID_GRID_C4")
+      .num_columns(2)
+      .spacing([40.0, 4.0])
+      .striped(true)
+      .show(ui, |ui| {
+        // 第1行 -> 输入文件路径  【选择文件】【重置】
+        Label::new("输入文件路径")
+          .selectable(false)
+          .ui(ui)
+          .on_hover_text("《黄金太阳 开启的封印》的ROM文件");
+        ui.horizontal(|ui| {
+          if ui.add(select_file_btn()).clicked() {
+            if let Some(file) = FileDialog::new().pick_file() {
+              let new_file_path = file.to_string_lossy().into_owned();
+              // 验证ROM文件
+              let result = validate_input_file(&new_file_path, false);
+              match result {
+                Ok((rom_version, _)) => {
+                  let can_patch = match rom_version {
+                    RomVersion::Others(crc32) => {
+                      self.input_file_crc32 = Some(crc32);
+                      true
+                    }
+                    RomVersion::LatestChinese => false,
+                  };
+                  if can_patch {
+                    self.input_file_path_c4 = new_file_path;
+                  } else {
+                    "输入的是已经应用了最新版汉化补丁的ROM文件！".clone_into(&mut self.err_msg);
+                    self.err_modal_open = true;
+                  }
+                }
+                Err(e) => {
+                  e.clone_into(&mut self.err_msg);
                   self.err_modal_open = true;
                 }
-              },
-              Err(e) => {
-                e.clone_into(&mut self.err_msg);
-                self.err_modal_open = true;
-              },
+              }
             }
           }
-        }
-        if self.input_file_path_c4.is_empty() {
-          ui.add_enabled(false, reset_btn());
-        } else if ui.add(reset_btn()).clicked() {
-          self.input_file_path_c4.clear();
-          self.input_file_crc32 = None;
-        }
-        ui.add(egui::TextEdit::singleline(&mut self.input_file_path_c4).interactive(false).hint_text("ROM文件路径").desired_width(f32::INFINITY));
-      });
-      ui.end_row();
-
-      // 第2行 -> 指定输出文件保存目录  【选择目录】【重置】
-      Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出的汉化版ROM文件路径（推荐留空），若留空则将转换后的ROM文件保存到输入文件的同目录下。");
-      ui.horizontal(|ui|{
-        if ui.add(select_dir_btn()).clicked() {
-          if let Some(file) = FileDialog::new().pick_folder(){
-            self.out_dir_c4 = file.to_string_lossy().into_owned();
+          if self.input_file_path_c4.is_empty() {
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked() {
+            self.input_file_path_c4.clear();
+            self.input_file_crc32 = None;
           }
-        }
-        if self.out_dir_c4.is_empty() {
-          ui.add_enabled(false, reset_btn());
-        } else if ui.add(reset_btn()).clicked() {
-          self.out_dir_c4.clear();
-        }
-        ui.add(egui::TextEdit::singleline(&mut self.out_dir_c4).interactive(false).hint_text("最新版汉化ROM输出路径").desired_width(f32::INFINITY));
+          ui.add(
+            egui::TextEdit::singleline(&mut self.input_file_path_c4)
+              .interactive(false)
+              .hint_text("ROM文件路径")
+              .desired_width(f32::INFINITY),
+          );
+        });
+        ui.end_row();
+
+        // 第2行 -> 指定输出文件保存目录  【选择目录】【重置】
+        Label::new("指定输出文件保存目录")
+          .selectable(false)
+          .ui(ui)
+          .on_hover_text("自定义输出的汉化版ROM文件路径（推荐留空），若留空则将转换后的ROM文件保存到输入文件的同目录下。");
+        ui.horizontal(|ui| {
+          if ui.add(select_dir_btn()).clicked() {
+            if let Some(file) = FileDialog::new().pick_folder() {
+              self.out_dir_c4 = file.to_string_lossy().into_owned();
+            }
+          }
+          if self.out_dir_c4.is_empty() {
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked() {
+            self.out_dir_c4.clear();
+          }
+          ui.add(
+            egui::TextEdit::singleline(&mut self.out_dir_c4)
+              .interactive(false)
+              .hint_text("最新版汉化ROM输出路径")
+              .desired_width(f32::INFINITY),
+          );
+        });
+        ui.end_row();
       });
-      ui.end_row();
-    });
   }
 
   pub fn run_c4(&mut self) {

@@ -11,7 +11,6 @@ use rfd::FileDialog;
 
 use crate::{
   App,
-  app::GAME_VERSIONS,
   core::{
     enums::{GameType, GameVersion, NameType},
     save::{convert_save_file, get_game_type_with_loop_start_index_option},
@@ -33,16 +32,23 @@ impl App {
     // 正式界面
     Label::new(DESC_C2).selectable(false).ui(ui);
 
-    egui::Grid::new("ID_GRID_C2").num_columns(2).spacing([40.0, 4.0]).striped(true).show(ui, |ui|{
-      // 第1行 -> 输入文件路径  【选择文件】【重置】
-      Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳 开启的封印》或《黄金太阳 失落的时代》的存档文件");
-      ui.horizontal(|ui|{
-        if ui.add(select_file_btn()).clicked() {
-          if let Some(file) = FileDialog::new().pick_file(){
-            let new_file_path = file.to_string_lossy().into_owned();
-            // 验证存档文件
-            let result = validate_input_file(&new_file_path);
-            match result {
+    egui::Grid::new("ID_GRID_C2")
+      .num_columns(2)
+      .spacing([40.0, 4.0])
+      .striped(true)
+      .show(ui, |ui| {
+        // 第1行 -> 输入文件路径  【选择文件】【重置】
+        Label::new("输入文件路径")
+          .selectable(false)
+          .ui(ui)
+          .on_hover_text("《黄金太阳 开启的封印》或《黄金太阳 失落的时代》的存档文件");
+        ui.horizontal(|ui| {
+          if ui.add(select_file_btn()).clicked() {
+            if let Some(file) = FileDialog::new().pick_file() {
+              let new_file_path = file.to_string_lossy().into_owned();
+              // 验证存档文件
+              let result = validate_input_file(&new_file_path);
+              match result {
                 Ok(o) => {
                   self.input_file_path_c2 = new_file_path;
                   self.save_file = o.0;
@@ -50,96 +56,141 @@ impl App {
 
                   self.build_date_ver = None;
                   self.default_name_ver = None;
-                },
+                }
                 Err(e) => {
                   e.clone_into(&mut self.err_msg);
                   self.err_modal_open = true;
-                },
+                }
+              }
             }
           }
-        }
-        if self.input_file_path_c2.is_empty() {
-          ui.add_enabled(false, reset_btn());
-        } else if ui.add(reset_btn()).clicked() {
-          self.input_file_path_c2.clear();
-          self.save_file.clear();
-          self.save_src_type_index = None;
+          if self.input_file_path_c2.is_empty() {
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked() {
+            self.input_file_path_c2.clear();
+            self.save_file.clear();
+            self.save_src_type_index = None;
 
-          self.build_date_ver = None;
-          self.default_name_ver = None;
-        }
-        ui.add(egui::TextEdit::singleline(&mut self.input_file_path_c2).interactive(false).hint_text("存档文件路径").desired_width(f32::INFINITY));
-      });
-      ui.end_row();
-
-      // 第2行 -> 名字版本
-      if let Some(val_result) = self.save_src_type_index {
-        Label::new("名字版本").selectable(false).ui(ui).on_hover_text("若选择了值，则将存档中的主角团所有成员的名字转换至指定版本的默认名；若留空则不修改。");
-        ComboBox::from_id_salt("ID_CB_C2_名字版本").width(100.0).selected_text(match &self.default_name_ver {
-            Some(name_type) => {name_type.get_name()},
-            None => {"无"},
-        }).show_ui(ui, |ui|{
-          ui.selectable_value(&mut self.default_name_ver, None, "无");
-          ui.selectable_value(&mut self.default_name_ver, Some(NameType::Japanese), NameType::Japanese.get_name());
-          ui.selectable_value(&mut self.default_name_ver, Some(NameType::English), NameType::English.get_name());
-          ui.selectable_value(&mut self.default_name_ver, Some(NameType::German), NameType::German.get_name());
-          ui.selectable_value(&mut self.default_name_ver, Some(NameType::Spanish), NameType::Spanish.get_name());
-          ui.selectable_value(&mut self.default_name_ver, Some(NameType::French), NameType::French.get_name());
-          ui.selectable_value(&mut self.default_name_ver, Some(NameType::Italian), NameType::Italian.get_name());
-          ui.add_enabled_ui(matches!(val_result.0, GameType::TheBrokenSeal), |ui|{
-            ui.selectable_value(&mut self.default_name_ver, Some(NameType::ChineseFanTranslation2023Team), NameType::ChineseFanTranslation2023Team.get_name());
-          });
-          ui.add_enabled_ui(matches!(val_result.0, GameType::TheLostAge), |ui|{
-            ui.selectable_value(&mut self.default_name_ver, Some(NameType::ChineseFanTranslationMobileTeam), NameType::ChineseFanTranslationMobileTeam.get_name());
-          });
+            self.build_date_ver = None;
+            self.default_name_ver = None;
+          }
+          ui.add(
+            egui::TextEdit::singleline(&mut self.input_file_path_c2)
+              .interactive(false)
+              .hint_text("存档文件路径")
+              .desired_width(f32::INFINITY),
+          );
         });
-      } else {
-        Label::new(RichText::new("名字版本").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则将存档中的主角团所有成员的名字转换至指定版本的默认名；若留空则不修改。");
-        ui.add_enabled_ui(false, |ui|{
-          ComboBox::from_id_salt("ID_CB_C2_名字版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
-        });
-      }
-      ui.end_row();
+        ui.end_row();
 
-      // 第3行 -> 构建日期版本
-      if let Some(val_result) = self.save_src_type_index {
-        Label::new("构建日期版本").selectable(false).ui(ui).on_hover_text("若选择了值，则将存档中的构建日期转换至指定版本的构建日期；若留空则不修改。");
-        ComboBox::from_id_salt("ID_CB_C2_构建日期版本").width(100.0).selected_text(match &self.build_date_ver{
-          Some(version_enum) => {version_enum.get_name()},
-          None => {"无"},
-        }).show_ui(ui, |ui|{
-          ui.selectable_value(&mut self.build_date_ver, None, "无");
-          for ele in GAME_VERSIONS {
-            ui.add_enabled_ui(ele != val_result.1, |ui| {
-              ui.selectable_value(&mut self.build_date_ver, Some(ele), ele.get_name());
+        // 第2行 -> 名字版本
+        if let Some(val_result) = self.save_src_type_index {
+          Label::new("名字版本")
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若选择了值，则将存档中的主角团所有成员的名字转换至指定版本的默认名；若留空则不修改。");
+          ComboBox::from_id_salt("ID_CB_C2_名字版本")
+            .width(100.0)
+            .selected_text(match &self.default_name_ver {
+              Some(name_type) => name_type.get_name(),
+              None => "无",
+            })
+            .show_ui(ui, |ui| {
+              ui.selectable_value(&mut self.default_name_ver, None, "无");
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::Japanese), NameType::Japanese.get_name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::English), NameType::English.get_name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::German), NameType::German.get_name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::Spanish), NameType::Spanish.get_name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::French), NameType::French.get_name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::Italian), NameType::Italian.get_name());
+              ui.add_enabled_ui(matches!(val_result.0, GameType::TheBrokenSeal), |ui| {
+                ui.selectable_value(
+                  &mut self.default_name_ver,
+                  Some(NameType::ChineseFanTranslation2023Team),
+                  NameType::ChineseFanTranslation2023Team.get_name(),
+                );
+              });
+              ui.add_enabled_ui(matches!(val_result.0, GameType::TheLostAge), |ui| {
+                ui.selectable_value(
+                  &mut self.default_name_ver,
+                  Some(NameType::ChineseFanTranslationMobileTeam),
+                  NameType::ChineseFanTranslationMobileTeam.get_name(),
+                );
+              });
             });
-          }
-        });
-      } else {
-        Label::new(RichText::new("构建日期版本").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则将存档中的构建日期转换至指定版本的构建日期；若留空则不修改。");
-        ui.add_enabled_ui(false, |ui|{
-          ComboBox::from_id_salt("ID_CB_C2_构建日期版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
-        });
-      }
-      ui.end_row();
+        } else {
+          Label::new(RichText::new("名字版本").weak())
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若选择了值，则将存档中的主角团所有成员的名字转换至指定版本的默认名；若留空则不修改。");
+          ui.add_enabled_ui(false, |ui| {
+            ComboBox::from_id_salt("ID_CB_C2_名字版本（不可用）")
+              .width(100.0)
+              .selected_text("无")
+              .show_ui(ui, |_ui| {});
+          });
+        }
+        ui.end_row();
 
-      // 第4行 -> 指定输出文件保存目录  【选择目录】【重置】
-      Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出的存档文件路径（推荐留空），若留空则将转换后的存档文件保存到输入文件的同目录下。");
-      ui.horizontal(|ui|{
-        if ui.add(select_dir_btn()).clicked() {
-          if let Some(file) = FileDialog::new().pick_folder(){
-            self.out_dir_c2 = file.to_string_lossy().into_owned();
+        // 第3行 -> 构建日期版本
+        if let Some(val_result) = self.save_src_type_index {
+          Label::new("构建日期版本")
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若选择了值，则将存档中的构建日期转换至指定版本的构建日期；若留空则不修改。");
+          ComboBox::from_id_salt("ID_CB_C2_构建日期版本")
+            .width(100.0)
+            .selected_text(match &self.build_date_ver {
+              Some(version_enum) => version_enum.get_name(),
+              None => "无",
+            })
+            .show_ui(ui, |ui| {
+              ui.selectable_value(&mut self.build_date_ver, None, "无");
+              for ele in GameVersion::GAME_VERSIONS {
+                ui.add_enabled_ui(ele != val_result.1, |ui| {
+                  ui.selectable_value(&mut self.build_date_ver, Some(ele), ele.get_name());
+                });
+              }
+            });
+        } else {
+          Label::new(RichText::new("构建日期版本").weak())
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若选择了值，则将存档中的构建日期转换至指定版本的构建日期；若留空则不修改。");
+          ui.add_enabled_ui(false, |ui| {
+            ComboBox::from_id_salt("ID_CB_C2_构建日期版本（不可用）")
+              .width(100.0)
+              .selected_text("无")
+              .show_ui(ui, |_ui| {});
+          });
+        }
+        ui.end_row();
+
+        // 第4行 -> 指定输出文件保存目录  【选择目录】【重置】
+        Label::new("指定输出文件保存目录")
+          .selectable(false)
+          .ui(ui)
+          .on_hover_text("自定义输出的存档文件路径（推荐留空），若留空则将转换后的存档文件保存到输入文件的同目录下。");
+        ui.horizontal(|ui| {
+          if ui.add(select_dir_btn()).clicked() {
+            if let Some(file) = FileDialog::new().pick_folder() {
+              self.out_dir_c2 = file.to_string_lossy().into_owned();
+            }
           }
-        }
-        if self.out_dir_c2.is_empty() {
-          ui.add_enabled(false, reset_btn());
-        } else if ui.add(reset_btn()).clicked() {
-          self.out_dir_c2.clear();
-        }
-        ui.add(egui::TextEdit::singleline(&mut self.out_dir_c2).interactive(false).hint_text("存档文件输出路径").desired_width(f32::INFINITY));
+          if self.out_dir_c2.is_empty() {
+            ui.add_enabled(false, reset_btn());
+          } else if ui.add(reset_btn()).clicked() {
+            self.out_dir_c2.clear();
+          }
+          ui.add(
+            egui::TextEdit::singleline(&mut self.out_dir_c2)
+              .interactive(false)
+              .hint_text("存档文件输出路径")
+              .desired_width(f32::INFINITY),
+          );
+        });
+        ui.end_row();
       });
-      ui.end_row();
-    });
   }
 
   pub fn run_c2(&mut self) {

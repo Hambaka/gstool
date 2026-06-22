@@ -1,22 +1,19 @@
 use core::f32;
-use std::{collections::HashMap, fmt::Write as _, fs::File, io::Read};
+use std::{fmt::Write as _, fs::File, io::Read};
 
 use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
 
 use crate::{
   App,
-  app::GAME_VERSIONS,
+  app::SubCommandEnum,
   core::{
-    enums::{PasswordGrade, PasswordVersion},
+    enums::{GameVersion, PasswordGrade, PasswordVersion},
     output,
-    save::{self, RawSaveData, gen_password_info_with_raw_save_bytes},
+    save::{self, RawSaveData},
   },
-  ui::window::pwd_info::{PreviewData, PreviewModeEnum, SaveSlotEnum},
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
-
-use super::shared_view::{PASSWORD_GRADES, PASSWORD_VERSIONS};
 
 const DESC_C1S1: &str = r"“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
 程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项。";
@@ -33,54 +30,70 @@ impl App {
       .striped(true)
       .show(ui, |ui| {
         // 第1行
-        if self.input_file_path_c1s1.is_empty(){
+        if self.input_file_path_c1s1.is_empty() {
           Label::new("存档导出选项").selectable(false).ui(ui).on_hover_text("根据需求进行勾选。");
         } else {
-          Label::new(RichText::new("存档导出选项").weak()).selectable(false).ui(ui).on_hover_text("根据需求进行勾选。");
+          Label::new(RichText::new("存档导出选项").weak())
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("根据需求进行勾选。");
         }
-        ui.add_enabled_ui(self.input_file_path_c1s1.is_empty(), |ui|{
+        ui.add_enabled_ui(self.input_file_path_c1s1.is_empty(), |ui| {
           ui.radio_value(&mut self.to_export_all_save, false, "仅导出通关存档");
           ui.radio_value(&mut self.to_export_all_save, true, "导出全部存档（无论是否通关）");
         });
         ui.end_row();
         // 第2行
-        Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳 开启的封印》的存档文件。");
+        Label::new("输入文件路径")
+          .selectable(false)
+          .ui(ui)
+          .on_hover_text("《黄金太阳 开启的封印》的存档文件。");
         ui.horizontal(|ui| {
           if ui.add(select_file_btn()).clicked() {
-            if let Some(file) = FileDialog::new().pick_file(){
+            if let Some(file) = FileDialog::new().pick_file() {
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证存档文件
               let result = validate_input_file(&new_file_path, self.to_export_all_save);
               match result {
-                  Ok(o) => {
-                    self.input_file_path_c1s1 = new_file_path;
-                    self.save_data_map = o;
+                Ok((raw_save_data, min_slot)) => {
+                  self.input_file_path_c1s1 = new_file_path;
+                  self.raw_save_data = raw_save_data;
+                  self.save_is_available = Some(min_slot);
 
-                    self.pwd_grade_c1s1= PasswordGrade::Gold;
-                    self.pwd_text_ver_c1s1= Some(PasswordVersion::English);
-                    self.to_export_pwd_bin_c1s1= false;
-                    self.pwd_cheat_ver_c1s1= None;
-                    self.to_export_pwd_data_text_c1s1= false;
-                  },
-                  Err(e) => {
-                    e.clone_into(&mut self.err_msg);
-                    self.err_modal_open = true;
-                  },
+                  self.pwd_grade_c1s1 = PasswordGrade::Gold;
+                  self.pwd_text_ver_c1s1 = Some(PasswordVersion::English);
+                  self.to_export_pwd_bin_c1s1 = false;
+                  self.pwd_cheat_ver_c1s1 = None;
+                  self.to_export_pwd_data_text_c1s1 = false;
+                }
+                Err(e) => {
+                  e.clone_into(&mut self.err_msg);
+                  self.err_modal_open = true;
+                }
               }
             }
           }
           if self.input_file_path_c1s1.is_empty() {
             ui.add_enabled(false, reset_btn());
           } else if ui.add(reset_btn()).clicked() {
-            self.to_export_all_save= false;
-            self.input_file_path_c1s1.clear();
-            self.save_data_map = None;
+            self.to_export_all_save = false;
 
-            self.pwd_grade_c1s1= PasswordGrade::Gold;
-            self.pwd_text_ver_c1s1= Some(PasswordVersion::English);
-            self.to_export_pwd_bin_c1s1= false;
-            self.pwd_cheat_ver_c1s1= None;
-            self.to_export_pwd_data_text_c1s1= false;
+            self.input_file_path_c1s1.clear();
+            self.raw_save_data = [None, None, None];
+            self.save_is_available = None;
+
+            self.pwd_grade_c1s1 = PasswordGrade::Gold;
+            self.pwd_text_ver_c1s1 = Some(PasswordVersion::English);
+            self.to_export_pwd_bin_c1s1 = false;
+            self.pwd_cheat_ver_c1s1 = None;
+            self.to_export_pwd_data_text_c1s1 = false;
+
+            for i in 0..3 {
+              if self.pwd_src[i] == Some(SubCommandEnum::First) {
+                self.pwd_src[i] = None;
+                self.pwd_src_slot[i] = None;
+              }
+            }
           }
           ui.add(
             egui::TextEdit::singleline(&mut self.input_file_path_c1s1)
@@ -91,28 +104,38 @@ impl App {
         });
         ui.end_row();
         // 第3行
-        if self.save_data_map.is_some(){
-          Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别，默认值为“金”");
+        if self.save_is_available.is_some() {
+          Label::new("密码级别")
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("目标密码级别，默认值为“金”");
           ComboBox::from_id_salt("ID_CB_C1S1_密码级别")
             .width(100.0)
-            .selected_text(
-              self.pwd_grade_c1s1.get_name()
-            )
+            .selected_text(self.pwd_grade_c1s1.get_name())
             .show_ui(ui, |ui| {
-              for ele in PASSWORD_GRADES {
+              for ele in PasswordGrade::PASSWORD_GRADES {
                 ui.selectable_value(&mut self.pwd_grade_c1s1, ele, ele.get_name());
               }
             });
         } else {
-          Label::new(RichText::new("密码级别").weak()).selectable(false).ui(ui).on_hover_text("目标密码级别，默认值为“金”");
-          ui.add_enabled_ui(false, |ui|{
-            ComboBox::from_id_salt("ID_CB_C1S1_密码级别（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
+          Label::new(RichText::new("密码级别").weak())
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("目标密码级别，默认值为“金”");
+          ui.add_enabled_ui(false, |ui| {
+            ComboBox::from_id_salt("ID_CB_C1S1_密码级别（不可用）")
+              .width(100.0)
+              .selected_text("无")
+              .show_ui(ui, |_ui| {});
           });
         }
         ui.end_row();
         // 第4行
-        if self.save_data_map.is_some(){
-          Label::new("密码文本版本").selectable(false).ui(ui).on_hover_text("生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。");
+        if self.save_is_available.is_some() {
+          Label::new("密码文本版本")
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。");
           ComboBox::from_id_salt("ID_CB_C1S1_密码文本版本")
             .width(100.0)
             .selected_text(match &self.pwd_text_ver_c1s1 {
@@ -121,84 +144,100 @@ impl App {
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_text_ver_c1s1, None, "无");
-              for ele in PASSWORD_VERSIONS {
+              for ele in PasswordVersion::PASSWORD_VERSIONS {
                 ui.selectable_value(&mut self.pwd_text_ver_c1s1, Some(ele), ele.get_name());
               }
             });
         } else {
-          Label::new(RichText::new("密码文本版本").weak()).selectable(false).ui(ui).on_hover_text("生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。");
-          ui.add_enabled_ui(false, |ui|{
-            ComboBox::from_id_salt("ID_CB_C1S1_密码文本版本（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
+          Label::new(RichText::new("密码文本版本").weak())
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。");
+          ui.add_enabled_ui(false, |ui| {
+            ComboBox::from_id_salt("ID_CB_C1S1_密码文本版本（不可用）")
+              .width(100.0)
+              .selected_text("无")
+              .show_ui(ui, |_ui| {});
           });
         }
         ui.end_row();
         // 第5行
-        if self.save_data_map.is_some() {
-          Label::new("生成内存转储文件").selectable(false).ui(ui).on_hover_text("若勾选，则生成密码的内存转储文件。");
+        if self.save_is_available.is_some() {
+          Label::new("生成内存转储文件")
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若勾选，则生成密码的内存转储文件。");
           Checkbox::without_text(&mut self.to_export_pwd_bin_c1s1).ui(ui);
         } else {
-          Label::new(RichText::new("生成内存转储文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则生成密码的内存转储文件。");
+          Label::new(RichText::new("生成内存转储文件").weak())
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若勾选，则生成密码的内存转储文件。");
           ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_bin_c1s1));
         }
         ui.end_row();
         // 第6行
-        if self.save_data_map.is_some() {
-          Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
+        if self.save_is_available.is_some() {
+          Label::new("生成密码金手指")
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
           ComboBox::from_id_salt("ID_CB_C1S1_生成密码金手指")
-          .width(100.0)
-          .selected_text(match &self.pwd_cheat_ver_c1s1 {
-            Some(version_enum) => version_enum.get_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, None, "无");
-            for ele in GAME_VERSIONS {
-              ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, Some(ele), ele.get_name());
-            }
-          });
+            .width(100.0)
+            .selected_text(match &self.pwd_cheat_ver_c1s1 {
+              Some(version_enum) => version_enum.get_name(),
+              None => "无",
+            })
+            .show_ui(ui, |ui| {
+              ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, None, "无");
+              for ele in GameVersion::GAME_VERSIONS {
+                ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, Some(ele), ele.get_name());
+              }
+            });
         } else {
-          Label::new(RichText::new("生成密码金手指").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
-          ui.add_enabled_ui(false, |ui|{
-            ComboBox::from_id_salt("ID_CB_C1S1_生成密码金手指（不可用）").width(100.0).selected_text("无").show_ui(ui, |_ui|{});
+          Label::new(RichText::new("生成密码金手指").weak())
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
+          ui.add_enabled_ui(false, |ui| {
+            ComboBox::from_id_salt("ID_CB_C1S1_生成密码金手指（不可用）")
+              .width(100.0)
+              .selected_text("无")
+              .show_ui(ui, |_ui| {});
           });
         }
         ui.end_row();
         // 第7行
-        if self.save_data_map.is_some() {
-          Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-          ui.horizontal(|ui|{
+        if self.save_is_available.is_some() {
+          Label::new("导出密码数据至文本文件")
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
+          ui.horizontal(|ui| {
             Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1).ui(ui);
             if ui.add(pwd_info_btn()).clicked() {
-              if let Some(map) = &self.save_data_map {
-                self.preview_data = [None, None, None];
-                let mut temp = Vec::new();
-                for (index, raw_save) in map {
-                  temp.push(*index);
-                  let pwd_info = gen_password_info_with_raw_save_bytes(raw_save.get_data());
-                  self.preview_data[*index as usize] = Some(PreviewData::new(PasswordGrade::Gold, pwd_info));
-                }
-                let min_slot = if temp.len() > 1 {*temp.iter().min().unwrap()} else {temp[0]} as usize;
-                self.preview_slot  = SaveSlotEnum::from(min_slot);
-                self.preview_current = self.preview_data[min_slot].clone();
-              }
-              self.char_page_mode = PreviewModeEnum::Main;
-              self.item_page_mode = PreviewModeEnum::Main;
-              self.pwd_info_window_open = true;
-            };
+              self.read_from(SubCommandEnum::First);
+            }
           });
         } else {
-          Label::new(RichText::new("导出密码数据至文本文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-          ui.horizontal(|ui|{
+          Label::new(RichText::new("导出密码数据至文本文件").weak())
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
+          ui.horizontal(|ui| {
             ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1));
             ui.add_enabled(false, pwd_info_btn());
           });
         }
         ui.end_row();
         // 第8行
-        Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
+        Label::new("指定输出文件保存目录")
+          .selectable(false)
+          .ui(ui)
+          .on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
         ui.horizontal(|ui| {
           if ui.add(select_dir_btn()).clicked() {
-            if let Some(dir) = FileDialog::new().pick_folder(){
+            if let Some(dir) = FileDialog::new().pick_folder() {
               self.out_dir_c1s1 = dir.to_string_lossy().into_owned();
             }
           }
@@ -241,148 +280,153 @@ impl App {
       }
     };
 
-    for (key, val) in self.save_data_map.as_ref().unwrap() {
-      let password_bytes =
-        save::get_password_bytes_with_raw_save_bytes(val.get_data(), self.pwd_grade_c1s1);
-      // Key is save slot number: 0, 1, 2 -> 1, 2, 3
-      let sub_dir_str =
-        match output::create_sav_sub_dir(*key + 1, val.get_is_clear(), &output_dir_str) {
-          Ok(o) => o,
-          Err(e) => {
-            e.clone_into(&mut self.err_msg);
-            self.err_modal_open = true;
-            return;
-          }
-        };
+    for (key, val_option) in self.raw_save_data.iter().enumerate() {
+      if let Some(val) = val_option {
+        let password_bytes =
+          save::get_password_bytes_with_raw_save_bytes(val.get_data(), self.pwd_grade_c1s1);
+        // Key is save slot number: 0, 1, 2 -> 1, 2, 3
+        let sub_dir_str =
+          match output::create_sav_sub_dir(key + 1, val.get_is_clear(), &output_dir_str) {
+            Ok(o) => o,
+            Err(e) => {
+              e.clone_into(&mut self.err_msg);
+              self.err_modal_open = true;
+              return;
+            }
+          };
 
-      if let Some(password_version) = self.pwd_text_ver_c1s1 {
-        if let Err(e) = output::write_password_text_file_with_bytes(
-          &password_bytes,
-          password_version,
-          &sub_dir_str,
-        ) {
-          e.clone_into(&mut self.err_msg);
-          self.err_modal_open = true;
-          return;
-        }
-      }
-
-      if self.to_export_pwd_bin_c1s1 {
-        if let Err(e) = output::write_memory_dump_file(&password_bytes, &sub_dir_str) {
-          e.clone_into(&mut self.err_msg);
-          self.err_modal_open = true;
-          return;
-        }
-      }
-
-      if let Some(cheat_version) = self.pwd_cheat_ver_c1s1 {
-        if let Err(e) = output::write_cheat_file(&password_bytes, cheat_version, &sub_dir_str) {
-          e.clone_into(&mut self.err_msg);
-          self.err_modal_open = true;
-          return;
-        }
-      }
-
-      if self.to_export_pwd_data_text_c1s1 {
-        if self.pwd_grade_c1s1.is_gold() {
-          if let Err(e) = output::write_game_data_text_file(
-            &save::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()),
+        if let Some(password_version) = self.pwd_text_ver_c1s1 {
+          if let Err(e) = output::write_password_text_file_with_bytes(
+            &password_bytes,
+            password_version,
             &sub_dir_str,
           ) {
             e.clone_into(&mut self.err_msg);
             self.err_modal_open = true;
             return;
           }
-        } else if let Err(e) = output::write_game_data_text_file(
-          &save::get_exported_data_for_dyrati_sheet_by_bytes(&password_bytes, self.pwd_grade_c1s1),
-          &sub_dir_str,
-        ) {
-          e.clone_into(&mut self.err_msg);
-          self.err_modal_open = true;
-          return;
         }
-      }
 
-      // More detailed output logs, to improve user experience.
-      // Sh*t code, but at least it works.
-      self.out_log_c1s1.clear();
-      let _ = write!(self.out_log_c1s1, "输出目录：\n{output_dir_str}\n\n");
-      self.out_log_c1s1.push_str("运行概况：\n");
+        if self.to_export_pwd_bin_c1s1 {
+          if let Err(e) = output::write_memory_dump_file(&password_bytes, &sub_dir_str) {
+            e.clone_into(&mut self.err_msg);
+            self.err_modal_open = true;
+            return;
+          }
+        }
 
-      let mut result_index = 1;
-      if self.to_export_all_save {
-        let _ = writeln!(
-          self.out_log_c1s1,
-          "{result_index}. 已勾选“导出所有存档”，导出包含未通关存档在内的所有存档的数据。"
-        );
-      } else {
-        let _ = writeln!(
-          self.out_log_c1s1,
-          "{result_index}. 未勾选“导出所有存档”，仅导出通关存档的数据。"
-        );
-      }
+        if let Some(cheat_version) = self.pwd_cheat_ver_c1s1 {
+          if let Err(e) = output::write_cheat_file(&password_bytes, cheat_version, &sub_dir_str) {
+            e.clone_into(&mut self.err_msg);
+            self.err_modal_open = true;
+            return;
+          }
+        }
 
-      let password_grade_cn = self.pwd_grade_c1s1.get_name();
+        if self.to_export_pwd_data_text_c1s1 {
+          if self.pwd_grade_c1s1.is_gold() {
+            if let Err(e) = output::write_game_data_text_file(
+              &save::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()),
+              &sub_dir_str,
+            ) {
+              e.clone_into(&mut self.err_msg);
+              self.err_modal_open = true;
+              return;
+            }
+          } else if let Err(e) = output::write_game_data_text_file(
+            &save::get_exported_data_for_dyrati_sheet_by_bytes(
+              &password_bytes,
+              self.pwd_grade_c1s1,
+            ),
+            &sub_dir_str,
+          ) {
+            e.clone_into(&mut self.err_msg);
+            self.err_modal_open = true;
+            return;
+          }
+        }
 
-      if let Some(password_version) = self.pwd_text_ver_c1s1 {
-        result_index += 1;
-        let password_version_cn = password_version.get_name();
+        // More detailed output logs, to improve user experience.
+        // Sh*t code, but at least it works.
+        self.out_log_c1s1.clear();
+        let _ = write!(self.out_log_c1s1, "输出目录：\n{output_dir_str}\n\n");
+        self.out_log_c1s1.push_str("运行概况：\n");
+
+        let mut result_index = 1;
         if self.to_export_all_save {
           let _ = writeln!(
             self.out_log_c1s1,
-            "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别、{password_version_cn}版的“密码文本.txt”文件。"
+            "{result_index}. 已勾选“导出所有存档”，导出包含未通关存档在内的所有存档的数据。"
           );
         } else {
           let _ = writeln!(
             self.out_log_c1s1,
-            "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别、{password_version_cn}版的“密码文本.txt”文件。"
+            "{result_index}. 未勾选“导出所有存档”，仅导出通关存档的数据。"
           );
         }
-      }
 
-      if self.to_export_pwd_bin_c1s1 {
-        result_index += 1;
-        if self.to_export_all_save {
-          let _ = writeln!(
-            self.out_log_c1s1,
-            "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别“密码内存转储.dmp”文件。"
-          );
-        } else {
-          let _ = writeln!(
-            self.out_log_c1s1,
-            "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别“密码内存转储.dmp”文件。"
-          );
+        let password_grade_cn = self.pwd_grade_c1s1.get_name();
+
+        if let Some(password_version) = self.pwd_text_ver_c1s1 {
+          result_index += 1;
+          let password_version_cn = password_version.get_name();
+          if self.to_export_all_save {
+            let _ = writeln!(
+              self.out_log_c1s1,
+              "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别、{password_version_cn}版的“密码文本.txt”文件。"
+            );
+          } else {
+            let _ = writeln!(
+              self.out_log_c1s1,
+              "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别、{password_version_cn}版的“密码文本.txt”文件。"
+            );
+          }
         }
-      }
 
-      if let Some(cheat_version) = self.pwd_cheat_ver_c1s1 {
-        result_index += 1;
-        let cheat_version_cn = cheat_version.get_name();
-        if self.to_export_all_save {
-          let _ = writeln!(
-            self.out_log_c1s1,
-            "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
-          );
-        } else {
-          let _ = writeln!(
-            self.out_log_c1s1,
-            "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
-          );
+        if self.to_export_pwd_bin_c1s1 {
+          result_index += 1;
+          if self.to_export_all_save {
+            let _ = writeln!(
+              self.out_log_c1s1,
+              "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别“密码内存转储.dmp”文件。"
+            );
+          } else {
+            let _ = writeln!(
+              self.out_log_c1s1,
+              "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别“密码内存转储.dmp”文件。"
+            );
+          }
         }
-      }
 
-      if self.to_export_pwd_data_text_c1s1 {
-        result_index += 1;
-        if self.to_export_all_save {
-          let _ = writeln!(
-            self.out_log_c1s1,
-            "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别“密码数据.txt”文件"
-          );
-        } else {
-          let _ = writeln!(
-            self.out_log_c1s1,
-            "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别“密码数据.txt”文件"
-          );
+        if let Some(cheat_version) = self.pwd_cheat_ver_c1s1 {
+          result_index += 1;
+          let cheat_version_cn = cheat_version.get_name();
+          if self.to_export_all_save {
+            let _ = writeln!(
+              self.out_log_c1s1,
+              "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
+            );
+          } else {
+            let _ = writeln!(
+              self.out_log_c1s1,
+              "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别的、适用于{cheat_version_cn}版《黄金太阳 失落的时代》的“密码金手指.txt”文件。"
+            );
+          }
+        }
+
+        if self.to_export_pwd_data_text_c1s1 {
+          result_index += 1;
+          if self.to_export_all_save {
+            let _ = writeln!(
+              self.out_log_c1s1,
+              "{result_index}. 已生成存档记录所对应的{password_grade_cn}级别“密码数据.txt”文件"
+            );
+          } else {
+            let _ = writeln!(
+              self.out_log_c1s1,
+              "{result_index}. 已生成通关的存档记录所对应的{password_grade_cn}级别“密码数据.txt”文件"
+            );
+          }
         }
       }
     }
@@ -392,7 +436,7 @@ impl App {
 fn validate_input_file(
   path_str: &str,
   to_export_all_save: bool,
-) -> Result<Option<HashMap<u8, RawSaveData>>, &'static str> {
+) -> Result<([Option<RawSaveData>; 3], usize), &'static str> {
   // Read save file.
   let input_file_result = File::open(path_str);
   let mut sav_file;
@@ -434,5 +478,15 @@ fn validate_input_file(
     return Err("存档文件中没有通关数据！");
   }
 
-  Ok(Some(save_data_map))
+  let mut raw_save_data = [None, None, None];
+  let mut min_slot = 0;
+
+  for (key, val) in save_data_map {
+    if key < min_slot {
+      min_slot = key;
+    }
+    raw_save_data[key as usize] = Some(val);
+  }
+
+  Ok((raw_save_data, min_slot as usize))
 }

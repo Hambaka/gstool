@@ -114,7 +114,7 @@ pub fn run() {
   )
   .unwrap();
   for (key, value) in VALID_PASSWORD_CHARS_JP_BYTE {
-    writeln!(&mut file, "  '{key}' => 0x{value:02X},").unwrap();
+    writeln!(&mut file, "  '{key}' => {value:#04X},").unwrap();
   }
   writeln!(&mut file, "}};\n").unwrap();
 
@@ -125,7 +125,7 @@ pub fn run() {
   )
   .unwrap();
   for (key, value) in VALID_PASSWORD_CHARS_EN_BYTE {
-    writeln!(&mut file, "  '{key}' => 0x{value:02X},").unwrap();
+    writeln!(&mut file, "  '{key}' => {value:#04X},").unwrap();
   }
   writeln!(&mut file, "}};").unwrap();
 }

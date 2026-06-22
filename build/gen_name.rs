@@ -115,7 +115,7 @@ pub fn run() {
     let img_path = Path::new(MAIN_DIR)
       .join("assets")
       .join("name_kbd_img")
-      .join(format!("0x{:02X}.png", i));
+      .join(format!("{i:#04X}.png"));
     let img_path_str = img_path.as_os_str().to_str().unwrap();
     let new_str = if img_path_str.contains("\\") {
       img_path_str.replace("\\", "\\\\")
@@ -123,7 +123,7 @@ pub fn run() {
       img_path_str.to_owned()
     };
 
-    writeln!(&mut file, "  0x{i:02X}u8 => include_bytes!(\"{new_str}\"),").unwrap();
+    writeln!(&mut file, "  {i:#04X} => include_bytes!(\"{new_str}\"),").unwrap();
   }
   writeln!(&mut file, "}};").unwrap();
 }

@@ -107,7 +107,7 @@ pub fn run(level: i32) {
   )
   .unwrap();
   for i in 0..file_count {
-    writeln!(&mut file, "  0x{:X},", all_source_crc32[i]).unwrap();
+    writeln!(&mut file, "  {:#010X},", all_source_crc32[i]).unwrap();
   }
   writeln!(&mut file, "];\n").unwrap();
 
@@ -120,7 +120,7 @@ pub fn run(level: i32) {
   for i in 0..file_count {
     writeln!(
       &mut file,
-      "  0x{:08X}u32 => ({}, {}),",
+      "  {:#010X}u32 => ({}, {}),",
       all_patch_crc32[i], start_index[i], all_file_size[i]
     )
     .unwrap();
@@ -137,7 +137,7 @@ pub fn run(level: i32) {
     let crc32 = all_source_crc32[i];
     writeln!(
       &mut file,
-      "  0x{:08X}u32 => 0x{:08X}u32,",
+      "  {:#010X}u32 => {:#010X}u32,",
       crc32, all_patch_crc32[i],
     )
     .unwrap();
@@ -155,13 +155,13 @@ pub fn run(level: i32) {
     if crc32 == JPN_ROM_CRC32 {
       writeln!(
         &mut file,
-        "  0x{crc32:08X}u32 => \"黄金太阳 - 开启的封印 (日)\","
+        "  {crc32:#010X}u32 => \"黄金太阳 - 开启的封印 (日)\","
       )
       .unwrap();
     } else {
       writeln!(
         &mut file,
-        "  0x{crc32:08X}u32 => \"{}\",",
+        "  {crc32:#010X}u32 => \"{}\",",
         get_non_jpn_rom_info(&all_file_name[i])
       )
       .unwrap();
