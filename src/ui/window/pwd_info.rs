@@ -7,8 +7,8 @@ use crate::{
     data::{ALL_DJINN_NAMES, ITEM_NAMES, Language},
     enums::PasswordGrade,
     save::{
-      self, BitArray, PSYNERGY_ITEMS, PasswordInfo, STACKABLE_ITEMS,
-      gen_password_info_with_raw_save_bytes, gen_password_info_with_save_data,
+      self, BitArray, MAX_VALID_BASE_STATS_VALUES_PWD, PSYNERGY_ITEMS, PasswordInfo,
+      STACKABLE_ITEMS, gen_password_info_with_raw_save_bytes, gen_password_info_with_save_data,
     },
   },
 };
@@ -219,11 +219,28 @@ impl App {
                         .ui(ui);
 
                       for j in 0..4 {
-                        let value = match self.stats_mode {
-                          PreviewModeEnum::Main => current_data.get_base_stats(i, j),
-                          PreviewModeEnum::Alt => current_data.get_stats(i, j),
+                        let stats_string = match self.stats_mode {
+                          PreviewModeEnum::Main => {
+                            let value = current_data.get_base_stats(i, j);
+                            if value > MAX_VALID_BASE_STATS_VALUES_PWD[i] {
+                              let real_value = match i {
+                                // Attack, Defense, Agility
+                                2 | 3 | 4 => value & MAX_VALID_BASE_STATS_VALUES_PWD[i],
+                                _ => MAX_VALID_BASE_STATS_VALUES_PWD[i],
+                              };
+
+                              format!("{value} ({real_value})")
+                            } else {
+                              format!("{value}")
+                            }
+                          }
+                          PreviewModeEnum::Alt => {
+                            let value = current_data.get_stats(i, j);
+                            format!("{value}")
+                          }
                         };
-                        Label::new(format!("{value}")).selectable(false).ui(ui);
+
+                        Label::new(stats_string).selectable(false).ui(ui);
                       }
                       ui.end_row();
                     }

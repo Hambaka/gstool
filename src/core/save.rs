@@ -271,6 +271,41 @@ const DEFAULT_CLASS_MULTIPLIERS: [[f64; 6]; 4] = [
   [0.9, 1.3, 0.9, 1.0, 0.8, 1.3],
 ];
 
+/// Details on the assword-making procedure - by Paulygon (Golden Sun Password Generator, Version 0.85, March 22, 2004)
+/// 
+/// "Information validation: The first thing done is to make sure that certain data, like stats, are capped to certain limits.
+/// 1999 for HP and PP; 999 for Attack, Defense, and Agility; 99 for Luck.
+/// Character class or other factors may limit what is shown during the game to a lower number.
+/// 
+/// You may note that in the program, you can't use 999 for attack, defense, or agility.
+/// The reason for this is that although the password can store this information,
+/// The Lost Age doesn't seem to acknowledge anything higher than 511.
+/// For those more technically inclined, this means that the highest bit is ignored and treated as 0.
+/// Rather surprising, but oh well... :-}"
+#[rustfmt::skip]
+pub const MAX_VALID_BASE_STATS_VALUES_PWD: [u16; 6] = [
+  // 11 bits, 0111 1111 1111, 2047 -> 1999
+  2047,
+  2047,
+  // 10 bits, 0011 1111 1111, 1023 -> 999 -> 511
+  // 0001 1111 1111
+  511,
+  511,
+  511,
+  // 8 bits, 1111 1111, 255 -> 127 -> 99
+  127,
+];
+
+#[rustfmt::skip]
+const MAX_VALID_IN_GAME_STATS_VALUES: [u16; 6] = [
+  1999,
+  1999,
+  999,
+  999,
+  999,
+  99,
+];
+
 /// In TBS, it should be 0 -> Robin (Isaac)
 /// In TLA, it should be 4 -> Garcia (Felix)
 const PARTY_MAIN_LEADER_INDEX: [usize; 2] = [0, 4];
@@ -1490,14 +1525,14 @@ pub fn gen_password_info_with_save_data(save_data: &SaveData) -> PasswordInfo {
   // Stats
   let mut stats = [[0; 6]; 4];
   for i in 0..6 {
-    stats[0][i] =
-      (f64::from(save_data.stats[0][i]) * DEFAULT_CLASS_MULTIPLIERS[0][i]).floor() as u16;
-    stats[1][i] =
-      (f64::from(save_data.stats[1][i]) * DEFAULT_CLASS_MULTIPLIERS[1][i]).floor() as u16;
-    stats[2][i] =
-      (f64::from(save_data.stats[2][i]) * DEFAULT_CLASS_MULTIPLIERS[2][i]).floor() as u16;
-    stats[3][i] =
-      (f64::from(save_data.stats[3][i]) * DEFAULT_CLASS_MULTIPLIERS[3][i]).floor() as u16;
+    for j in 0..4 {
+      stats[j][i] = get_in_game_stats_tla(
+        save_data.stats[j][i],
+        DEFAULT_CLASS_MULTIPLIERS[j][i],
+        MAX_VALID_IN_GAME_STATS_VALUES[i],
+        MAX_VALID_BASE_STATS_VALUES_PWD[i],
+      );
+    }
   }
 
   let mut psy_items = [false; 8];
@@ -1576,6 +1611,37 @@ pub fn gen_password_info_with_save_data(save_data: &SaveData) -> PasswordInfo {
     psy_items,
     items,
     coins,
+  }
+}
+
+/*
+fn get_base_stats(input_stats: u16, class_multiplier: f64) -> u16 {
+  ((((input_stats as f64) + 0.9) / class_multiplier).floor()) as u16
+}
+*/
+
+fn get_in_game_stats_tla(
+  input_stats: u16,
+  class_multiplier: f64,
+  max_in_game_stats: u16,
+  max_base_stats_pwd: u16,
+) -> u16 {
+  let input_stats_f64 = if input_stats > max_base_stats_pwd {
+    if max_base_stats_pwd == MAX_VALID_BASE_STATS_VALUES_PWD[2] {
+      input_stats & max_base_stats_pwd
+    } else {
+      max_base_stats_pwd
+    }
+  } else {
+    input_stats
+  } as f64;
+
+  let result = ((input_stats_f64 * class_multiplier).floor()) as u16;
+
+  if result > max_in_game_stats {
+    max_in_game_stats
+  } else {
+    result
   }
 }
 
