@@ -4,7 +4,7 @@ use crate::{
   App,
   app::SubCommandEnum,
   core::{
-    data::{ALL_DJINN_NAMES, ITEM_NAMES, Language},
+    data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, get_icon_id},
     enums::PasswordGrade,
     save::{
       self, BitArray, MAX_VALID_BASE_STATS_VALUES_PWD, PSYNERGY_ITEMS, PasswordInfo,
@@ -177,6 +177,8 @@ impl App {
                 ui.radio_value(&mut self.stats_mode, PreviewModeEnum::Alt, "能力状态属性");
               });
 
+              ui.add_space(8.0);
+
               ui.columns_const(|[col_1, col_2, col_3, col_4, col_5]| {
                 Label::new("").selectable(false).ui(col_1);
                 Label::new(RichText::new("罗宾").strong())
@@ -192,6 +194,8 @@ impl App {
                   .selectable(false)
                   .ui(col_5);
               });
+
+              ui.add_space(4.0);
 
               egui::Grid::new("preview_stats")
                 .striped(true)
@@ -263,14 +267,26 @@ impl App {
                   });
               });
 
+              ui.add_space(8.0);
+
               match self.item_page_mode {
                 PreviewModeEnum::Main => {
                   ui.columns_const(|[col_1, col_2, col_3, col_4]| {
-                    Label::new("罗宾").selectable(false).ui(col_1);
-                    Label::new("杰拉德").selectable(false).ui(col_2);
-                    Label::new("伊万").selectable(false).ui(col_3);
-                    Label::new("梅雅莉").selectable(false).ui(col_4);
+                    Label::new(RichText::new("罗宾").strong())
+                      .selectable(false)
+                      .ui(col_1);
+                    Label::new(RichText::new("杰拉德").strong())
+                      .selectable(false)
+                      .ui(col_2);
+                    Label::new(RichText::new("伊万").strong())
+                      .selectable(false)
+                      .ui(col_3);
+                    Label::new(RichText::new("梅雅莉").strong())
+                      .selectable(false)
+                      .ui(col_4);
                   });
+
+                  ui.add_space(4.0);
 
                   egui::Grid::new("preview_items")
                     .striped(true)
@@ -282,22 +298,29 @@ impl App {
                       for i in 0..15 {
                         for j in 0..4 {
                           let (id, amount) = current_data.get_items(i, j);
-                          let value = if id == 0 {
-                            ""
+                          if id == 0 {
+                            Label::new("").selectable(false).ui(ui);
                           } else {
-                            if STACKABLE_ITEMS.contains(&id) {
-                              &format!(
-                                "{}×{amount}",
-                                ITEM_NAMES[id as usize - 1].get_name(self.item_preview_lang)
-                              )
-                            } else {
-                              &format!(
-                                "{}",
-                                ITEM_NAMES[id as usize - 1].get_name(self.item_preview_lang)
-                              )
-                            }
+                            ui.horizontal(|ui| {
+                              let icon_img =
+                                egui::Image::new(&self.item_icon_img[get_icon_id(id - 1)])
+                                  .fit_to_exact_size(egui::vec2(16.0, 16.0));
+                              ui.add(icon_img);
+
+                              let item_str = if STACKABLE_ITEMS.contains(&id) {
+                                &format!(
+                                  "{}×{amount}",
+                                  ITEM_NAMES[id as usize - 1].get_name(self.item_preview_lang)
+                                )
+                              } else {
+                                &format!(
+                                  "{}",
+                                  ITEM_NAMES[id as usize - 1].get_name(self.item_preview_lang)
+                                )
+                              };
+                              Label::new(item_str).selectable(false).ui(ui);
+                            });
                           };
-                          Label::new(value).selectable(false).ui(ui);
                         }
                         ui.end_row();
                       }
@@ -305,27 +328,35 @@ impl App {
                 }
                 PreviewModeEnum::Alt => {
                   for i in PSYNERGY_ITEM_GAMEPLAY_ORDER {
-                    if current_data.get_psy_items(i) {
-                      Label::new(format!(
-                        "{}\t√",
-                        ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
-                          .get_name(self.item_preview_lang)
-                      ))
-                      .selectable(false)
-                      .ui(ui);
-                    } else {
-                      Label::new(
-                        RichText::new(format!(
-                          "{}\t×",
+                    ui.horizontal(|ui| {
+                      let icon_img = egui::Image::new(
+                        &self.item_icon_img[get_icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
+                      )
+                      .fit_to_exact_size(egui::vec2(16.0, 16.0));
+                      ui.add(icon_img);
+
+                      if current_data.get_psy_items(i) {
+                        Label::new(format!(
+                          "{}\t√",
                           ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
                             .get_name(self.item_preview_lang)
                         ))
-                        .weak()
-                        .strikethrough(),
-                      )
-                      .selectable(false)
-                      .ui(ui);
-                    }
+                        .selectable(false)
+                        .ui(ui);
+                      } else {
+                        Label::new(
+                          RichText::new(format!(
+                            "{}\t×",
+                            ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
+                              .get_name(self.item_preview_lang)
+                          ))
+                          .weak()
+                          .strikethrough(),
+                        )
+                        .selectable(false)
+                        .ui(ui);
+                      }
+                    });
                   }
                 }
               }
@@ -346,12 +377,24 @@ impl App {
                   });
               });
 
+              ui.add_space(8.0);
+
               ui.columns_const(|[col_1, col_2, col_3, col_4]| {
-                Label::new("维纳斯").selectable(false).ui(col_1);
-                Label::new("玛尔斯").selectable(false).ui(col_2);
-                Label::new("朱庇特").selectable(false).ui(col_3);
-                Label::new("墨丘利").selectable(false).ui(col_4);
+                Label::new(RichText::new("维纳斯").strong())
+                  .selectable(false)
+                  .ui(col_1);
+                Label::new(RichText::new("玛尔斯").strong())
+                  .selectable(false)
+                  .ui(col_2);
+                Label::new(RichText::new("朱庇特").strong())
+                  .selectable(false)
+                  .ui(col_3);
+                Label::new(RichText::new("墨丘利").strong())
+                  .selectable(false)
+                  .ui(col_4);
               });
+
+              ui.add_space(4.0);
 
               egui::Grid::new("preview_djinns")
                 .striped(true)

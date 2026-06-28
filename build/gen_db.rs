@@ -6,6 +6,7 @@ pub fn run() {
   gen_essential(&mut file);
   gen_item_db(&mut file);
   gen_jinn_db(&mut file);
+  gen_icon_db(&mut file);
 }
 
 fn gen_essential(file: &mut BufWriter<File>) {
@@ -143,4 +144,87 @@ fn gen_jinn_db(file: &mut BufWriter<File>) {
     writeln!(file, "  ],").unwrap();
   }
   writeln!(file, "];\n").unwrap();
+}
+
+fn gen_icon_db(file: &mut BufWriter<File>) {
+  let en =
+    serde_json::from_slice::<Vec<String>>(include_bytes!("../resources/json/item_name/en.json"))
+      .unwrap();
+
+  // "Mythril Bag"
+  let mut first_mythril_bag = None;
+  // "Rusty Sword"
+  let mut first_rusty_sword = None;
+  // "Rusty Axe"
+  let mut first_rusty_axe = None;
+  // "Rusty Mace"
+  let mut first_rusty_mace = None;
+  // "Rusty Staff"
+  let mut first_rusty_staff = None;
+
+  writeln!(file, "pub fn get_icon_id(item_id: u16) -> usize {{").unwrap();
+  writeln!(file, "  match item_id {{").unwrap();
+
+  let mut counter = 0;
+  for i in 0..460 {
+    match en[i].as_str() {
+      "?" | "Signal Whistle" => {
+        // writeln!(file, "    {i} => 361,").unwrap();
+        continue;
+      }
+      // Real one is 224
+      "Mythril Bag" => {
+        if first_mythril_bag.is_none() {
+          first_mythril_bag = Some(counter);
+          writeln!(file, "    {i} => {counter},").unwrap();
+          counter += 1;
+        } else {
+          writeln!(file, "    {i} => {},", first_mythril_bag.unwrap()).unwrap();
+        }
+      }
+      "Rusty Sword" => {
+        if first_rusty_sword.is_none() {
+          first_rusty_sword = Some(counter);
+          writeln!(file, "    {i} => {counter},").unwrap();
+          counter += 1;
+        } else {
+          writeln!(file, "    {i} => {},", first_rusty_sword.unwrap()).unwrap();
+        }
+      }
+      "Rusty Axe" => {
+        if first_rusty_axe.is_none() {
+          first_rusty_axe = Some(counter);
+          writeln!(file, "    {i} => {counter},").unwrap();
+          counter += 1;
+        } else {
+          writeln!(file, "    {i} => {},", first_rusty_axe.unwrap()).unwrap();
+        }
+      }
+      "Rusty Mace" => {
+        if first_rusty_mace.is_none() {
+          first_rusty_mace = Some(counter);
+          writeln!(file, "    {i} => {counter},").unwrap();
+          counter += 1;
+        } else {
+          writeln!(file, "    {i} => {},", first_rusty_mace.unwrap()).unwrap();
+        }
+      }
+      "Rusty Staff" => {
+        if first_rusty_staff.is_none() {
+          first_rusty_staff = Some(counter);
+          writeln!(file, "    {i} => {counter},").unwrap();
+          counter += 1;
+        } else {
+          writeln!(file, "    {i} => {},", first_rusty_staff.unwrap()).unwrap();
+        }
+      }
+      _ => {
+        writeln!(file, "    {i} => {counter},").unwrap();
+        counter += 1;
+      }
+    }
+  }
+
+  writeln!(file, "    _ => 361,").unwrap();
+  writeln!(file, "  }}\n}}").unwrap();
 }

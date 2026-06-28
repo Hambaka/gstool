@@ -1,5 +1,6 @@
-use egui::Shadow;
+use egui::{Shadow, TextureHandle, TextureOptions};
 use egui_notify::{Anchor, Toasts};
+use image::GenericImageView;
 
 use crate::{
   core::{
@@ -78,6 +79,7 @@ pub struct App {
   pub item_page_mode: PreviewModeEnum,
   pub item_preview_lang: Language,
   pub djinn_preview_lang: Language,
+  pub item_icon_img: Vec<TextureHandle>,
 
   pub about_window_open: bool,
   pub pwd_info_window_open: bool,
@@ -149,8 +151,66 @@ pub struct App {
   pub out_log_c5: String,
 }
 
-impl Default for App {
-  fn default() -> Self {
+impl App {
+  pub fn name() -> String {
+    // env!("CARGO_PKG_VERSION")
+    // env!("CARGO_PKG_NAME")
+    format!("GSTool - {}", env!("CARGO_PKG_VERSION"))
+  }
+
+  pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    // 1. 设置字体
+    // 解压内嵌字体
+    let decompressed_font =
+      zstd::decode_all(include_bytes!(concat!(env!("OUT_DIR"), "/font.zst")).as_slice()).unwrap();
+    // 替换默认字体以支持显示CJK等字符
+    let mut fonts = egui::FontDefinitions::default();
+    fonts.font_data.insert(
+      "simplified_chinese_font".to_owned(),
+      std::sync::Arc::new(egui::FontData::from_owned(decompressed_font)),
+    );
+    fonts
+      .families
+      .entry(egui::FontFamily::Proportional)
+      .or_default()
+      .insert(0, "simplified_chinese_font".to_owned());
+    cc.egui_ctx.set_fonts(fonts);
+
+    // 2. 设置道具图标图片
+    // 加载道具图标图片
+    let image_bytes = include_bytes!("../assets/icon_img/all_items.png");
+    let image = image::load_from_memory_with_format(image_bytes, image::ImageFormat::Png).unwrap();
+    let mut handles = Vec::new();
+
+    let icon_size = 16;
+    let columns = 10;
+
+    for id in 0..362 {
+      // 当前图标所在列
+      let col = id % columns;
+      // 当前图标所在行
+      let row = id / columns;
+
+      // 起始像素坐标
+      let x = (col * icon_size) as u32;
+      let y = (row * icon_size) as u32;
+
+      // 从完整大图中获取该图标的 16x16 的图像
+      let sub_image = image.view(x, y, icon_size as u32, icon_size as u32);
+      // 开始转换为egui的TextureHandle
+      let rgba_image = sub_image.to_image();
+      let pixels = rgba_image.into_raw();
+      let color_image = egui::ColorImage::from_rgba_unmultiplied([icon_size, icon_size], &pixels);
+
+      let handle = cc.egui_ctx.load_texture(
+        format!("item_icon_{}", id),
+        color_image,
+        TextureOptions::NEAREST,
+      );
+
+      handles.push(handle);
+    }
+
     Self {
       preview_data: [None, None, None],
       preview_current: None,
@@ -161,6 +221,7 @@ impl Default for App {
       item_page_mode: PreviewModeEnum::Main,
       item_preview_lang: Language::ChineseTBS,
       djinn_preview_lang: Language::ChineseTBS,
+      item_icon_img: handles,
 
       about_window_open: false,
       pwd_info_window_open: false,
@@ -240,34 +301,6 @@ impl Default for App {
       out_dir_c5: String::new(),
       out_log_c5: String::new(),
     }
-  }
-}
-
-impl App {
-  pub fn name() -> String {
-    // env!("CARGO_PKG_VERSION")
-    // env!("CARGO_PKG_NAME")
-    format!("GSTool - {}", env!("CARGO_PKG_VERSION"))
-  }
-
-  pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-    // 解压内嵌字体
-    let decompressed_font =
-      zstd::decode_all(include_bytes!(concat!(env!("OUT_DIR"), "/font.zst")).as_slice()).unwrap();
-    // 替换默认字体以支持显示CJK等字符
-    let mut fonts = egui::FontDefinitions::default();
-    fonts.font_data.insert(
-      "simplified_chinese_font".to_owned(),
-      std::sync::Arc::new(egui::FontData::from_owned(decompressed_font)),
-    );
-    fonts
-      .families
-      .entry(egui::FontFamily::Proportional)
-      .or_default()
-      .insert(0, "simplified_chinese_font".to_owned());
-    cc.egui_ctx.set_fonts(fonts);
-
-    Default::default()
   }
 }
 
