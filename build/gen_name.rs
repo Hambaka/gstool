@@ -123,7 +123,7 @@ pub fn run() {
       img_path_str.to_owned()
     };
 
-    writeln!(&mut file, "  {i:#04X} => include_bytes!(\"{new_str}\"),").unwrap();
+    writeln!(&mut file, "  {i:#04X}u8 => include_bytes!(\"{new_str}\"),").unwrap();
   }
   writeln!(&mut file, "}};").unwrap();
 }
