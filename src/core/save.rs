@@ -1363,11 +1363,26 @@ fn gen_exported_data_for_dyrati_sheet_with_info(pwd_info: &PasswordInfo) -> Stri
     .push_str("　　（“基础能力状态属性”使用起来可能不太方便，不过不会出现数值误差）\n\n");
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
+
+  // Stats cap in dyrati sheet.
+  let mut dyrati_base_stats = pwd_info.base_stats;
+  let mut dyrati_stats = pwd_info.stats;
   for i in 0..6 {
-    let _ = write!(exported_text, "{}\t", pwd_info.base_stats[0][i]);
-    let _ = write!(exported_text, "{}\t", pwd_info.base_stats[1][i]);
-    let _ = write!(exported_text, "{}\t", pwd_info.base_stats[2][i]);
-    let _ = writeln!(exported_text, "{}", pwd_info.base_stats[3][i]);
+    for j in 0..4 {
+      if dyrati_base_stats[j][i] > MAX_VALID_IN_GAME_STATS_VALUES[i] {
+        dyrati_base_stats[j][i] = MAX_VALID_IN_GAME_STATS_VALUES[i];
+        dyrati_stats[j][i] = (MAX_VALID_IN_GAME_STATS_VALUES[i] as f64
+          * DEFAULT_CLASS_MULTIPLIERS[j][i])
+          .floor() as u16;
+      }
+    }
+  }
+
+  for i in 0..6 {
+    let _ = write!(exported_text, "{}\t", dyrati_base_stats[0][i]);
+    let _ = write!(exported_text, "{}\t", dyrati_base_stats[1][i]);
+    let _ = write!(exported_text, "{}\t", dyrati_base_stats[2][i]);
+    let _ = writeln!(exported_text, "{}", dyrati_base_stats[3][i]);
   }
   exported_text.push_str("============结束============\n\n\n\n");
 
@@ -1386,10 +1401,10 @@ fn gen_exported_data_for_dyrati_sheet_with_info(pwd_info: &PasswordInfo) -> Stri
   exported_text.push_str("表格中的范围 -> J5:M10\n");
   exported_text.push_str("============开始============\n");
   for i in 0..6 {
-    let _ = write!(exported_text, "{}\t", pwd_info.stats[0][i]);
-    let _ = write!(exported_text, "{}\t", pwd_info.stats[1][i]);
-    let _ = write!(exported_text, "{}\t", pwd_info.stats[2][i]);
-    let _ = writeln!(exported_text, "{}", pwd_info.stats[3][i]);
+    let _ = write!(exported_text, "{}\t", dyrati_stats[0][i]);
+    let _ = write!(exported_text, "{}\t", dyrati_stats[1][i]);
+    let _ = write!(exported_text, "{}\t", dyrati_stats[2][i]);
+    let _ = writeln!(exported_text, "{}", dyrati_stats[3][i]);
   }
   exported_text.push_str("============结束============\n\n\n\n");
 
