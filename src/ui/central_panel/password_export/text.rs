@@ -1,6 +1,7 @@
 use core::f32;
 use std::{fmt::Write as _, fs::File, io::Read};
 
+use chardetng::{EncodingDetector, Iso2022JpDetection::Deny, Utf8Detection::Allow};
 use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
 
@@ -418,22 +419,40 @@ fn validate_input_file(
   }
   input_file = input_file_result.unwrap();
 
-  let mut password = String::new();
-  if input_file.read_to_string(&mut password).is_err() {
+  let file_size = input_file.metadata().unwrap().len();
+  if file_size == 0 {
+    return Err("文本文件内没有任何内容！");
+  } else if file_size > 0x10_0000 {
+    return Err("文本文件的大小过大！");
+  }
+
+  let mut file_bytes = Vec::new();
+  input_file.read_to_end(&mut file_bytes).unwrap();
+
+  let mut detector = EncodingDetector::new(Deny);
+  detector.feed(&file_bytes, true);
+  let encoding = detector.guess(None, Allow);
+
+  let (cow_str, had_errors) = encoding.decode_with_bom_removal(&file_bytes);
+  if had_errors {
     return Err("输入的不是有效的文本文件！");
   }
+
+  let password = cow_str.into_owned();
   // If the text file is empty...
   if password.is_empty() {
     return Err("文本文件内没有任何内容！");
   }
+
   // Remove all line break and whitespace.
   let password_without_whitespace = convert::remove_whitespace(&password);
   // Check password's length, and get its grade.
-  let chars_cout = password_without_whitespace.chars().count();
-  let source_password_grade = match chars_cout {
+  let chars_count = password_without_whitespace.chars().count();
+  let source_password_grade = match chars_count {
     260 => PasswordGrade::Gold,
     61 => PasswordGrade::Silver,
     16 => PasswordGrade::Bronze,
+    0 => return Err("文本文件内没有任何内容！"),
     _ => return Err("密码长度不正确！"),
   };
   // Check its password version.
