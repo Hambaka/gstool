@@ -8,9 +8,17 @@ use crate::{
   widgets::colors::{DANGER, LIGHT, SECONDARY, SUCCESS},
 };
 
+const CUSTOM_ORDER_COMMANDS: [CommandEnum; CommandEnum::COMMANDS.len()] = [
+  CommandEnum::First,
+  CommandEnum::Fifth,
+  CommandEnum::Third,
+  CommandEnum::Second,
+  CommandEnum::Fourth,
+];
+
 impl App {
   pub fn show_main_panel(&mut self, ui: &mut egui::Ui) {
-    egui::CentralPanel::default().show_inside(ui, |ui| {
+    egui::CentralPanel::default().show(ui, |ui| {
       if self.about_window_open {
         ui.disable();
       }
@@ -18,11 +26,11 @@ impl App {
       egui::ScrollArea::vertical().show(ui, |ui| {
         // 功能选择“标签”页
         ui.columns_const(|columns: &mut [egui::Ui; CommandEnum::COMMANDS.len()]| {
-          for i in 0..CommandEnum::COMMANDS.len() {
+          for i in 0..CUSTOM_ORDER_COMMANDS.len() {
             columns[i].selectable_value(
               &mut self.command,
-              CommandEnum::COMMANDS[i],
-              CommandEnum::COMMANDS[i].get_name(),
+              CUSTOM_ORDER_COMMANDS[i],
+              CUSTOM_ORDER_COMMANDS[i].get_name(),
             );
           }
         });

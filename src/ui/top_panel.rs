@@ -5,7 +5,7 @@ use crate::App;
 impl App {
   pub fn show_top_panel(&mut self, ui: &mut egui::Ui) {
     // 顶部面板，主要用于实现菜单栏
-    egui::Panel::top("ID_TOP_PANEL").show_inside(ui, |ui| {
+    egui::Panel::top("ID_TOP_PANEL").show(ui, |ui| {
       // 定义快捷键
       if ui.input_mut(|input| {
         input.consume_shortcut(&egui::KeyboardShortcut::new(

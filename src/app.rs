@@ -31,11 +31,16 @@ impl CommandEnum {
 
   pub fn get_name(self) -> &'static str {
     match self {
-      CommandEnum::First => "❶ 密码导出功能",
-      CommandEnum::Second => "❷ 存档转换功能",
-      CommandEnum::Third => "❸ 自定义角色名",
-      CommandEnum::Fourth => "❹ 应用汉化补丁",
-      CommandEnum::Fifth => "❺ 注入密码功能",
+      // ⏏、⮉、⤴、⬆
+      CommandEnum::First => "⮉ 密码导出功能",
+      // ⇆
+      CommandEnum::Second => "⇆  存档转换功能",
+      // 📝
+      CommandEnum::Third => "🖊 自定义角色名",
+      // 🌐、🔨
+      CommandEnum::Fourth => "🛠 应用汉化补丁",
+      // ⤵、⤓、⮋、⬇
+      CommandEnum::Fifth => "⮋ 注入密码功能",
     }
   }
 }
