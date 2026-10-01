@@ -1,6 +1,7 @@
 use core::f32;
 use std::{fmt::Write as _, fs::File, io::Read};
 
+use arboard::Clipboard;
 use chardetng::{EncodingDetector, Iso2022JpDetection::Deny, Utf8Detection::Allow};
 use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
@@ -14,7 +15,7 @@ use crate::{
     output,
     save::{self, BitArray},
   },
-  widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
+  widgets::buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
 const DESC_C1S2: &str = r"“密码级别”，“转换密码版本”，“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
@@ -34,7 +35,30 @@ impl App {
         // 第1行
         Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳》的密码文本文件。");
         ui.horizontal(|ui| {
-          if ui.add(select_file_btn()).clicked(){
+          if ui.add(clipboard_btn()).clicked() {
+            let result = validate_clipboard_text();
+            match result {
+                Ok(o) => {
+                    self.input_file_path_c1s2 = String::new();
+                    self.txt_file = o.0;
+                    self.txt_bytes = o.1;
+                    self.txt_bits = Some(o.2);
+                    self.txt_src_grade_version = Some((o.3, o.4));
+
+                    self.pwd_grade_c1s2 = None;
+                    self.to_convert_pwd_text_ver = false;
+                    self.to_export_pwd_bin_c1s2 = false;
+                    self.pwd_cheat_ver_c1s2 = None;
+                    self.to_export_pwd_data_text_c1s2 = false;
+                },
+                Err(e) => {
+                    e.clone_into(&mut self.err_msg);
+                    self.err_modal_open = true;
+                },
+            }
+          }
+
+          if ui.add(select_file_btn()).clicked() {
             if let Some(file) = FileDialog::new().pick_file(){
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证密码文本文件
@@ -60,7 +84,8 @@ impl App {
               }
             }
           }
-          if self.input_file_path_c1s2.is_empty() {
+          
+          if self.txt_src_grade_version.is_none() {
             ui.add_enabled(false, reset_btn());
           } else if ui.add(reset_btn()).clicked() {
             self.input_file_path_c1s2.clear();
@@ -439,9 +464,32 @@ fn validate_input_file(
   }
 
   let password = cow_str.into_owned();
+  validate_password_string(&password)
+}
+
+fn validate_clipboard_text()
+-> Result<(String, Vec<u8>, BitArray, PasswordGrade, PasswordVersion), &'static str> {
+  let clipboard_result = Clipboard::new();
+  if clipboard_result.is_err() {
+    return Err("访问剪贴板时出现错误！");
+  }
+  let mut clipboard = clipboard_result.unwrap();
+
+  let clipboard_text_result = clipboard.get_text();
+  if clipboard_text_result.is_err() {
+    return Err("获取剪贴板的文本时出现错误！");
+  }
+
+  let password = clipboard_text_result.unwrap();
+  validate_password_string(&password)
+}
+
+fn validate_password_string(
+  password: &str,
+) -> Result<(String, Vec<u8>, BitArray, PasswordGrade, PasswordVersion), &'static str> {
   // If the text file is empty...
   if password.is_empty() {
-    return Err("文本文件内没有任何内容！");
+    return Err("文本中没有任何内容！");
   }
 
   // Remove all line break and whitespace.
@@ -452,7 +500,7 @@ fn validate_input_file(
     260 => PasswordGrade::Gold,
     61 => PasswordGrade::Silver,
     16 => PasswordGrade::Bronze,
-    0 => return Err("文本文件内没有任何内容！"),
+    0 => return Err("文本中没有任何内容！"),
     _ => return Err("密码长度不正确！"),
   };
   // Check its password version.

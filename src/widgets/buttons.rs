@@ -17,3 +17,7 @@ pub fn reset_btn() -> Button<'static> {
 pub fn pwd_info_btn() -> Button<'static> {
   Button::new(RichText::new("🔍 查看信息").color(LIGHT)).fill(SECONDARY)
 }
+
+pub fn clipboard_btn() -> Button<'static> {
+  Button::new(RichText::new("📋 剪贴板").color(LIGHT)).fill(PRIMARY)
+}

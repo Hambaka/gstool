@@ -937,6 +937,7 @@ dependencies = [
 name = "gstool"
 version = "0.2.0"
 dependencies = [
+ "arboard",
  "chardetng",
  "crc32fast",
  "eframe",
