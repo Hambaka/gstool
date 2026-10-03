@@ -1,4 +1,3 @@
-use core::f32;
 use std::{fmt::Write as _, fs::File, io::Read};
 
 use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};

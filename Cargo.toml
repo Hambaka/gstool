@@ -9,16 +9,18 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-egui = "0.36"
-eframe = { version = "0.36", default-features = false, features = [
+egui = { git = "https://github.com/emilk/egui", rev = "6b420bc1b11cd4f37d5db6b5e0a2e369f259dd35" }
+eframe = { git = "https://github.com/emilk/egui", rev = "6b420bc1b11cd4f37d5db6b5e0a2e369f259dd35", default-features = false, features = [
     "default_fonts", # Embed the default egui fonts.
+    "links",
+    "system_fonts",
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "wayland",       # To support Linux (and CI)
     "x11",           # To support older Linux distributions (restores one of the default features)
 ] }
 egui_extras = { version = "0.36", default-features = false, features = ["image"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
-egui-notify = { git = "https://github.com/UnknownSuperficialNight/egui-notify.git", rev = "ae98ed7cb57a5c1c0127ef878bc9b2233d335983" }
+egui-notify = "0.23"
 phf = { version = "0.14", features = ["macros"] }
 rfd = "0.17"
 zstd = "0.14"
@@ -26,6 +28,10 @@ crc32fast = "1.5"
 chardetng = "1.0"
 encoding_rs = "0.8"
 arboard = { version = "3.6", default-features = false }
+
+[patch.crates-io]
+# 临时同步"egui-notify"所依赖的"egui"版本
+egui = { git = "https://github.com/emilk/egui", rev = "6b420bc1b11cd4f37d5db6b5e0a2e369f259dd35" }
 
 [build-dependencies]
 serde_json = "1.0"

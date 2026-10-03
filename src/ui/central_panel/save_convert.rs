@@ -1,4 +1,3 @@
-use core::f32;
 use std::{
   fmt::Write as _,
   fs::{File, create_dir_all},

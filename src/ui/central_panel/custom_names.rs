@@ -1,4 +1,3 @@
-use core::f32;
 use std::{fmt::Write as _, io::Cursor};
 
 use egui::{

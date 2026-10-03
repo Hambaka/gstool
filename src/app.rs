@@ -164,24 +164,7 @@ impl App {
   }
 
   pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-    // 1. 设置字体
-    // 解压内嵌字体
-    let decompressed_font =
-      zstd::decode_all(include_bytes!(concat!(env!("OUT_DIR"), "/font.zst")).as_slice()).unwrap();
-    // 替换默认字体以支持显示CJK等字符
-    let mut fonts = egui::FontDefinitions::default();
-    fonts.font_data.insert(
-      "simplified_chinese_font".to_owned(),
-      std::sync::Arc::new(egui::FontData::from_owned(decompressed_font)),
-    );
-    fonts
-      .families
-      .entry(egui::FontFamily::Proportional)
-      .or_default()
-      .insert(0, "simplified_chinese_font".to_owned());
-    cc.egui_ctx.set_fonts(fonts);
-
-    // 2. 设置道具图标图片
+    // 1. 设置道具图标图片
     // 加载道具图标图片
     let image_bytes = include_bytes!("../assets/icon_img/all_items.png");
     let image = image::load_from_memory_with_format(image_bytes, image::ImageFormat::Png).unwrap();
