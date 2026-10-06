@@ -1,6 +1,7 @@
 use crate::core::{
   bits::BitArray,
   data::{ALL_DJINN_NAMES, DYRATI_ITEM_NAMES, Language},
+  password::structs::{PasswordData, PasswordInfo},
   save_game::format::{
     CHECKSUM_INDEX, DEFAULT_CLASS_MULTIPLIERS, MAX_VALID_BASE_STATS_VALUES_PWD,
     MAX_VALID_IN_GAME_STATS_VALUES, PSYNERGY_ITEMS, STACKABLE_ITEMS,
@@ -9,62 +10,6 @@ use crate::core::{
 
 use super::enums::PasswordGrade;
 use std::fmt::Write as _;
-
-#[derive(Debug)]
-pub struct SaveData {
-  levels: [u8; 4],
-  djinn: [u32; 4],
-  events: [u8; 6],
-  stats: [[u16; 6]; 4],
-  items: [[u16; 15]; 4],
-  coins: u32,
-}
-
-#[derive(Debug, Clone)]
-pub struct PasswordInfo {
-  levels: [u8; 4],
-  djinn: [[bool; 7]; 4],
-  events: [bool; 6],
-  base_stats: [[u16; 6]; 4],
-  stats: [[u16; 6]; 4],
-  psy_items: [bool; 8],
-  items: [[(u16, u8); 15]; 4],
-  coins: u32,
-}
-
-impl PasswordInfo {
-  pub fn get_levels(&self) -> [u8; 4] {
-    self.levels
-  }
-
-  pub fn get_djinn(&self) -> [[bool; 7]; 4] {
-    self.djinn
-  }
-
-  pub fn get_events(&self) -> [bool; 6] {
-    self.events
-  }
-
-  pub fn get_base_stats(&self) -> [[u16; 6]; 4] {
-    self.base_stats
-  }
-
-  pub fn get_stats(&self) -> [[u16; 6]; 4] {
-    self.stats
-  }
-
-  pub fn get_psy_items(&self) -> [bool; 8] {
-    self.psy_items
-  }
-
-  pub fn get_items(&self) -> [[(u16, u8); 15]; 4] {
-    self.items
-  }
-
-  pub fn get_coins(&self) -> u32 {
-    self.coins
-  }
-}
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
 Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L8 */
@@ -76,7 +21,7 @@ fn get_event_flag(raw_save: &[u8], flag: u32) -> u8 {
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
 Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L35 */
-fn gen_save_data_with_raw_save_bytes(raw_save: &[u8]) -> SaveData {
+fn gen_save_data_with_raw_save_bytes(raw_save: &[u8]) -> PasswordData {
   // [u8; 4]
   let mut levels = [0; 4];
   // [u32; 4]
@@ -141,7 +86,7 @@ fn gen_save_data_with_raw_save_bytes(raw_save: &[u8]) -> SaveData {
     raw_save[0x252],
     raw_save[0x253],
   ]);
-  SaveData {
+  PasswordData {
     levels,
     djinn,
     events,
@@ -153,7 +98,7 @@ fn gen_save_data_with_raw_save_bytes(raw_save: &[u8]) -> SaveData {
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
 Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L79 */
-fn gen_password_bytes_with_save_data(grade: PasswordGrade, save_data: &SaveData) -> Vec<u8> {
+fn gen_password_bytes_with_save_data(grade: PasswordGrade, save_data: &PasswordData) -> Vec<u8> {
   let mut bits = BitArray::new();
 
   // Insert 7 bits per level, 7 bits per jinn element
@@ -459,7 +404,7 @@ pub fn get_valid_password_bits_option(
 fn gen_save_data_with_password_bits(
   password_bits: &mut BitArray,
   password_grade: PasswordGrade,
-) -> SaveData {
+) -> PasswordData {
   /* [u8; 4]
   TEMP Default Values
   Order: Isaac, Garet, Ivan, Mia */
@@ -679,7 +624,7 @@ fn gen_save_data_with_password_bits(
     coins = password_bits.sub_bits_u32(password_bits.len() - 24, password_bits.len() - 1);
   }
 
-  SaveData {
+  PasswordData {
     levels,
     djinn,
     events,
@@ -692,12 +637,12 @@ fn gen_save_data_with_password_bits(
 pub fn get_save_data_with_password_bits(
   password_bits: &mut BitArray,
   source_grade: PasswordGrade,
-) -> SaveData {
+) -> PasswordData {
   gen_save_data_with_password_bits(password_bits, source_grade)
 }
 
 pub fn get_password_bytes_with_save_data(
-  save_data: &SaveData,
+  save_data: &PasswordData,
   target_grade: PasswordGrade,
 ) -> Vec<u8> {
   gen_password_bytes_with_save_data(target_grade, save_data)
@@ -884,7 +829,7 @@ pub fn get_exported_data_for_dyrati_sheet_with_raw_save_bytes(raw_save: &[u8]) -
   gen_exported_data_for_dyrati_sheet_with_info(&pwd_info)
 }
 
-pub fn get_exported_data_for_dyrati_sheet_by_save_data(save_data: &SaveData) -> String {
+pub fn get_exported_data_for_dyrati_sheet_by_save_data(save_data: &PasswordData) -> String {
   let pwd_info = gen_password_info_with_save_data(save_data);
   gen_exported_data_for_dyrati_sheet_with_info(&pwd_info)
 }
@@ -904,7 +849,7 @@ pub fn gen_password_info_with_raw_save_bytes(raw_save: &[u8]) -> PasswordInfo {
   gen_password_info_with_save_data(&save_data)
 }
 
-pub fn gen_password_info_with_save_data(save_data: &SaveData) -> PasswordInfo {
+pub fn gen_password_info_with_save_data(save_data: &PasswordData) -> PasswordInfo {
   // Levels
   let levels = save_data.levels;
   // Djinn

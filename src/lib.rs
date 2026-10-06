@@ -18,6 +18,9 @@ mod core {
     pub mod format;
     pub mod raw;
   }
+  pub mod password {
+    pub mod structs;
+  }
 }
 mod util {
   pub mod bps;

@@ -7,9 +7,8 @@ use crate::{
     bits::BitArray,
     data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, get_icon_id},
     enums::PasswordGrade,
-    save::{
-      self, PasswordInfo, gen_password_info_with_raw_save_bytes, gen_password_info_with_save_data,
-    },
+    password::structs::PasswordInfo,
+    save::{self, gen_password_info_with_raw_save_bytes, gen_password_info_with_save_data},
     save_game::format::{MAX_VALID_BASE_STATS_VALUES_PWD, PSYNERGY_ITEMS, STACKABLE_ITEMS},
   },
   widgets::{
