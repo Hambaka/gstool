@@ -13,6 +13,9 @@ mod core {
   pub mod enums;
   pub mod output;
   pub mod save;
+  pub mod save_game {
+    pub mod format;
+  }
 }
 mod util {
   pub mod bps;
