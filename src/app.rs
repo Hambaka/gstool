@@ -8,8 +8,8 @@ use crate::{
   core::{
     bits::BitArray,
     data::Language,
-    enums::{GameType, GameVersion, NameType, PasswordGrade, PasswordVersion},
-    save::RawSaveData,
+    enums::{GameVersion, NameType, PasswordGrade, PasswordVersion},
+    save_game::raw::{GameInfo, SaveSlot},
   },
   ui::window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
   widgets::{
@@ -155,7 +155,7 @@ pub struct App {
   pub to_export_all_save: bool,
   pub input_file_path_c1s1: String,
   pub save_is_available: Option<usize>,
-  pub raw_save_data: [Option<RawSaveData>; 3],
+  pub raw_save_data: [Option<SaveSlot>; 3],
   pub pwd_grade_c1s1: PasswordGrade,
   pub pwd_text_ver_c1s1: Option<PasswordVersion>,
   pub to_export_pwd_bin_c1s1: bool,
@@ -190,7 +190,7 @@ pub struct App {
   // 2. 存档转换功能部分
   pub input_file_path_c2: String,
   pub save_file: Vec<u8>,
-  pub save_src_type_index: Option<(GameType, GameVersion, usize)>,
+  pub save_src_type_index: Option<GameInfo>,
   pub default_name_ver: Option<NameType>,
   pub build_date_ver: Option<GameVersion>,
   pub out_dir_c2: String,

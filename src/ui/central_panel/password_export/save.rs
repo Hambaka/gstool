@@ -9,7 +9,8 @@ use crate::{
   core::{
     enums::{GameVersion, PasswordGrade, PasswordVersion},
     output,
-    save::{self, RawSaveData},
+    save::{self},
+    save_game::raw::{SaveSlot, collect_slots, find_first_slot_index},
   },
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
@@ -435,7 +436,7 @@ impl App {
 fn validate_input_file(
   path_str: &str,
   to_export_all_save: bool,
-) -> Result<([Option<RawSaveData>; 3], usize), &'static str> {
+) -> Result<([Option<SaveSlot>; 3], usize), &'static str> {
   // Read save file.
   let input_file_result = File::open(path_str);
   let mut sav_file;
@@ -460,7 +461,7 @@ fn validate_input_file(
   sav_file.read_to_end(&mut raw_save_file).unwrap();
 
   let loop_start_index;
-  if let Some(index) = save::get_loop_start_index_option(&raw_save_file) {
+  if let Some(index) = find_first_slot_index(&raw_save_file) {
     loop_start_index = index;
   } else {
     return Err("输入的不是《黄金太阳 开启的封印》的存档文件！或者存档文件中没有数据！");
@@ -468,8 +469,7 @@ fn validate_input_file(
 
   /* Get save data from save file with slot number.
   Also check if the save data is clear data. */
-  let save_data_map =
-    save::get_raw_save_data_map(to_export_all_save, &raw_save_file, loop_start_index);
+  let save_data_map = collect_slots(to_export_all_save, &raw_save_file, loop_start_index);
   if save_data_map.is_empty() {
     if to_export_all_save {
       return Err("存档文件中没有数据！");

@@ -15,6 +15,7 @@ mod core {
   pub mod save;
   pub mod save_game {
     pub mod format;
+    pub mod raw;
   }
 }
 mod util {

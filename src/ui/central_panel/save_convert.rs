@@ -12,7 +12,8 @@ use crate::{
   App,
   core::{
     enums::{GameType, GameVersion, NameType},
-    save::{convert_save_file, get_game_type_with_loop_start_index_option},
+    save::convert_save_file,
+    save_game::raw::{GameInfo, identify_game},
   },
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };
@@ -50,10 +51,10 @@ impl App {
               // 验证存档文件
               let result = validate_input_file(&new_file_path);
               match result {
-                Ok(o) => {
+                Ok((save_vec, game_info)) => {
                   self.input_file_path_c2 = new_file_path;
-                  self.save_file = o.0;
-                  self.save_src_type_index = Some((o.1, o.2, o.3));
+                  self.save_file = save_vec;
+                  self.save_src_type_index = Some(game_info);
 
                   self.build_date_ver = None;
                   self.default_name_ver = None;
@@ -104,14 +105,14 @@ impl App {
               ui.selectable_value(&mut self.default_name_ver, Some(NameType::Spanish), NameType::Spanish.get_name());
               ui.selectable_value(&mut self.default_name_ver, Some(NameType::French), NameType::French.get_name());
               ui.selectable_value(&mut self.default_name_ver, Some(NameType::Italian), NameType::Italian.get_name());
-              ui.add_enabled_ui(matches!(val_result.0, GameType::TheBrokenSeal), |ui| {
+              ui.add_enabled_ui(matches!(val_result.get_game_type(), GameType::TheBrokenSeal), |ui| {
                 ui.selectable_value(
                   &mut self.default_name_ver,
                   Some(NameType::ChineseFanTranslation2023Team),
                   NameType::ChineseFanTranslation2023Team.get_name(),
                 );
               });
-              ui.add_enabled_ui(matches!(val_result.0, GameType::TheLostAge), |ui| {
+              ui.add_enabled_ui(matches!(val_result.get_game_type(), GameType::TheLostAge), |ui| {
                 ui.selectable_value(
                   &mut self.default_name_ver,
                   Some(NameType::ChineseFanTranslationMobileTeam),
@@ -148,7 +149,7 @@ impl App {
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.build_date_ver, None, "无");
               for ele in GameVersion::GAME_VERSIONS {
-                ui.add_enabled_ui(ele != val_result.1, |ui| {
+                ui.add_enabled_ui(ele != val_result.get_version(), |ui| {
                   ui.selectable_value(&mut self.build_date_ver, Some(ele), ele.get_name());
                 });
               }
@@ -198,8 +199,8 @@ impl App {
     // Convert save data.
     let new_save_file = convert_save_file(
       &mut self.save_file.clone(),
-      self.save_src_type_index.unwrap().0,
-      self.save_src_type_index.unwrap().2,
+      self.save_src_type_index.unwrap().get_game_type(),
+      self.save_src_type_index.unwrap().get_slot_index(),
       self.default_name_ver,
       self.build_date_ver,
     );
@@ -260,7 +261,7 @@ impl App {
 
     let mut result_index = 0;
     result_index += 1;
-    let game_type_cn = match self.save_src_type_index.unwrap().0 {
+    let game_type_cn = match self.save_src_type_index.unwrap().get_game_type() {
       GameType::TheBrokenSeal => "《黄金太阳 开启的封印》",
       GameType::TheLostAge => "《黄金太阳 失落的时代》",
     };
@@ -293,9 +294,7 @@ impl App {
   }
 }
 
-fn validate_input_file(
-  path_str: &str,
-) -> Result<(Vec<u8>, GameType, GameVersion, usize), &'static str> {
+fn validate_input_file(path_str: &str) -> Result<(Vec<u8>, GameInfo), &'static str> {
   // Read save file.
   let input_file_result = File::open(path_str);
   let mut sav_file;
@@ -320,17 +319,14 @@ fn validate_input_file(
   sav_file.read_to_end(&mut raw_save_file).unwrap();
 
   // Detect game/save type, also get loop start index.
-  let game_type_loop_index_tuple = get_game_type_with_loop_start_index_option(&raw_save_file);
-  if game_type_loop_index_tuple.is_none() {
+  let game_info_option = identify_game(&raw_save_file);
+  if game_info_option.is_none() {
     return Err(
       "输入的不是《黄金太阳 开启的封印》或《黄金太阳 失落的时代》的存档文件！或者存档文件中没有数据！",
     );
-  }
+  } else {
+    let game_info = game_info_option.unwrap();
 
-  Ok((
-    raw_save_file,
-    game_type_loop_index_tuple.unwrap().0,
-    game_type_loop_index_tuple.unwrap().1,
-    game_type_loop_index_tuple.unwrap().2,
-  ))
+    Ok((raw_save_file, game_info))
+  }
 }
