@@ -117,35 +117,35 @@ impl PreviewData {
   }
 
   pub fn get_levels(&self, i: usize) -> u8 {
-    self.info.get_levels()[i]
+    self.info.levels[i]
   }
 
   pub fn get_djinn(&self, i: usize, j: usize) -> bool {
-    self.info.get_djinn()[j][i]
+    self.info.djinn[j][i]
   }
 
   pub fn get_events(&self, i: usize) -> bool {
-    self.info.get_events()[i]
+    self.info.events[i]
   }
 
   pub fn get_base_stats(&self, i: usize, j: usize) -> u16 {
-    self.info.get_base_stats()[j][i]
+    self.info.base_stats[j][i]
   }
 
   pub fn get_stats(&self, i: usize, j: usize) -> u16 {
-    self.info.get_stats()[j][i]
+    self.info.stats[j][i]
   }
 
   pub fn get_psy_items(&self, i: usize) -> bool {
-    self.info.get_psy_items()[i]
+    self.info.psy_items[i]
   }
 
   pub fn get_items(&self, i: usize, j: usize) -> (u16, u8) {
-    self.info.get_items()[j][i]
+    self.info.items[j][i]
   }
 
   pub fn get_coins(&self) -> u32 {
-    self.info.get_coins()
+    self.info.coins
   }
 }
 

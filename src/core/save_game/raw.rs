@@ -22,9 +22,9 @@ struct HeaderInfo {
 
 #[derive(Debug, Clone, Copy)]
 pub struct GameInfo {
-  game_type: GameType,
-  version: GameVersion,
-  slot_index: usize,
+  pub game_type: GameType,
+  pub version: GameVersion,
+  pub slot_index: usize,
 }
 
 impl GameInfo {
@@ -34,18 +34,6 @@ impl GameInfo {
       version,
       slot_index,
     }
-  }
-
-  pub fn get_game_type(&self) -> GameType {
-    self.game_type
-  }
-
-  pub fn get_version(&self) -> GameVersion {
-    self.version
-  }
-
-  pub fn get_slot_index(&self) -> usize {
-    self.slot_index
   }
 }
 

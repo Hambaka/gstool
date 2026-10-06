@@ -19,37 +19,3 @@ pub struct PasswordInfo {
   pub items: [[(u16, u8); 15]; 4],
   pub coins: u32,
 }
-
-impl PasswordInfo {
-  pub fn get_levels(&self) -> [u8; 4] {
-    self.levels
-  }
-
-  pub fn get_djinn(&self) -> [[bool; 7]; 4] {
-    self.djinn
-  }
-
-  pub fn get_events(&self) -> [bool; 6] {
-    self.events
-  }
-
-  pub fn get_base_stats(&self) -> [[u16; 6]; 4] {
-    self.base_stats
-  }
-
-  pub fn get_stats(&self) -> [[u16; 6]; 4] {
-    self.stats
-  }
-
-  pub fn get_psy_items(&self) -> [bool; 8] {
-    self.psy_items
-  }
-
-  pub fn get_items(&self) -> [[(u16, u8); 15]; 4] {
-    self.items
-  }
-
-  pub fn get_coins(&self) -> u32 {
-    self.coins
-  }
-}

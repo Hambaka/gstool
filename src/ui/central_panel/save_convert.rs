@@ -107,14 +107,14 @@ impl App {
               ui.selectable_value(&mut self.default_name_ver, Some(NameType::Spanish), NameType::Spanish.get_name());
               ui.selectable_value(&mut self.default_name_ver, Some(NameType::French), NameType::French.get_name());
               ui.selectable_value(&mut self.default_name_ver, Some(NameType::Italian), NameType::Italian.get_name());
-              ui.add_enabled_ui(matches!(val_result.get_game_type(), GameType::TheBrokenSeal), |ui| {
+              ui.add_enabled_ui(matches!(val_result.game_type, GameType::TheBrokenSeal), |ui| {
                 ui.selectable_value(
                   &mut self.default_name_ver,
                   Some(NameType::ChineseFanTranslation2023Team),
                   NameType::ChineseFanTranslation2023Team.get_name(),
                 );
               });
-              ui.add_enabled_ui(matches!(val_result.get_game_type(), GameType::TheLostAge), |ui| {
+              ui.add_enabled_ui(matches!(val_result.game_type, GameType::TheLostAge), |ui| {
                 ui.selectable_value(
                   &mut self.default_name_ver,
                   Some(NameType::ChineseFanTranslationMobileTeam),
@@ -151,7 +151,7 @@ impl App {
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.build_date_ver, None, "无");
               for ele in GameVersion::GAME_VERSIONS {
-                ui.add_enabled_ui(ele != val_result.get_version(), |ui| {
+                ui.add_enabled_ui(ele != val_result.version, |ui| {
                   ui.selectable_value(&mut self.build_date_ver, Some(ele), ele.get_name());
                 });
               }
@@ -201,8 +201,8 @@ impl App {
     // Convert save data.
     let new_save_file = convert_save_file(
       &mut self.save_file.clone(),
-      self.save_src_type_index.unwrap().get_game_type(),
-      self.save_src_type_index.unwrap().get_slot_index(),
+      self.save_src_type_index.unwrap().game_type,
+      self.save_src_type_index.unwrap().slot_index,
       self.default_name_ver,
       self.build_date_ver,
     );
@@ -263,7 +263,7 @@ impl App {
 
     let mut result_index = 0;
     result_index += 1;
-    let game_type_cn = match self.save_src_type_index.unwrap().get_game_type() {
+    let game_type_cn = match self.save_src_type_index.unwrap().game_type {
       GameType::TheBrokenSeal => "《黄金太阳 开启的封印》",
       GameType::TheLostAge => "《黄金太阳 失落的时代》",
     };
