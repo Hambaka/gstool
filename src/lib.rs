@@ -14,6 +14,7 @@ mod core {
   pub mod output;
   pub mod save;
   pub mod save_game {
+    pub mod convert;
     pub mod format;
     pub mod raw;
   }
