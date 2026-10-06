@@ -7,10 +7,11 @@ use crate::{
   App,
   app::SubCommandEnum,
   core::{
+    bits::BitArray,
     convert,
     enums::{GameVersion, PasswordGrade, PasswordVersion},
     output,
-    save::{self, BitArray},
+    save::{self},
   },
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };

@@ -12,8 +12,9 @@ use crate::{
   App,
   app::{AtomsEnum, SubCommandEnum},
   core::{
+    bits::BitArray,
     enums::{GameVersion, PasswordGrade, PasswordVersion},
-    save::{self, BitArray},
+    save::{self},
   },
   ui::window::pwd_info::SaveSlotEnum,
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},

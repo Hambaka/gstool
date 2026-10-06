@@ -7,6 +7,7 @@ mod widgets {
   pub mod icons;
 }
 mod core {
+  pub mod bits;
   pub mod convert;
   pub mod data;
   pub mod enums;

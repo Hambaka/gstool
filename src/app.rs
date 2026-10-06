@@ -6,9 +6,10 @@ use image::GenericImageView;
 
 use crate::{
   core::{
+    bits::BitArray,
     data::Language,
     enums::{GameType, GameVersion, NameType, PasswordGrade, PasswordVersion},
-    save::{BitArray, RawSaveData},
+    save::RawSaveData,
   },
   ui::window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
   widgets::{

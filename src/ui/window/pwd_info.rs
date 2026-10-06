@@ -4,11 +4,12 @@ use crate::{
   App,
   app::SubCommandEnum,
   core::{
+    bits::BitArray,
     data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, get_icon_id},
     enums::PasswordGrade,
     save::{
-      self, BitArray, MAX_VALID_BASE_STATS_VALUES_PWD, PSYNERGY_ITEMS, PasswordInfo,
-      STACKABLE_ITEMS, gen_password_info_with_raw_save_bytes, gen_password_info_with_save_data,
+      self, MAX_VALID_BASE_STATS_VALUES_PWD, PSYNERGY_ITEMS, PasswordInfo, STACKABLE_ITEMS,
+      gen_password_info_with_raw_save_bytes, gen_password_info_with_save_data,
     },
   },
   widgets::{

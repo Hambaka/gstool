@@ -1,4 +1,7 @@
-use crate::core::data::{ALL_DJINN_NAMES, DYRATI_ITEM_NAMES, Language};
+use crate::core::{
+  bits::BitArray,
+  data::{ALL_DJINN_NAMES, DYRATI_ITEM_NAMES, Language},
+};
 
 use super::enums::{GameType, GameVersion, NameType, PasswordGrade};
 use std::{collections::HashMap, fmt::Write as _};
@@ -426,96 +429,6 @@ impl PasswordInfo {
   }
 }
 
-// Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-pub struct BitArray {
-  bits: Vec<u8>,
-}
-
-// Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-impl Default for BitArray {
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
-impl BitArray {
-  pub fn new() -> Self {
-    BitArray { bits: Vec::new() }
-  }
-
-  pub fn from(value: &[u8]) -> Self {
-    BitArray {
-      bits: Vec::from(value),
-    }
-  }
-
-  pub fn get_bits(&self) -> Vec<u8> {
-    self.bits.clone()
-  }
-
-  // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L16
-  fn push_bit(&mut self, value: u32) {
-    self.bits.push((value & 1) as u8);
-  }
-
-  // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L16
-  fn push_bits(&mut self, value: u32, size: usize) {
-    for i in 0..size {
-      self.bits.push(((value >> (size - i - 1)) & 1) as u8);
-    }
-  }
-
-  // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L16
-  fn replace_bits(&mut self, value: u32, size: usize, pos: usize) {
-    for i in 0..size {
-      self.bits[pos + i] = ((value >> (size - i - 1)) & 1) as u8;
-    }
-  }
-
-  // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L23
-  fn sub_bits_u8(&mut self, min: usize, max: usize) -> u8 {
-    let mut acc = 0;
-    for i in 0..=(max - min) {
-      if min < self.bits.len() {
-        acc = 2 * acc + self.bits[min + i];
-      } else {
-        acc *= 2;
-      }
-    }
-    acc
-  }
-
-  // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L23
-  fn sub_bits_u16(&mut self, min: usize, max: usize) -> u16 {
-    let mut acc = 0;
-    for i in 0..=(max - min) {
-      if min < self.bits.len() {
-        acc = 2 * acc + u16::from(self.bits[min + i]);
-      } else {
-        acc *= 2;
-      }
-    }
-    acc
-  }
-
-  // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L23
-  fn sub_bits_u32(&mut self, min: usize, max: usize) -> u32 {
-    let mut acc = 0;
-    for i in 0..=(max - min) {
-      if min < self.bits.len() {
-        acc = 2 * acc + u32::from(self.bits[min + i]);
-      } else {
-        acc *= 2;
-      }
-    }
-    acc
-  }
-
-  fn get_len(&self) -> usize {
-    self.bits.len()
-  }
-}
-
 // password
 pub fn get_loop_start_index_option(raw_save_file: &[u8]) -> Option<usize> {
   for i in 0..MAX_LOOP_COUNT[0] {
@@ -848,7 +761,7 @@ fn gen_password_bytes_with_save_data(grade: PasswordGrade, save_data: &SaveData)
   }
 
   // Append 0 until reaching the correct password size.
-  for _i in 0..8 * size - bits.get_len() {
+  for _i in 0..8 * size - bits.len() {
     bits.push_bit(0);
   }
 
@@ -886,11 +799,11 @@ fn gen_password_bytes_with_save_data(grade: PasswordGrade, save_data: &SaveData)
     let mut max = i + 5;
     let entry;
 
-    if max <= bits.get_len() {
+    if max <= bits.len() {
       entry = bits.sub_bits_u8(i, max);
     } else {
       let last_left_shift = max - max_size + 1;
-      max = bits.get_len() - 1;
+      max = bits.len() - 1;
       entry = bits.sub_bits_u8(i, max) << last_left_shift;
     }
 
@@ -1119,38 +1032,38 @@ fn gen_save_data_with_password_bits(
       -> 16 + 40
       -> 56 */
       for _i in 0..56 {
-        password_bits.bits.remove(password_bits.get_len() - 1);
+        password_bits.remove(password_bits.len() - 1);
       }
       /* (4 * 7) + (4 * 7) + (2 + 6) + (4 * (11 + 11 + 10 + 10 + 10 + 8)) + 8 - 1
       -> 28 + 28 + 8 + 240 + 8 - 1
       -> 311 */
       for i in (1..=8).rev() {
-        password_bits.bits.remove(311 + i * 64);
+        password_bits.remove(311 + i * 64);
       }
       /* (4 * 7) + (4 * 7) + (2 + 6) + (4 * (11 + 11 + 10 + 10 + 10 + 8))
       -> 28 + 28 + 8 + 240
       -> 304 */
       for _i in 0..8 {
-        password_bits.bits.remove(304);
+        password_bits.remove(304);
       }
       /* (4 * 7) + (4 * 7)
       -> 28 + 28
       -> 56 */
       for _i in 0..2 {
-        password_bits.bits.remove(56);
+        password_bits.remove(56);
       }
     }
     PasswordGrade::Silver | PasswordGrade::Bronze => {
       /* (2 * 8)
       -> 16 */
       for _i in 0..16 {
-        password_bits.bits.remove(password_bits.get_len() - 1);
+        password_bits.remove(password_bits.len() - 1);
       }
       /* (4 * 7) + (4 * 7)
       -> 28 + 28
       -> 56 */
       for _i in 0..2 {
-        password_bits.bits.remove(56);
+        password_bits.remove(56);
       }
     }
   }
@@ -1182,7 +1095,7 @@ fn gen_save_data_with_password_bits(
   /* Get all event bits.
   Order is: Vault, Vale, Deadbeard, Hsu, Colosso, Hammet */
   for (i, event) in events.iter_mut().enumerate() {
-    *event = password_bits.bits[61 - i];
+    *event = password_bits.bit_at(61 - i);
   }
 
   /* If password grade is silver or bronze, check 8 psynergy items.
@@ -1193,7 +1106,7 @@ fn gen_save_data_with_password_bits(
     let mut isaac_inventory_start_index = 4;
     for (i, psynergy_item) in PSYNERGY_ITEMS.iter().enumerate() {
       // Reversed order
-      if password_bits.bits[62 + (7 - i)] == 1 {
+      if password_bits.bit_at(62 + (7 - i)) == 1 {
         items[0][isaac_inventory_start_index] = *psynergy_item;
         isaac_inventory_start_index += 1;
       }
@@ -1263,7 +1176,7 @@ fn gen_save_data_with_password_bits(
         }
       }
     }
-    coins = password_bits.sub_bits_u32(password_bits.get_len() - 24, password_bits.get_len() - 1);
+    coins = password_bits.sub_bits_u32(password_bits.len() - 24, password_bits.len() - 1);
   }
 
   SaveData {
@@ -1509,16 +1422,16 @@ pub fn gen_password_info_with_save_data(save_data: &SaveData) -> PasswordInfo {
   let mut jupiter_djinn = [false; 7];
   // Reversed order
   for i in 0..7 {
-    if venus_djinn_bits.bits[6 - i] == 1 {
+    if venus_djinn_bits.bit_at(6 - i) == 1 {
       venus_djinn[i] = true;
     }
-    if mars_djinn_bits.bits[6 - i] == 1 {
+    if mars_djinn_bits.bit_at(6 - i) == 1 {
       mars_djinn[i] = true;
     }
-    if jupiter_djinn_bits.bits[6 - i] == 1 {
+    if jupiter_djinn_bits.bit_at(6 - i) == 1 {
       jupiter_djinn[i] = true;
     }
-    if mercury_djinn_bits.bits[6 - i] == 1 {
+    if mercury_djinn_bits.bit_at(6 - i) == 1 {
       mercury_djinn[i] = true;
     }
   }
