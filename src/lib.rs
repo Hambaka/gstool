@@ -19,6 +19,7 @@ mod core {
     pub mod raw;
   }
   pub mod password {
+    pub mod encode;
     pub mod structs;
   }
 }

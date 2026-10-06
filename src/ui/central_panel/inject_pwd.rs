@@ -14,6 +14,7 @@ use crate::{
   core::{
     bits::BitArray,
     enums::{BuildDate, GameVersion, PasswordGrade, PasswordVersion},
+    password::encode::{encode, from_raw_save},
     save::{self},
   },
   ui::window::pwd_info::SaveSlotEnum,
@@ -337,8 +338,7 @@ impl App {
             .as_ref()
             .unwrap()
             .get_data();
-          let password_bytes =
-            save::get_password_bytes_with_raw_save_bytes(raw_save_data, PasswordGrade::Gold);
+          let password_bytes = from_raw_save(raw_save_data, PasswordGrade::Gold);
           Some(password_bytes)
         }
         SubCommandEnum::Second => Some(self.txt_bytes.clone()),
@@ -356,8 +356,7 @@ impl App {
             .as_ref()
             .unwrap()
             .get_data();
-          let password_bytes =
-            save::get_password_bytes_with_raw_save_bytes(raw_save_data, PasswordGrade::Silver);
+          let password_bytes = from_raw_save(raw_save_data, PasswordGrade::Silver);
           Some(password_bytes)
         }
         SubCommandEnum::Second => match self.txt_src_grade_version {
@@ -372,8 +371,7 @@ impl App {
                 self.txt_src_grade_version.unwrap().0,
               );
 
-              let target_password_bytes =
-                save::get_password_bytes_with_save_data(&save_data, PasswordGrade::Silver);
+              let target_password_bytes = encode(&save_data, PasswordGrade::Silver);
               Some(target_password_bytes)
             }
           }
@@ -390,8 +388,7 @@ impl App {
                 self.dmp_src_grade.unwrap(),
               );
 
-              let target_password_bytes =
-                save::get_password_bytes_with_save_data(&save_data, PasswordGrade::Silver);
+              let target_password_bytes = encode(&save_data, PasswordGrade::Silver);
               Some(target_password_bytes)
             }
           }
@@ -410,8 +407,7 @@ impl App {
             .as_ref()
             .unwrap()
             .get_data();
-          let password_bytes =
-            save::get_password_bytes_with_raw_save_bytes(raw_save_data, PasswordGrade::Bronze);
+          let password_bytes = from_raw_save(raw_save_data, PasswordGrade::Bronze);
           Some(password_bytes)
         }
         SubCommandEnum::Second => match self.txt_src_grade_version {
@@ -426,8 +422,7 @@ impl App {
                 self.txt_src_grade_version.unwrap().0,
               );
 
-              let target_password_bytes =
-                save::get_password_bytes_with_save_data(&save_data, PasswordGrade::Bronze);
+              let target_password_bytes = encode(&save_data, PasswordGrade::Bronze);
               Some(target_password_bytes)
             }
           }
@@ -444,8 +439,7 @@ impl App {
                 self.dmp_src_grade.unwrap(),
               );
 
-              let target_password_bytes =
-                save::get_password_bytes_with_save_data(&save_data, PasswordGrade::Bronze);
+              let target_password_bytes = encode(&save_data, PasswordGrade::Bronze);
               Some(target_password_bytes)
             }
           }

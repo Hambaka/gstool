@@ -9,6 +9,7 @@ use crate::{
   core::{
     enums::{GameVersion, PasswordGrade, PasswordVersion},
     output,
+    password::encode::from_raw_save,
     save::{self},
     save_game::raw::{SaveSlot, collect_slots, find_first_slot_index},
   },
@@ -282,8 +283,7 @@ impl App {
 
     for (key, val_option) in self.raw_save_data.iter().enumerate() {
       if let Some(val) = val_option {
-        let password_bytes =
-          save::get_password_bytes_with_raw_save_bytes(val.get_data(), self.pwd_grade_c1s1);
+        let password_bytes = from_raw_save(val.get_data(), self.pwd_grade_c1s1);
         // Key is save slot number: 0, 1, 2 -> 1, 2, 3
         let sub_dir_str =
           match output::create_sav_sub_dir(key + 1, val.get_is_clear(), &output_dir_str) {

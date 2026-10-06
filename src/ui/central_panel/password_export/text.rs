@@ -13,6 +13,7 @@ use crate::{
     convert,
     enums::{GameVersion, PasswordGrade, PasswordVersion},
     output,
+    password::encode::encode,
     save::{self},
   },
   widgets::buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
@@ -232,7 +233,7 @@ impl App {
       self.txt_src_grade_version.unwrap().0,
     );
     let target_password_bytes = match self.pwd_grade_c1s2 {
-      Some(password_grade) => save::get_password_bytes_with_save_data(&save_data, password_grade),
+      Some(password_grade) => encode(&save_data, password_grade),
       None => self.txt_bytes.clone(),
     };
 
