@@ -78,7 +78,11 @@ pub fn run(level: i32) {
     }
   }
 
-  let compressed_bps = zstd::encode_all(all_bps.as_slice(), level).unwrap();
+  // let compressed_bps = zstd::encode_all(all_bps.as_slice(), level).unwrap();
+  let compressed_bps = structured_zstd::encoding::compress_slice_to_vec(
+    all_bps.as_slice(),
+    structured_zstd::encoding::CompressionLevel::from_level(level),
+  );
   let output_path = Path::new(&env::var("OUT_DIR").unwrap()).join("all_bps.zst");
   let mut output_file = File::create(output_path).expect("Create \"all_bps.zst\" failed!");
   output_file

@@ -10,7 +10,7 @@ use rfd::FileDialog;
 
 use crate::{
   App,
-  app::SubCommandEnum,
+  app::{AtomsEnum, SubCommandEnum},
   core::{
     enums::{GameVersion, PasswordGrade, PasswordVersion},
     save::{self, BitArray},
@@ -41,11 +41,11 @@ const PWD_SRC_DESC: [&str; 3] = [
 
 const DESC_C5: &str = r"使用该功能可为《黄金太阳 失落的时代》注入能够自动输入密码的程序。
 支持的版本：
-⒈ 官方版本ROM（日/美/德/西/法/意）
-⒉ 流传度最高的中文汉化版ROM（SOMA汉化组/Mobile+elffinal）
+1. 官方版本ROM（日/美/德/西/法/意）
+2. 流传度最高的中文汉化版ROM（SOMA汉化组/Mobile+elffinal）
 
 注：
-⒈ 游戏版本的来源多种多样，无法一一进行测试。";
+1. 游戏版本的来源多种多样，无法一一进行测试。";
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum InjectPasswordCombination {
@@ -107,9 +107,11 @@ struct FileInfo {
 }
 
 impl App {
-  pub fn show_c5(&mut self, ui: &mut Ui) {
+  pub fn show_c5(&mut self, ui: &mut Ui, svg_icon_size: f32, is_dark: bool) {
     // 正式界面
     Label::new(DESC_C5).selectable(false).ui(ui);
+
+    ui.add_space(16.0);
 
     egui::Grid::new("ID_GRID_C5")
       .num_columns(2)
@@ -122,7 +124,7 @@ impl App {
           .ui(ui)
           .on_hover_text("《黄金太阳 失落的时代》的ROM文件");
         ui.horizontal(|ui| {
-          if ui.add(select_file_btn()).clicked() {
+          if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file() {
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证ROM文件
@@ -139,8 +141,8 @@ impl App {
             }
           }
           if self.input_file_path_c5.is_empty() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked() {
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.input_file_path_c5.clear();
           }
           ui.add(
@@ -175,9 +177,11 @@ impl App {
             ui.horizontal(|ui| {
               ComboBox::from_id_salt(format!("ID_CB_C5_{}_1", PWD_SRC_LABEL[i]))
                 .width(100.0)
-                .selected_text(match &self.pwd_src[i] {
-                  Some(sub_command) => sub_command.get_name(),
-                  None => "无",
+                .selected_text({
+                  match &self.pwd_src[i] {
+                    Some(sub_command) => AtomsEnum::ImageAndText(sub_command.get_atoms(svg_icon_size, is_dark)) ,
+                    None => AtomsEnum::Text("无"),
+                  }
                 })
                 .show_ui(ui, |ui| {
                   if ui.selectable_value(&mut self.pwd_src[i], None, "无").changed() {
@@ -186,7 +190,7 @@ impl App {
 
                   ui.add_enabled_ui(self.save_is_available.is_some(), |ui| {
                     if ui
-                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::First), SubCommandEnum::First.get_name())
+                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::First), SubCommandEnum::First.get_atoms(svg_icon_size,is_dark))
                       .changed()
                     {
                       self.pwd_src_slot[i] = Some(SaveSlotEnum::from(self.save_is_available.unwrap()));
@@ -219,7 +223,7 @@ impl App {
 
                   ui.add_enabled_ui(self.txt_bits.is_some() && bool_txt, |ui| {
                     if ui
-                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Second), SubCommandEnum::Second.get_name())
+                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Second), SubCommandEnum::Second.get_atoms(svg_icon_size,is_dark))
                       .changed()
                     {
                       self.pwd_src_slot[i] = Some(SaveSlotEnum::First);
@@ -252,7 +256,7 @@ impl App {
 
                   ui.add_enabled_ui(self.dmp_bits.is_some() && bool_dmp, |ui| {
                     if ui
-                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Third), SubCommandEnum::Third.get_name())
+                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Third), SubCommandEnum::Third.get_atoms(svg_icon_size,is_dark))
                       .changed()
                     {
                       self.pwd_src_slot[i] = Some(SaveSlotEnum::First);
@@ -264,8 +268,8 @@ impl App {
                 ComboBox::from_id_salt(format!("ID_CB_C5_{}_2", PWD_SRC_LABEL[i]))
                   .width(100.0)
                   .selected_text(match &self.pwd_src_slot[i] {
-                    Some(save_slot) => save_slot.get_name(),
-                    None => "无",
+                    Some(save_slot) => AtomsEnum::ImageAndText(save_slot.get_atoms(svg_icon_size, is_dark, false)),
+                    None => AtomsEnum::Text("无"),
                   })
                   .show_ui(ui, |ui| {
                     for j in 0..3 {
@@ -273,7 +277,7 @@ impl App {
                         ui.selectable_value(
                           &mut self.pwd_src_slot[i],
                           Some(SaveSlotEnum::SAVE_SLOTS[j]),
-                          SaveSlotEnum::SAVE_SLOTS[j].get_name(),
+                          SaveSlotEnum::SAVE_SLOTS[j].get_atoms(svg_icon_size, is_dark, false),
                         );
                       });
                     }
@@ -291,14 +295,14 @@ impl App {
           .ui(ui)
           .on_hover_text("自定义输出的汉化版ROM文件路径（推荐留空），若留空则将转换后的ROM文件保存到输入文件的同目录下。");
         ui.horizontal(|ui| {
-          if ui.add(select_dir_btn()).clicked() {
+          if ui.add(select_dir_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_folder() {
               self.out_dir_c5 = file.to_string_lossy().into_owned();
             }
           }
           if self.out_dir_c5.is_empty() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked() {
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.out_dir_c5.clear();
           }
           ui.add(

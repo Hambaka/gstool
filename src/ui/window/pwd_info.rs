@@ -1,4 +1,4 @@
-use egui::{Button, ComboBox, Label, RichText, Widget};
+use egui::{Button, ComboBox, Image, Label, RichText, Widget};
 
 use crate::{
   App,
@@ -9,6 +9,14 @@ use crate::{
     save::{
       self, BitArray, MAX_VALID_BASE_STATS_VALUES_PWD, PSYNERGY_ITEMS, PasswordInfo,
       STACKABLE_ITEMS, gen_password_info_with_raw_save_bytes, gen_password_info_with_save_data,
+    },
+  },
+  widgets::{
+    colors::{DANGER, SUCCESS, get_default_svg_color},
+    icons::{
+      CHECK_MARK, NUMBER_1_CIRCLE_FILL, NUMBER_1_SQUARE_FILL, NUMBER_2_CIRCLE_FILL,
+      NUMBER_2_SQUARE_FILL, NUMBER_3_CIRCLE_FILL, NUMBER_3_SQUARE_FILL, NUMBER_4_SQUARE_FILL,
+      X_MARK,
     },
   },
 };
@@ -39,12 +47,35 @@ impl SaveSlotEnum {
     SaveSlotEnum::Third,
   ];
 
-  pub fn get_name(&self) -> &str {
-    match self {
-      Self::First => "存档 ❶",
-      Self::Second => "存档 ❷",
-      Self::Third => "存档 ❸",
+  pub fn get_name(&self, is_password_preview_window: bool) -> &'static str {
+    if is_password_preview_window {
+      match self {
+        Self::First => "号存档/密码数据",
+        _ => "号存档",
+      }
+    } else {
+      "号存档"
     }
+  }
+
+  pub fn get_atoms(
+    &self,
+    svg_icon_size: f32,
+    is_dark: bool,
+    is_password_preview_window: bool,
+  ) -> (Image<'static>, &'static str) {
+    let svg_icon_color = get_default_svg_color(is_dark);
+
+    (
+      Image::new(match self {
+        SaveSlotEnum::First => NUMBER_1_CIRCLE_FILL,
+        SaveSlotEnum::Second => NUMBER_2_CIRCLE_FILL,
+        SaveSlotEnum::Third => NUMBER_3_CIRCLE_FILL,
+      })
+      .tint(svg_icon_color)
+      .max_height(svg_icon_size),
+      self.get_name(is_password_preview_window),
+    )
   }
 
   pub fn from(value: usize) -> Self {
@@ -119,7 +150,9 @@ impl PreviewData {
 }
 
 impl App {
-  pub fn show_pwd_info_window(&mut self, ui: &mut egui::Ui) {
+  pub fn show_pwd_info_window(&mut self, ui: &mut egui::Ui, svg_icon_size: f32, is_dark: bool) {
+    let color = get_default_svg_color(is_dark);
+
     egui::Window::new("密码数据预览")
       .open(&mut self.pwd_info_window_open)
       .resizable(false)
@@ -127,29 +160,50 @@ impl App {
       .show(ui, |ui| {
         ui.columns_const(|[col_1, col_2, col_3]| {
           if self.preview_data[0].is_some() {
-            col_1.selectable_value(&mut self.preview_slot, SaveSlotEnum::First, "存档 ❶");
+            col_1.selectable_value(
+              &mut self.preview_slot,
+              SaveSlotEnum::First,
+              SaveSlotEnum::First.get_atoms(svg_icon_size, is_dark, true),
+            );
           } else {
             col_1.add_enabled(
               false,
-              Button::selectable(self.preview_slot == SaveSlotEnum::First, "存档 ❶"),
+              Button::selectable(
+                self.preview_slot == SaveSlotEnum::First,
+                SaveSlotEnum::First.get_atoms(svg_icon_size, is_dark, true),
+              ),
             );
           }
 
           if self.preview_data[1].is_some() {
-            col_2.selectable_value(&mut self.preview_slot, SaveSlotEnum::Second, "存档 ❷");
+            col_2.selectable_value(
+              &mut self.preview_slot,
+              SaveSlotEnum::Second,
+              SaveSlotEnum::Second.get_atoms(svg_icon_size, is_dark, true),
+            );
           } else {
             col_2.add_enabled(
               false,
-              Button::selectable(self.preview_slot == SaveSlotEnum::Second, "存档 ❷"),
+              Button::selectable(
+                self.preview_slot == SaveSlotEnum::Second,
+                SaveSlotEnum::Second.get_atoms(svg_icon_size, is_dark, true),
+              ),
             );
           }
 
           if self.preview_data[2].is_some() {
-            col_3.selectable_value(&mut self.preview_slot, SaveSlotEnum::Third, "存档 ❸");
+            col_3.selectable_value(
+              &mut self.preview_slot,
+              SaveSlotEnum::Third,
+              SaveSlotEnum::Third.get_atoms(svg_icon_size, is_dark, true),
+            );
           } else {
             col_3.add_enabled(
               false,
-              Button::selectable(self.preview_slot == SaveSlotEnum::Third, "存档 ❸"),
+              Button::selectable(
+                self.preview_slot == SaveSlotEnum::Third,
+                SaveSlotEnum::Third.get_atoms(svg_icon_size, is_dark, true),
+              ),
             );
           }
         });
@@ -160,10 +214,46 @@ impl App {
           let current_data = self.preview_current.as_ref().unwrap();
 
           ui.columns_const(|[col_1, col_2, col_3, col_4]| {
-            col_1.selectable_value(&mut self.preview_page, PreviewPageEnum::Character, "🅰 角色");
-            col_2.selectable_value(&mut self.preview_page, PreviewPageEnum::Item, "🅱 物品");
-            col_3.selectable_value(&mut self.preview_page, PreviewPageEnum::Djinn, "🅲 精灵");
-            col_4.selectable_value(&mut self.preview_page, PreviewPageEnum::Misc, "🅳 其他");
+            col_1.selectable_value(
+              &mut self.preview_page,
+              PreviewPageEnum::Character,
+              (
+                Image::new(NUMBER_1_SQUARE_FILL)
+                  .tint(color)
+                  .max_height(svg_icon_size),
+                "角色",
+              ),
+            );
+            col_2.selectable_value(
+              &mut self.preview_page,
+              PreviewPageEnum::Item,
+              (
+                Image::new(NUMBER_2_SQUARE_FILL)
+                  .tint(color)
+                  .max_height(svg_icon_size),
+                "物品",
+              ),
+            );
+            col_3.selectable_value(
+              &mut self.preview_page,
+              PreviewPageEnum::Djinn,
+              (
+                Image::new(NUMBER_3_SQUARE_FILL)
+                  .tint(color)
+                  .max_height(svg_icon_size),
+                "精灵",
+              ),
+            );
+            col_4.selectable_value(
+              &mut self.preview_page,
+              PreviewPageEnum::Misc,
+              (
+                Image::new(NUMBER_4_SQUARE_FILL)
+                  .tint(color)
+                  .max_height(svg_icon_size),
+                "其他",
+              ),
+            );
           });
 
           match self.preview_page {
@@ -329,32 +419,50 @@ impl App {
                 PreviewModeEnum::Alt => {
                   for i in PSYNERGY_ITEM_GAMEPLAY_ORDER {
                     ui.horizontal(|ui| {
-                      let icon_img = egui::Image::new(
-                        &self.item_icon_img[get_icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
-                      )
-                      .fit_to_exact_size(egui::vec2(16.0, 16.0));
-                      ui.add(icon_img);
-
                       if current_data.get_psy_items(i) {
-                        Label::new(format!(
-                          "{}\t√",
-                          ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
-                            .get_name(self.item_preview_lang)
-                        ))
-                        .selectable(false)
-                        .ui(ui);
-                      } else {
-                        Label::new(
-                          RichText::new(format!(
-                            "{}\t×",
+                        ui.horizontal(|ui| {
+                          ui.add(
+                            Image::new(CHECK_MARK)
+                              .tint(SUCCESS)
+                              .max_height(svg_icon_size),
+                          );
+
+                          let icon_img = egui::Image::new(
+                            &self.item_icon_img[get_icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
+                          )
+                          .fit_to_exact_size(egui::vec2(16.0, 16.0));
+                          ui.add(icon_img);
+
+                          Label::new(format!(
+                            "{}",
                             ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
                               .get_name(self.item_preview_lang)
                           ))
-                          .weak()
-                          .strikethrough(),
-                        )
-                        .selectable(false)
-                        .ui(ui);
+                          .selectable(false)
+                          .ui(ui);
+                        });
+                      } else {
+                        ui.horizontal(|ui| {
+                          ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
+
+                          let icon_img = egui::Image::new(
+                            &self.item_icon_img[get_icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
+                          )
+                          .fit_to_exact_size(egui::vec2(16.0, 16.0));
+                          ui.add(icon_img);
+
+                          Label::new(
+                            RichText::new(format!(
+                              "{}",
+                              ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
+                                .get_name(self.item_preview_lang)
+                            ))
+                            .weak()
+                            .strikethrough(),
+                          )
+                          .selectable(false)
+                          .ui(ui);
+                        });
                       }
                     });
                   }
@@ -406,17 +514,29 @@ impl App {
                   for i in 0..7 {
                     for j in 0..4 {
                       if self.preview_current.as_ref().unwrap().get_djinn(i, j) {
-                        Label::new(ALL_DJINN_NAMES[j][i].get_name(self.djinn_preview_lang))
+                        ui.horizontal(|ui| {
+                          ui.add(
+                            Image::new(CHECK_MARK)
+                              .tint(SUCCESS)
+                              .max_height(svg_icon_size),
+                          );
+
+                          Label::new(ALL_DJINN_NAMES[j][i].get_name(self.djinn_preview_lang))
+                            .selectable(false)
+                            .ui(ui);
+                        });
+                      } else {
+                        ui.horizontal(|ui| {
+                          ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
+
+                          Label::new(
+                            RichText::new(ALL_DJINN_NAMES[j][i].get_name(self.djinn_preview_lang))
+                              .weak()
+                              .strikethrough(),
+                          )
                           .selectable(false)
                           .ui(ui);
-                      } else {
-                        Label::new(
-                          RichText::new(ALL_DJINN_NAMES[j][i].get_name(self.djinn_preview_lang))
-                            .weak()
-                            .strikethrough(),
-                        )
-                        .selectable(false)
-                        .ui(ui);
+                        });
                       }
                     }
 
@@ -438,17 +558,29 @@ impl App {
 
               for i in EVENT_GAMEPLAY_ORDER {
                 if current_data.get_events(i) {
-                  Label::new(format!("{}\t√", EVENT_STR[i]))
+                  ui.horizontal(|ui| {
+                    ui.add(
+                      Image::new(CHECK_MARK)
+                        .tint(SUCCESS)
+                        .max_height(svg_icon_size),
+                    );
+
+                    Label::new(format!("{}", EVENT_STR[i]))
+                      .selectable(false)
+                      .ui(ui);
+                  });
+                } else {
+                  ui.horizontal(|ui| {
+                    ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
+
+                    Label::new(
+                      RichText::new(format!("{}", EVENT_STR[i]))
+                        .weak()
+                        .strikethrough(),
+                    )
                     .selectable(false)
                     .ui(ui);
-                } else {
-                  Label::new(
-                    RichText::new(format!("{}\t×", EVENT_STR[i]))
-                      .weak()
-                      .strikethrough(),
-                  )
-                  .selectable(false)
-                  .ui(ui);
+                  });
                 }
               }
             }

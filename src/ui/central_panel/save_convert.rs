@@ -18,18 +18,20 @@ use crate::{
 };
 
 const DESC_C2: &str = r"使用该功能可转换《黄金太阳 开启的封印》或《黄金太阳 失落的时代》存档的版本：
-⒈ 修改主角团所有成员的名字为指定语言版本的默认名
-⒉ 通过修改存档中的游戏构建日期来转换存档版本
+1. 修改主角团所有成员的名字为指定语言版本的默认名
+2. 通过修改存档中的游戏构建日期来转换存档版本
 
 注：
-⒈ 如果存档中的构建日期与游戏 ROM 中的构建日期不匹配，游戏将强制玩家从神殿开始游戏。
-⒉ Mobile&elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，所以 ROM 中的构建日期同美版。
-⒊ 《黄金太阳 开启的封印》新汉化版基于日版制作，所以 ROM 中的构建日期同日版。";
+1. 如果存档中的构建日期与游戏 ROM 中的构建日期不匹配，游戏将强制玩家从神殿开始游戏。
+2. Mobile&elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，所以 ROM 中的构建日期同美版。
+3. 《黄金太阳 开启的封印》新汉化版基于日版制作，所以 ROM 中的构建日期同日版。";
 
 impl App {
-  pub fn show_c2(&mut self, ui: &mut Ui) {
+  pub fn show_c2(&mut self, ui: &mut Ui, svg_icon_size: f32) {
     // 正式界面
     Label::new(DESC_C2).selectable(false).ui(ui);
+
+    ui.add_space(16.0);
 
     egui::Grid::new("ID_GRID_C2")
       .num_columns(2)
@@ -42,7 +44,7 @@ impl App {
           .ui(ui)
           .on_hover_text("《黄金太阳 开启的封印》或《黄金太阳 失落的时代》的存档文件");
         ui.horizontal(|ui| {
-          if ui.add(select_file_btn()).clicked() {
+          if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file() {
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证存档文件
@@ -64,8 +66,8 @@ impl App {
             }
           }
           if self.input_file_path_c2.is_empty() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked() {
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.input_file_path_c2.clear();
             self.save_file.clear();
             self.save_src_type_index = None;
@@ -171,14 +173,14 @@ impl App {
           .ui(ui)
           .on_hover_text("自定义输出的存档文件路径（推荐留空），若留空则将转换后的存档文件保存到输入文件的同目录下。");
         ui.horizontal(|ui| {
-          if ui.add(select_dir_btn()).clicked() {
+          if ui.add(select_dir_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_folder() {
               self.out_dir_c2 = file.to_string_lossy().into_owned();
             }
           }
           if self.out_dir_c2.is_empty() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked() {
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.out_dir_c2.clear();
           }
           ui.add(

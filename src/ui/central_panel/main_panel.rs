@@ -1,11 +1,9 @@
 use std::time::Duration;
 
-use egui::{Button, RichText};
-
 use crate::{
   App,
   app::{CommandEnum, SubCommandEnum},
-  widgets::colors::{DANGER, LIGHT, SECONDARY, SUCCESS},
+  widgets::buttons::{copy_btn, run_btn_available, run_btn_unavailable},
 };
 
 const CUSTOM_ORDER_COMMANDS: [CommandEnum; CommandEnum::COMMANDS.len()] = [
@@ -17,9 +15,9 @@ const CUSTOM_ORDER_COMMANDS: [CommandEnum; CommandEnum::COMMANDS.len()] = [
 ];
 
 impl App {
-  pub fn show_main_panel(&mut self, ui: &mut egui::Ui) {
+  pub fn show_main_panel(&mut self, ui: &mut egui::Ui, svg_icon_size: f32, is_dark: bool) {
     egui::CentralPanel::default().show(ui, |ui| {
-      if self.about_window_open {
+      if self.about_window_open || self.pwd_info_window_open {
         ui.disable();
       }
 
@@ -30,17 +28,17 @@ impl App {
             columns[i].selectable_value(
               &mut self.command,
               CUSTOM_ORDER_COMMANDS[i],
-              CUSTOM_ORDER_COMMANDS[i].get_name(),
+              CUSTOM_ORDER_COMMANDS[i].get_atoms(svg_icon_size, is_dark),
             );
           }
         });
         // 显示对应的功能页面
         match self.command {
-          CommandEnum::First => self.show_c1(ui),
-          CommandEnum::Second => self.show_c2(ui),
+          CommandEnum::First => self.show_c1(ui, svg_icon_size, is_dark),
+          CommandEnum::Second => self.show_c2(ui, svg_icon_size),
           CommandEnum::Third => self.show_c3(ui),
-          CommandEnum::Fourth => self.show_c4(ui),
-          CommandEnum::Fifth => self.show_c5(ui),
+          CommandEnum::Fourth => self.show_c4(ui, svg_icon_size),
+          CommandEnum::Fifth => self.show_c5(ui, svg_icon_size, is_dark),
         }
         ui.separator();
 
@@ -121,9 +119,7 @@ impl App {
 
         ui.vertical_centered(|ui| {
           if enable_run_button {
-            if ui
-              .add(Button::new(RichText::new("⏵ 运行").color(LIGHT)).fill(SUCCESS))
-              .clicked()
+            if ui.add(run_btn_available(svg_icon_size)).clicked()
               || ui.input_mut(|input| {
                 input.consume_shortcut(&egui::KeyboardShortcut::new(
                   egui::Modifiers::COMMAND,
@@ -140,17 +136,11 @@ impl App {
               }
             }
           } else {
-            ui.add_enabled(
-              false,
-              Button::new(RichText::new("❌ 运行").color(LIGHT)).fill(DANGER),
-            );
+            ui.add_enabled(false, run_btn_unavailable(svg_icon_size));
           }
           // 输出按钮
           if ui
-            .add_enabled(
-              enable_copy_button,
-              Button::new(RichText::new("🗐 复制").color(LIGHT)).fill(SECONDARY),
-            )
+            .add_enabled(enable_copy_button, copy_btn(svg_icon_size))
             .clicked()
           {
             let log = match self.command {

@@ -1,4 +1,6 @@
-use egui::{Shadow, TextureHandle, TextureOptions};
+use std::io::Read;
+
+use egui::{Image, Shadow, TextStyle, TextureHandle, TextureOptions};
 use egui_notify::{Anchor, Toasts};
 use image::GenericImageView;
 
@@ -9,7 +11,29 @@ use crate::{
     save::{BitArray, RawSaveData},
   },
   ui::window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
+  widgets::{
+    colors::get_default_svg_color,
+    icons::{
+      ARROW_DOWN, ARROW_LEFT_RIGHT, ARROW_UP, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL,
+      NUMBER_3_SQUARE_FILL, PENCIL, TOOLS,
+    },
+  },
 };
+
+#[derive(Debug, Clone)]
+pub enum AtomsEnum {
+  Text(&'static str),
+  ImageAndText((Image<'static>, &'static str)),
+}
+
+impl<'a> egui::IntoAtoms<'a> for AtomsEnum {
+  fn collect(self, atoms: &mut egui::Atoms<'a>) {
+    match self {
+      AtomsEnum::Text(text) => text.collect(atoms),
+      AtomsEnum::ImageAndText(image_and_text) => image_and_text.collect(atoms),
+    }
+  }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CommandEnum {
@@ -32,26 +56,43 @@ impl CommandEnum {
   pub fn get_name(self) -> &'static str {
     match self {
       // ⏏、⮉、⤴、⬆
-      CommandEnum::First => "⮉ 密码导出功能",
+      CommandEnum::First => "密码导出功能",
       // ⇆
-      CommandEnum::Second => "⇆  存档转换功能",
-      // 📝
-      CommandEnum::Third => "🖊 自定义角色名",
-      // 🌐、🔨
-      CommandEnum::Fourth => "🛠 应用汉化补丁",
+      CommandEnum::Second => "存档转换功能",
+      // 📝、🖊
+      CommandEnum::Third => " 自定义角色名",
+      // 🌐、🔨、🛠
+      CommandEnum::Fourth => "应用汉化补丁",
       // ⤵、⤓、⮋、⬇
-      CommandEnum::Fifth => "⮋ 注入密码功能",
+      CommandEnum::Fifth => "注入密码功能",
     }
+  }
+
+  pub fn get_atoms(self, svg_icon_size: f32, is_dark: bool) -> (Image<'static>, &'static str) {
+    let color = get_default_svg_color(is_dark);
+
+    (
+      Image::new(match self {
+        CommandEnum::First => ARROW_UP,
+        CommandEnum::Second => ARROW_LEFT_RIGHT,
+        CommandEnum::Third => PENCIL,
+        CommandEnum::Fourth => TOOLS,
+        CommandEnum::Fifth => ARROW_DOWN,
+      })
+      .tint(color)
+      .max_height(svg_icon_size),
+      self.get_name(),
+    )
   }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SubCommandEnum {
-  /// ❶ 密码导出功能 -> 🅰 游戏存档文件
+  /// ❶ 密码导出功能 -> 🅰 游戏存档
   First,
-  /// ❶ 密码导出功能 -> 🅱 密码文本文件
+  /// ❶ 密码导出功能 -> 🅱 密码文本
   Second,
-  /// ❶ 密码导出功能 -> 🅲 内存转储文件
+  /// ❶ 密码导出功能 -> 🅲 内存转储
   Third,
 }
 
@@ -62,12 +103,27 @@ impl SubCommandEnum {
     SubCommandEnum::Third,
   ];
 
-  pub fn get_name(self) -> &'static str {
+  pub fn get_name(&self) -> &'static str {
     match self {
-      SubCommandEnum::First => "🅰 游戏存档文件",
-      SubCommandEnum::Second => "🅱 密码文本文件",
-      SubCommandEnum::Third => "🅲 内存转储文件",
+      SubCommandEnum::First => "游戏存档",
+      SubCommandEnum::Second => "密码文本",
+      SubCommandEnum::Third => "内存转储",
     }
+  }
+
+  pub fn get_atoms(&self, svg_icon_size: f32, is_dark: bool) -> (Image<'static>, &'static str) {
+    let color = get_default_svg_color(is_dark);
+
+    (
+      Image::new(match self {
+        SubCommandEnum::First => NUMBER_1_SQUARE_FILL,
+        SubCommandEnum::Second => NUMBER_2_SQUARE_FILL,
+        SubCommandEnum::Third => NUMBER_3_SQUARE_FILL,
+      })
+      .tint(color)
+      .max_height(svg_icon_size),
+      self.get_name(),
+    )
   }
 }
 
@@ -166,7 +222,7 @@ impl App {
   pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
     // 1. 设置道具图标图片
     // 加载道具图标图片
-    let image_bytes = include_bytes!("../assets/icon_img/all_items.png");
+    let image_bytes = include_bytes!("../assets/item_icon_img/all_items.png");
     let image = image::load_from_memory_with_format(image_bytes, image::ImageFormat::Png).unwrap();
     let mut handles = Vec::new();
 
@@ -275,8 +331,25 @@ impl App {
       out_log_c3: String::new(),
       // 4. 打汉化补丁功能部分
       decompressed_bps: {
+        let mut compressed_data =
+          include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice();
+        let mut decoder = ruzstd::decoding::StreamingDecoder::new(&mut compressed_data).unwrap();
+        let mut decompreessed_data = Vec::new();
+        decoder.read_to_end(&mut decompreessed_data).unwrap();
+        decompreessed_data
+        /*
         zstd::decode_all(include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice())
           .unwrap()
+        */
+        /*
+        let mut compressed_data =
+          include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice();
+        let mut decoder =
+          structured_zstd::decoding::StreamingDecoder::new(&mut compressed_data).unwrap();
+        let mut decompreessed_data = Vec::new();
+        decoder.read_to_end(&mut decompreessed_data).unwrap();
+        decompreessed_data
+        */
       },
       input_file_path_c4: String::new(),
       input_file_crc32: None,
@@ -294,18 +367,23 @@ impl App {
 
 impl eframe::App for App {
   fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+    let svg_icon_size = ui.text_style_height(&TextStyle::Body);
+    let is_dark = ui.visuals().dark_mode;
+
+    // ui.set_visuals(egui::Visuals::dark());
+
     // “关于”窗口
-    self.show_about_window(ui);
+    self.show_about_window(ui, svg_icon_size, is_dark);
     // 密码信息窗口
-    self.show_pwd_info_window(ui);
+    self.show_pwd_info_window(ui, svg_icon_size, is_dark);
     // 错误信息显示模态窗口
     if self.err_modal_open {
       self.show_error_modal(ui);
     }
     // 顶部面板，主要用于菜单栏。
-    self.show_top_panel(ui);
+    self.show_top_panel(ui, svg_icon_size, is_dark);
     // 主面板，核心功能区。
-    self.show_main_panel(ui);
+    self.show_main_panel(ui, svg_icon_size, is_dark);
     self.toasts.show(ui);
   }
 }

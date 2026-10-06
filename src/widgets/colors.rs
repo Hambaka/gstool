@@ -16,3 +16,19 @@ pub const INFO: Color32 = Color32::from_rgb(0x0d, 0xca, 0xf0);
 pub const LIGHT: Color32 = Color32::from_rgb(0xf8, 0xf9, 0xfa);
 /// Bootstrap 5 `Dark` color, better with **light** text as a background color.
 pub const DARK: Color32 = Color32::from_rgb(0x21, 0x25, 0x29);
+
+pub fn get_default_svg_color(is_dark: bool) -> Color32 {
+  if is_dark {
+    Color32::from_rgb(0xd7, 0xd7, 0xd7)
+  } else {
+    Color32::from_rgb(0x3c, 0x3c, 0x3c)
+  }
+}
+
+pub fn get_default_text_color(is_dark: bool) -> Color32 {
+  if is_dark {
+    Color32::from_rgb(0x8c, 0x8c, 0x8c)
+  } else {
+    Color32::from_rgb(0x50, 0x50, 0x50)
+  }
+}

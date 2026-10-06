@@ -4,6 +4,7 @@ mod app;
 mod widgets {
   pub mod buttons;
   pub mod colors;
+  pub mod icons;
 }
 mod core {
   pub mod convert;

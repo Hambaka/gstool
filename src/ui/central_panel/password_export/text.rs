@@ -21,7 +21,7 @@ const DESC_C1S2: &str = r"“密码级别”，“转换密码版本”，“生
 以上五项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
 
 impl App {
-  pub fn show_c1s2(&mut self, ui: &mut Ui) {
+  pub fn show_c1s2(&mut self, ui: &mut Ui, svg_icon_size: f32) {
     Label::new(DESC_C1S2).selectable(false).ui(ui);
 
     ui.add_space(16.0);
@@ -32,9 +32,9 @@ impl App {
       .striped(true)
       .show(ui, |ui| {
         // 第1行
-        Label::new("输入文件路径").selectable(false).ui(ui).on_hover_text("《黄金太阳》的密码文本文件。");
+        Label::new("密码输入来源").selectable(false).ui(ui).on_hover_text("《黄金太阳》的密码文本的输入来源。");
         ui.horizontal(|ui| {
-          if ui.add(clipboard_btn()).clicked() {
+          if ui.add(clipboard_btn(svg_icon_size)).clicked() {
             let result = validate_clipboard_text();
             match result {
                 Ok(o) => {
@@ -57,7 +57,7 @@ impl App {
             }
           }
 
-          if ui.add(select_file_btn()).clicked() {
+          if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file(){
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证密码文本文件
@@ -83,10 +83,10 @@ impl App {
               }
             }
           }
-          
+
           if self.txt_src_grade_version.is_none() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked() {
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.input_file_path_c1s2.clear();
             self.txt_file.clear();
             self.txt_bytes.clear();
@@ -185,7 +185,7 @@ impl App {
           Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件");
           ui.horizontal(|ui|{
             Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2).ui(ui);
-            if ui.add(pwd_info_btn()).clicked() {
+            if ui.add(pwd_info_btn(svg_icon_size)).clicked() {
               self.read_from(SubCommandEnum::Second);
             }
           });
@@ -193,21 +193,21 @@ impl App {
           Label::new(RichText::new("导出密码数据至文本文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件");
           ui.horizontal(|ui|{
             ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2));
-            ui.add_enabled(false, pwd_info_btn());
+            ui.add_enabled(false, pwd_info_btn(svg_icon_size));
           });
         }
         ui.end_row();
         // 第7行
         Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
         ui.horizontal(|ui| {
-          if ui.add(select_dir_btn()).clicked(){
+          if ui.add(select_dir_btn(svg_icon_size)).clicked(){
             if let Some(dir) = FileDialog::new().pick_folder(){
               self.out_dir_c1s2 = dir.to_string_lossy().into_owned();
             }
           }
           if self.out_dir_c1s2.is_empty() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked(){
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked(){
             self.out_dir_c1s2.clear();
           }
           ui.add(

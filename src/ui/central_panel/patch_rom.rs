@@ -23,17 +23,19 @@ enum RomVersion {
 
 const DESC_C4: &str = r"使用该功能可为日版的《黄金太阳 开启的封印》应用最新版的汉化补丁。
 除了使用日版，该功能也对其他的部分版本做了支持：
-⒈ 其他的所有官方版本ROM（美/德/西/法/意）
-⒉ 部分网络公开的且流传度较高的其他较老的中文汉化版ROM（CGP汉化组/CGP+elffinal/润色美化版）
+1. 其他的所有官方版本ROM（美/德/西/法/意）
+2. 部分网络公开的且流传度较高的其他较老的中文汉化版ROM（CGP汉化组/CGP+elffinal/润色美化版）
 
 注：
-⒈ 其他汉化版的来源多种多样，无法做到全部支持。
-⒉ 不支持使用各类基于汉化版制作的改版ROM。";
+1. 其他汉化版的来源多种多样，无法做到全部支持。
+2. 不支持使用各类基于汉化版制作的改版ROM。";
 
 impl App {
-  pub fn show_c4(&mut self, ui: &mut Ui) {
+  pub fn show_c4(&mut self, ui: &mut Ui, svg_icon_size: f32) {
     // 正式界面
     Label::new(DESC_C4).selectable(false).ui(ui);
+
+    ui.add_space(16.0);
 
     egui::Grid::new("ID_GRID_C4")
       .num_columns(2)
@@ -46,7 +48,7 @@ impl App {
           .ui(ui)
           .on_hover_text("《黄金太阳 开启的封印》的ROM文件");
         ui.horizontal(|ui| {
-          if ui.add(select_file_btn()).clicked() {
+          if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file() {
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证ROM文件
@@ -75,8 +77,8 @@ impl App {
             }
           }
           if self.input_file_path_c4.is_empty() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked() {
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.input_file_path_c4.clear();
             self.input_file_crc32 = None;
           }
@@ -95,14 +97,14 @@ impl App {
           .ui(ui)
           .on_hover_text("自定义输出的汉化版ROM文件路径（推荐留空），若留空则将转换后的ROM文件保存到输入文件的同目录下。");
         ui.horizontal(|ui| {
-          if ui.add(select_dir_btn()).clicked() {
+          if ui.add(select_dir_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_folder() {
               self.out_dir_c4 = file.to_string_lossy().into_owned();
             }
           }
           if self.out_dir_c4.is_empty() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked() {
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.out_dir_c4.clear();
           }
           ui.add(

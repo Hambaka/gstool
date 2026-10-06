@@ -18,7 +18,7 @@ const DESC_C1S1: &str = r"“生成内存转储文件”，“生成密码金手
 程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项。";
 
 impl App {
-  pub fn show_c1s1(&mut self, ui: &mut Ui) {
+  pub fn show_c1s1(&mut self, ui: &mut Ui, svg_icon_size: f32) {
     Label::new(DESC_C1S1).selectable(false).ui(ui);
 
     ui.add_space(16.0);
@@ -48,7 +48,7 @@ impl App {
           .ui(ui)
           .on_hover_text("《黄金太阳 开启的封印》的存档文件。");
         ui.horizontal(|ui| {
-          if ui.add(select_file_btn()).clicked() {
+          if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file() {
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证存档文件
@@ -73,8 +73,8 @@ impl App {
             }
           }
           if self.input_file_path_c1s1.is_empty() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked() {
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.to_export_all_save = false;
 
             self.input_file_path_c1s1.clear();
@@ -214,7 +214,7 @@ impl App {
             .on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
           ui.horizontal(|ui| {
             Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1).ui(ui);
-            if ui.add(pwd_info_btn()).clicked() {
+            if ui.add(pwd_info_btn(svg_icon_size)).clicked() {
               self.read_from(SubCommandEnum::First);
             }
           });
@@ -225,7 +225,7 @@ impl App {
             .on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
           ui.horizontal(|ui| {
             ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1));
-            ui.add_enabled(false, pwd_info_btn());
+            ui.add_enabled(false, pwd_info_btn(svg_icon_size));
           });
         }
         ui.end_row();
@@ -235,15 +235,15 @@ impl App {
           .ui(ui)
           .on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
         ui.horizontal(|ui| {
-          if ui.add(select_dir_btn()).clicked() {
+          if ui.add(select_dir_btn(svg_icon_size)).clicked() {
             if let Some(dir) = FileDialog::new().pick_folder() {
               self.out_dir_c1s1 = dir.to_string_lossy().into_owned();
             }
           }
 
           if self.out_dir_c1s1.is_empty() {
-            ui.add_enabled(false, reset_btn());
-          } else if ui.add(reset_btn()).clicked() {
+            ui.add_enabled(false, reset_btn(svg_icon_size));
+          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.out_dir_c1s1.clear();
           }
           ui.add(
