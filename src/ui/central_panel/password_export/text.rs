@@ -499,7 +499,12 @@ fn validate_password_string(
     _ => return Err("密码长度不正确！"),
   };
   // Check its password version.
-  let password_version = convert::get_password_version(&password_without_whitespace);
+  let password_version = match convert::detect_password_version(&password_without_whitespace) {
+    Some(version) => version,
+    None => {
+      unreachable!()
+    }
+  };
   // Check if it contains invalid char
   let has_invalid_char = match password_version {
     PasswordVersion::Japanese => convert::contains_invalid_char_jp(&password_without_whitespace),

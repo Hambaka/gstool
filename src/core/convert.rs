@@ -68,49 +68,33 @@ pub fn remove_whitespace(s: &str) -> String {
 /// A very stupid and lazy way to detect password version by comparing the first char in `password_str` to 'z' in ASCII.
 ///
 /// 'z' is the "largest" char in English version password. If the first char is larger than 'z', then it is Japanese version password, since Japanese version password characters are all Hiragana.
-pub fn get_password_version(password_str: &str) -> PasswordVersion {
-  let first_char = password_str.chars().next().unwrap();
-  if first_char <= 'z' {
-    PasswordVersion::English
-  } else {
-    PasswordVersion::Japanese
-  }
+pub fn detect_password_version(password_str: &str) -> Option<PasswordVersion> {
+  password_str.chars().next().map(|ch| {
+    if ch <= 'z' {
+      PasswordVersion::English
+    } else {
+      PasswordVersion::Japanese
+    }
+  })
 }
 
 /// Returns `true` if this `password_str` contains char that does not exist in `VALID_PASSWORD_CHARS_EN`.
 pub fn contains_invalid_char_en(password_str: &str) -> bool {
-  let mut result = false;
-  for char in password_str.chars() {
-    if !VALID_PASSWORD_CHARS_EN.contains(&char) {
-      result = true;
-      break;
-    }
-  }
-  result
+  password_str
+    .chars()
+    .any(|ch| !VALID_PASSWORD_CHARS_EN.contains(&ch))
 }
 
 /// Returns `true` if this `password_str` contains char that does not exist in `VALID_PASSWORD_CHARS_JP`.
 pub fn contains_invalid_char_jp(password_str: &str) -> bool {
-  let mut result = false;
-  for char in password_str.chars() {
-    if !VALID_PASSWORD_CHARS_JP.contains(&char) {
-      result = true;
-      break;
-    }
-  }
-  result
+  password_str
+    .chars()
+    .any(|ch| !VALID_PASSWORD_CHARS_JP.contains(&ch))
 }
 
 /// Returns `true` if this `password_bytes` contains value that does not exist in `VALID_PASSWORD_BYTES`.
 pub fn contains_invalid_byte(password_bytes: &[u8]) -> bool {
-  let mut result = false;
-  for byte in password_bytes {
-    if *byte > 63 {
-      result = true;
-      break;
-    }
-  }
-  result
+  password_bytes.iter().any(|x| *x > 63)
 }
 
 /// Convert password text string to bytes (memory dump).
