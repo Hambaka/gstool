@@ -9,8 +9,7 @@ use crate::{
   core::{
     enums::{GameVersion, PasswordGrade, PasswordVersion},
     output,
-    password::encode::from_raw_save,
-    save::{self},
+    password::dyrati::from_password_bytes,
     save_game::raw::{SaveSlot, collect_slots, find_first_slot_index},
   },
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
@@ -283,7 +282,8 @@ impl App {
 
     for (key, val_option) in self.raw_save_data.iter().enumerate() {
       if let Some(val) = val_option {
-        let password_bytes = from_raw_save(val.get_data(), self.pwd_grade_c1s1);
+        let password_bytes =
+          crate::core::password::encode::from_raw_save(val.get_data(), self.pwd_grade_c1s1);
         // Key is save slot number: 0, 1, 2 -> 1, 2, 3
         let sub_dir_str =
           match output::create_sav_sub_dir(key + 1, val.get_is_clear(), &output_dir_str) {
@@ -326,7 +326,7 @@ impl App {
         if self.to_export_pwd_data_text_c1s1 {
           if self.pwd_grade_c1s1.is_gold() {
             if let Err(e) = output::write_game_data_text_file(
-              &save::get_exported_data_for_dyrati_sheet_with_raw_save_bytes(val.get_data()),
+              &crate::core::password::dyrati::from_raw_save(val.get_data()),
               &sub_dir_str,
             ) {
               e.clone_into(&mut self.err_msg);
@@ -334,10 +334,7 @@ impl App {
               return;
             }
           } else if let Err(e) = output::write_game_data_text_file(
-            &save::get_exported_data_for_dyrati_sheet_by_bytes(
-              &password_bytes,
-              self.pwd_grade_c1s1,
-            ),
+            &from_password_bytes(&password_bytes, self.pwd_grade_c1s1),
             &sub_dir_str,
           ) {
             e.clone_into(&mut self.err_msg);

@@ -13,9 +13,9 @@ use crate::{
     output,
     password::{
       decode::{bits_from_bytes, read_from_bits},
+      dyrati::{from_data, from_password_bytes},
       encode::encode,
     },
-    save::{self},
   },
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
@@ -262,19 +262,13 @@ impl App {
 
     if self.to_export_pwd_data_text_c1s3 {
       if self.pwd_grade_c1s3.is_none() {
-        if let Err(e) = output::write_game_data_text_file(
-          &save::get_exported_data_for_dyrati_sheet_by_save_data(&save_data),
-          &output_dir_str,
-        ) {
+        if let Err(e) = output::write_game_data_text_file(&from_data(&save_data), &output_dir_str) {
           e.clone_into(&mut self.err_msg);
           self.err_modal_open = true;
           return;
         }
       } else if let Err(e) = output::write_game_data_text_file(
-        &save::get_exported_data_for_dyrati_sheet_by_bytes(
-          &target_password_bytes,
-          self.pwd_grade_c1s3.unwrap(),
-        ),
+        &from_password_bytes(&target_password_bytes, self.pwd_grade_c1s3.unwrap()),
         &output_dir_str,
       ) {
         e.clone_into(&mut self.err_msg);
