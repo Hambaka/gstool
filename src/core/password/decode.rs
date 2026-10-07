@@ -132,7 +132,7 @@ pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<Bi
   }
 }
 
-pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrade) -> PasswordData {
+pub fn read_from_bits(bits: &mut BitArray, grade: PasswordGrade) -> PasswordData {
   /* [u8; 4]
   TEMP Default Values
   Order: Isaac, Garet, Ivan, Mia */
@@ -199,44 +199,44 @@ pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrad
   Silver and bronze grades:
   Step 1: Remove 16 bits of the key for encryption/decryption.
   Step 2: Remove two useless bits "00" before events' bits. */
-  match password_grade {
+  match grade {
     PasswordGrade::Gold => {
       /* (2 * 8) + 40
       -> 16 + 40
       -> 56 */
       for _i in 0..56 {
-        password_bits.remove(password_bits.len() - 1);
+        bits.remove(bits.len() - 1);
       }
       /* (4 * 7) + (4 * 7) + (2 + 6) + (4 * (11 + 11 + 10 + 10 + 10 + 8)) + 8 - 1
       -> 28 + 28 + 8 + 240 + 8 - 1
       -> 311 */
       for i in (1..=8).rev() {
-        password_bits.remove(311 + i * 64);
+        bits.remove(311 + i * 64);
       }
       /* (4 * 7) + (4 * 7) + (2 + 6) + (4 * (11 + 11 + 10 + 10 + 10 + 8))
       -> 28 + 28 + 8 + 240
       -> 304 */
       for _i in 0..8 {
-        password_bits.remove(304);
+        bits.remove(304);
       }
       /* (4 * 7) + (4 * 7)
       -> 28 + 28
       -> 56 */
       for _i in 0..2 {
-        password_bits.remove(56);
+        bits.remove(56);
       }
     }
     PasswordGrade::Silver | PasswordGrade::Bronze => {
       /* (2 * 8)
       -> 16 */
       for _i in 0..16 {
-        password_bits.remove(password_bits.len() - 1);
+        bits.remove(bits.len() - 1);
       }
       /* (4 * 7) + (4 * 7)
       -> 28 + 28
       -> 56 */
       for _i in 0..2 {
-        password_bits.remove(56);
+        bits.remove(56);
       }
     }
   }
@@ -245,9 +245,9 @@ pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrad
   Each level value has 7 bits.
   Order is: Mia, Ivan, Garet, Isaac */
   let mut level_bits = BitArray::new();
-  level_bits.push_bits(u32::from(password_bits.sub_bits_u8(24, 27)), 4);
+  level_bits.push_bits(u32::from(bits.sub_bits_u8(24, 27)), 4);
   for i in (7..=23).rev().step_by(8) {
-    level_bits.push_bits(u32::from(password_bits.sub_bits_u8(i - 7, i)), 8);
+    level_bits.push_bits(u32::from(bits.sub_bits_u8(i - 7, i)), 8);
   }
   for (i, level) in levels.iter_mut().enumerate() {
     *level = level_bits.sub_bits_u8(21 - i * 7, 27 - i * 7);
@@ -258,9 +258,9 @@ pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrad
   Order is: Jupiter, Mars, Mercury, Venus */
   let mut djinn_bits = BitArray::new();
   for i in (39..=55).rev().step_by(8) {
-    djinn_bits.push_bits(u32::from(password_bits.sub_bits_u8(i - 7, i)), 8);
+    djinn_bits.push_bits(u32::from(bits.sub_bits_u8(i - 7, i)), 8);
   }
-  djinn_bits.push_bits(u32::from(password_bits.sub_bits_u8(28, 31)), 4);
+  djinn_bits.push_bits(u32::from(bits.sub_bits_u8(28, 31)), 4);
   for (i, djinn_data) in djinn.iter_mut().enumerate() {
     *djinn_data = u32::from(djinn_bits.sub_bits_u8(21 - i * 7, 27 - i * 7));
   }
@@ -268,18 +268,18 @@ pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrad
   /* Get all event bits.
   Order is: Vault, Vale, Deadbeard, Hsu, Colosso, Hammet */
   for (i, event) in events.iter_mut().enumerate() {
-    *event = password_bits.bit_at(61 - i);
+    *event = bits.bit_at(61 - i);
   }
 
   /* If password grade is silver or bronze, check 8 psynergy items.
   if it does has one, insert it back to Isaac's inventory */
-  if password_grade.is_silver() || password_grade.is_bronze() {
+  if grade.is_silver() || grade.is_bronze() {
     /* Isaac's inventory: Great Sword, Steel Armor, Knight's Shield, Knight's Helm
     So the start index is 4 */
     let mut isaac_inventory_start_index = 4;
     for (i, psynergy_item) in PSYNERGY_ITEMS.iter().enumerate() {
       // Reversed order
-      if password_bits.bit_at(62 + (7 - i)) == 1 {
+      if bits.bit_at(62 + (7 - i)) == 1 {
         items[0][isaac_inventory_start_index] = *psynergy_item;
         isaac_inventory_start_index += 1;
       }
@@ -287,8 +287,8 @@ pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrad
   }
 
   // If password grade is gold or silver, get stats.
-  if password_grade.is_gold() || password_grade.is_silver() {
-    let start_index = if password_grade.is_gold() {
+  if grade.is_gold() || grade.is_silver() {
+    let start_index = if grade.is_gold() {
       /* (4 * 7) + (4 * 7) + 6
       -> 28 + 28 + 6
       -> 62 */
@@ -301,27 +301,21 @@ pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrad
     };
     for (i, stats_per_person) in stats.iter_mut().enumerate() {
       // HP
-      stats_per_person[0] =
-        password_bits.sub_bits_u16(start_index + i * 60, start_index + 10 + i * 60);
+      stats_per_person[0] = bits.sub_bits_u16(start_index + i * 60, start_index + 10 + i * 60);
       // EP
-      stats_per_person[1] =
-        password_bits.sub_bits_u16(start_index + 11 + i * 60, start_index + 21 + i * 60);
+      stats_per_person[1] = bits.sub_bits_u16(start_index + 11 + i * 60, start_index + 21 + i * 60);
       // Attack
-      stats_per_person[2] =
-        password_bits.sub_bits_u16(start_index + 22 + i * 60, start_index + 31 + i * 60);
+      stats_per_person[2] = bits.sub_bits_u16(start_index + 22 + i * 60, start_index + 31 + i * 60);
       // Defense
-      stats_per_person[3] =
-        password_bits.sub_bits_u16(start_index + 32 + i * 60, start_index + 41 + i * 60);
+      stats_per_person[3] = bits.sub_bits_u16(start_index + 32 + i * 60, start_index + 41 + i * 60);
       // Agility
-      stats_per_person[4] =
-        password_bits.sub_bits_u16(start_index + 42 + i * 60, start_index + 51 + i * 60);
+      stats_per_person[4] = bits.sub_bits_u16(start_index + 42 + i * 60, start_index + 51 + i * 60);
       // Luck
-      stats_per_person[5] =
-        password_bits.sub_bits_u16(start_index + 52 + i * 60, start_index + 59 + i * 60);
+      stats_per_person[5] = bits.sub_bits_u16(start_index + 52 + i * 60, start_index + 59 + i * 60);
     }
   }
 
-  if password_grade.is_gold() {
+  if grade.is_gold() {
     /* (4 * 7) + (4 * 7) + 6 + (4 * (11 + 11 + 10 + 10 + 10 + 8))
     -> 28 + 28 + 6 + 240
     -> 302 */
@@ -332,12 +326,12 @@ pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrad
     let stackable_item_quantity_start_index = 842;
     for (i, items_per_person) in items.iter_mut().enumerate() {
       for (j, item) in items_per_person.iter_mut().enumerate() {
-        let item_id = password_bits.sub_bits_u16(
+        let item_id = bits.sub_bits_u16(
           item_id_start_index + i * 135 + j * 9,
           item_id_start_index + 8 + i * 135 + j * 9,
         );
         if let Some(stackable_item_index) = STACKABLE_ITEMS.iter().position(|&x| x == item_id) {
-          let item_quantity = password_bits.sub_bits_u8(
+          let item_quantity = bits.sub_bits_u8(
             stackable_item_quantity_start_index + i * 115 + stackable_item_index * 5,
             stackable_item_quantity_start_index + 4 + i * 115 + stackable_item_index * 5,
           );
@@ -349,7 +343,7 @@ pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrad
         }
       }
     }
-    coins = password_bits.sub_bits_u32(password_bits.len() - 24, password_bits.len() - 1);
+    coins = bits.sub_bits_u32(bits.len() - 24, bits.len() - 1);
   }
 
   PasswordData {
@@ -370,14 +364,17 @@ pub fn info_from_data(data: &PasswordData) -> PasswordInfo {
   let mut mercury_djinn_bits = BitArray::new();
   let mut mars_djinn_bits = BitArray::new();
   let mut jupiter_djinn_bits = BitArray::new();
+
   venus_djinn_bits.push_bits(data.djinn[0], 7);
   mercury_djinn_bits.push_bits(data.djinn[1], 7);
   mars_djinn_bits.push_bits(data.djinn[2], 7);
   jupiter_djinn_bits.push_bits(data.djinn[3], 7);
+
   let mut venus_djinn = [false; 7];
   let mut mercury_djinn = [false; 7];
   let mut mars_djinn = [false; 7];
   let mut jupiter_djinn = [false; 7];
+
   // Reversed order
   for i in 0..7 {
     if venus_djinn_bits.bit_at(6 - i) == 1 {
@@ -393,85 +390,44 @@ pub fn info_from_data(data: &PasswordData) -> PasswordInfo {
       mercury_djinn[i] = true;
     }
   }
+
   //let djinn = [venus_djinn, mercury_djinn, mars_djinn, jupiter_djinn];
   let djinn = [venus_djinn, mars_djinn, jupiter_djinn, mercury_djinn];
 
   // Events
   let mut events = [false; 6];
   for (i, event) in data.events.iter().enumerate() {
-    if i == 2 {
+    events[i] = if i == 2 {
       let inverted_event = (event ^ 1) & 1;
-      events[i] = inverted_event == 1;
+      inverted_event == 1
     } else {
-      events[i] = *event == 1;
+      *event == 1
     }
   }
   // Base Stats
   let base_stats = data.stats;
   // Stats
   let stats = in_game_stats(base_stats);
-
+  // Psynergy Items
   let mut psy_items = [false; 8];
   // Items
   let mut items = [[(0, 0); 15]; 4];
   for i in 0..15 {
-    let isaac_item = data.items[0][i];
-    let isaac_item_id = isaac_item & 0x1FF;
-    if isaac_item_id != 0 {
-      let item_count = if STACKABLE_ITEMS.contains(&isaac_item_id) {
-        (isaac_item >> 11) + 1
-      } else {
-        1
-      };
-      items[0][i] = (isaac_item_id, item_count as u8);
+    for j in 0..4 {
+      let item = data.items[j][i];
+      let item_id = item & 0x1FF;
 
-      if PSYNERGY_ITEMS.contains(&isaac_item_id) {
-        psy_items[(isaac_item_id - PSYNERGY_ITEMS[0]) as usize] = true;
-      }
-    }
+      if item_id != 0 {
+        let count = if STACKABLE_ITEMS.contains(&item_id) {
+          (item >> 11) + 1
+        } else {
+          1
+        };
+        items[j][i] = (item_id, count as u8);
 
-    let garet_item = data.items[1][i];
-    let garet_item_id = garet_item & 0x1FF;
-    if garet_item_id != 0 {
-      let item_count = if STACKABLE_ITEMS.contains(&garet_item_id) {
-        (garet_item >> 11) + 1
-      } else {
-        1
-      };
-      items[1][i] = (garet_item_id, item_count as u8);
-
-      if PSYNERGY_ITEMS.contains(&garet_item_id) {
-        psy_items[(garet_item_id - PSYNERGY_ITEMS[0]) as usize] = true;
-      }
-    }
-
-    let ivan_item = data.items[2][i];
-    let ivan_item_id = ivan_item & 0x1FF;
-    if ivan_item_id != 0 {
-      let item_count = if STACKABLE_ITEMS.contains(&ivan_item_id) {
-        (ivan_item >> 11) + 1
-      } else {
-        1
-      };
-      items[2][i] = (ivan_item_id, item_count as u8);
-
-      if PSYNERGY_ITEMS.contains(&ivan_item_id) {
-        psy_items[(ivan_item_id - PSYNERGY_ITEMS[0]) as usize] = true;
-      }
-    }
-
-    let mia_item = data.items[3][i];
-    let mia_item_id = mia_item & 0x1FF;
-    if mia_item_id != 0 {
-      let item_count = if STACKABLE_ITEMS.contains(&mia_item_id) {
-        (mia_item >> 11) + 1
-      } else {
-        1
-      };
-      items[3][i] = (mia_item_id, item_count as u8);
-
-      if PSYNERGY_ITEMS.contains(&mia_item_id) {
-        psy_items[(mia_item_id - PSYNERGY_ITEMS[0]) as usize] = true;
+        if PSYNERGY_ITEMS.contains(&item_id) {
+          psy_items[(item_id - PSYNERGY_ITEMS[0]) as usize] = true;
+        }
       }
     }
   }
