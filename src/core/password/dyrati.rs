@@ -3,10 +3,10 @@ use crate::core::{
   enums::PasswordGrade,
   password::{
     PasswordData, PasswordInfo, bits_from_bytes, info_from_data, info_from_raw_save,
+    items::STACKABLE_ITEMS,
     read_from_bits,
     stats::{DEFAULT_CLASS_MULTIPLIERS, MAX_VALID_IN_GAME_STATS_VALUES},
   },
-  save::format::STACKABLE_ITEMS,
 };
 
 use std::fmt::Write as _;

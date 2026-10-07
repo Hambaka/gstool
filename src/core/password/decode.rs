@@ -1,8 +1,13 @@
 use crate::core::{
   bits::BitArray,
   enums::PasswordGrade,
-  password::{PasswordData, PasswordInfo, encode::read_from_raw_save, stats::in_game_stats},
-  save::format::{CHECKSUM_INDEX, PSYNERGY_ITEMS, STACKABLE_ITEMS},
+  password::{
+    PasswordData, PasswordInfo,
+    encode::read_from_raw_save,
+    items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
+    stats::in_game_stats,
+  },
+  save::format::CHECKSUM_INDEX,
 };
 
 pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<BitArray> {

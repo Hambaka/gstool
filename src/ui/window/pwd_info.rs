@@ -9,10 +9,10 @@ use crate::{
     enums::PasswordGrade,
     password::{
       decode::{info_from_data, info_from_raw_save, read_from_bits},
+      items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
       stats::MAX_VALID_BASE_STATS_VALUES_PWD,
       structs::PasswordInfo,
     },
-    save::format::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
   },
   widgets::{
     colors::{DANGER, SUCCESS, get_default_svg_color},

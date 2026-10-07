@@ -1,8 +1,10 @@
 use crate::core::{
   bits::BitArray,
   enums::PasswordGrade,
-  password::structs::PasswordData,
-  save::format::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
+  password::{
+    items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
+    structs::PasswordData,
+  },
 };
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
