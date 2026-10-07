@@ -7,8 +7,10 @@ use crate::{
     bits::BitArray,
     data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, get_icon_id},
     enums::PasswordGrade,
-    password::structs::PasswordInfo,
-    save::{self, gen_password_info_with_raw_save_bytes, gen_password_info_with_save_data},
+    password::{
+      decode::{info_from_data, info_from_raw_save, read_from_bits},
+      structs::PasswordInfo,
+    },
     save_game::format::{MAX_VALID_BASE_STATS_VALUES_PWD, PSYNERGY_ITEMS, STACKABLE_ITEMS},
   },
   widgets::{
@@ -602,7 +604,7 @@ impl App {
               is_first_element = false;
             }
 
-            let pwd_info = gen_password_info_with_raw_save_bytes(raw_save.get_data());
+            let pwd_info = info_from_raw_save(raw_save.get_data());
             self.preview_data[index] = Some(PreviewData::new(PasswordGrade::Gold, pwd_info));
           }
         }
@@ -617,8 +619,8 @@ impl App {
         self.preview_data = [None, None, None];
         let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
         let src_grade = self.txt_src_grade_version.unwrap().0;
-        let save_data = save::get_save_data_with_password_bits(&mut password_bits, src_grade);
-        let pwd_info = gen_password_info_with_save_data(&save_data);
+        let save_data = read_from_bits(&mut password_bits, src_grade);
+        let pwd_info = info_from_data(&save_data);
         self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
         self.preview_slot = SaveSlotEnum::First;
         self.preview_current = self.preview_data[0].clone();
@@ -644,8 +646,8 @@ impl App {
         self.preview_data = [None, None, None];
         let mut password_bits = BitArray::from(&self.dmp_bits.as_ref().unwrap().get_bits());
         let src_grade = self.dmp_src_grade.unwrap();
-        let save_data = save::get_save_data_with_password_bits(&mut password_bits, src_grade);
-        let pwd_info = gen_password_info_with_save_data(&save_data);
+        let save_data = read_from_bits(&mut password_bits, src_grade);
+        let pwd_info = info_from_data(&save_data);
         self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
         self.preview_slot = SaveSlotEnum::First;
         self.preview_current = self.preview_data[0].clone();

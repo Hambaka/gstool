@@ -14,8 +14,10 @@ use crate::{
   core::{
     bits::BitArray,
     enums::{BuildDate, GameVersion, PasswordGrade, PasswordVersion},
-    password::encode::{encode, from_raw_save},
-    save::{self},
+    password::{
+      decode::read_from_bits,
+      encode::{encode, from_raw_save},
+    },
   },
   ui::window::pwd_info::SaveSlotEnum,
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
@@ -366,10 +368,8 @@ impl App {
             } else {
               let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
 
-              let save_data = save::get_save_data_with_password_bits(
-                &mut password_bits,
-                self.txt_src_grade_version.unwrap().0,
-              );
+              let save_data =
+                read_from_bits(&mut password_bits, self.txt_src_grade_version.unwrap().0);
 
               let target_password_bytes = encode(&save_data, PasswordGrade::Silver);
               Some(target_password_bytes)
@@ -383,10 +383,7 @@ impl App {
               Some(self.dmp_bytes.clone())
             } else {
               let mut password_bits = BitArray::from(&self.dmp_bits.as_ref().unwrap().get_bits());
-              let save_data = save::get_save_data_with_password_bits(
-                &mut password_bits,
-                self.dmp_src_grade.unwrap(),
-              );
+              let save_data = read_from_bits(&mut password_bits, self.dmp_src_grade.unwrap());
 
               let target_password_bytes = encode(&save_data, PasswordGrade::Silver);
               Some(target_password_bytes)
@@ -417,10 +414,8 @@ impl App {
             } else {
               let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
 
-              let save_data = save::get_save_data_with_password_bits(
-                &mut password_bits,
-                self.txt_src_grade_version.unwrap().0,
-              );
+              let save_data =
+                read_from_bits(&mut password_bits, self.txt_src_grade_version.unwrap().0);
 
               let target_password_bytes = encode(&save_data, PasswordGrade::Bronze);
               Some(target_password_bytes)
@@ -434,10 +429,7 @@ impl App {
               Some(self.dmp_bytes.clone())
             } else {
               let mut password_bits = BitArray::from(&self.dmp_bits.as_ref().unwrap().get_bits());
-              let save_data = save::get_save_data_with_password_bits(
-                &mut password_bits,
-                self.dmp_src_grade.unwrap(),
-              );
+              let save_data = read_from_bits(&mut password_bits, self.dmp_src_grade.unwrap());
 
               let target_password_bytes = encode(&save_data, PasswordGrade::Bronze);
               Some(target_password_bytes)

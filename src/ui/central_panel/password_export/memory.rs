@@ -11,7 +11,10 @@ use crate::{
     convert,
     enums::{GameVersion, PasswordGrade, PasswordVersion},
     output,
-    password::encode::encode,
+    password::{
+      decode::{bits_from_bytes, read_from_bits},
+      encode::encode,
+    },
     save::{self},
   },
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
@@ -199,8 +202,7 @@ impl App {
     let mut password_bits = BitArray::from(&self.dmp_bits.as_ref().unwrap().get_bits());
 
     // Generate save data, and set target password bytes
-    let save_data =
-      save::get_save_data_with_password_bits(&mut password_bits, self.dmp_src_grade.unwrap());
+    let save_data = read_from_bits(&mut password_bits, self.dmp_src_grade.unwrap());
     let target_password_bytes = match self.pwd_grade_c1s3 {
       Some(password_grade) => encode(&save_data, password_grade),
       None => self.dmp_bytes.clone(),
@@ -384,7 +386,7 @@ fn validate_input_file(path_str: &str) -> Result<(Vec<u8>, BitArray, PasswordGra
 
   // Check if the password is valid;
   let password_bits;
-  if let Some(bits) = save::get_valid_password_bits_option(password_bytes.as_slice(), true) {
+  if let Some(bits) = bits_from_bytes(password_bytes.as_slice(), true) {
     password_bits = bits;
   } else {
     return Err("密码无效！");
