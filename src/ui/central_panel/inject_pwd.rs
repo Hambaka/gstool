@@ -13,7 +13,7 @@ use crate::{
   app::{AtomsEnum, SubCommandEnum},
   core::{
     bits::BitArray,
-    enums::{BuildDate, GameVersion, PasswordGrade, PasswordVersion},
+    enums::{GameVersion, PasswordGrade, PasswordVersion},
     password::{
       decode::read_from_bits,
       encode::{encode, from_raw_save},
@@ -616,7 +616,7 @@ fn validate_input_file(
       let rom_build_date =
         String::from_utf8_lossy(&rom_bytes[ROM_BUILD_DATE_OFFSET..ROM_BUILD_DATE_OFFSET + 12])
           .into_owned();
-      let game_version_option = GameVersion::from_build_date(BuildDate::String(rom_build_date));
+      let game_version_option = GameVersion::from_rom_build_date(&rom_build_date);
       if game_version_option.is_none() {
         return Err("无法确定该《黄金太阳 失落的时代》ROM的版本！");
       } else {

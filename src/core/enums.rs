@@ -5,12 +5,6 @@ pub enum PasswordGrade {
   Bronze,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum BuildDate {
-  Bytes(u16),
-  String(String),
-}
-
 impl PasswordGrade {
   pub const PASSWORD_GRADES: [PasswordGrade; 3] = [
     PasswordGrade::Gold,
@@ -155,35 +149,29 @@ impl GameVersion {
     self.get_tla_pwd_buffer_address() + 259
   }
 
-  // GSPI
-  pub fn get_password_version(self) -> PasswordVersion {
-    match self {
-      GameVersion::Japan => PasswordVersion::Japanese,
-      _ => PasswordVersion::English,
+  // Raw Save
+  pub fn from_save_build_date(build_date: u16) -> Option<Self> {
+    match build_date {
+      0x159C | 0x198A => Some(GameVersion::Japan),
+      0x1652 | 0x1C85 => Some(GameVersion::USA),
+      0x1849 | 0x1D97 => Some(GameVersion::Germany),
+      0x1885 | 0x1DC7 => Some(GameVersion::Spain),
+      0x1713 | 0x1D98 => Some(GameVersion::France),
+      0x1886 | 0x1DC8 => Some(GameVersion::Italy),
+      _ => None,
     }
   }
 
-  // Raw Save & GSPI
-  pub fn from_build_date(build_date: BuildDate) -> Option<Self> {
+  // GSPI
+  pub fn from_rom_build_date(build_date: &str) -> Option<Self> {
     match build_date {
-      BuildDate::Bytes(build_date) => match build_date {
-        0x159C | 0x198A => Some(GameVersion::Japan),
-        0x1652 | 0x1C85 => Some(GameVersion::USA),
-        0x1849 | 0x1D97 => Some(GameVersion::Germany),
-        0x1885 | 0x1DC7 => Some(GameVersion::Spain),
-        0x1713 | 0x1D98 => Some(GameVersion::France),
-        0x1886 | 0x1DC8 => Some(GameVersion::Italy),
-        _ => None,
-      },
-      BuildDate::String(build_date) => match build_date.as_str() {
-        "020610172024" => Some(GameVersion::Japan),
-        "030205144838" => Some(GameVersion::USA),
-        "030623214832" => Some(GameVersion::Germany),
-        "030707212715" => Some(GameVersion::Spain),
-        "030624204924" => Some(GameVersion::France),
-        "030708203047" => Some(GameVersion::Italy),
-        _ => None,
-      },
+      "020610172024" => Some(GameVersion::Japan),
+      "030205144838" => Some(GameVersion::USA),
+      "030623214832" => Some(GameVersion::Germany),
+      "030707212715" => Some(GameVersion::Spain),
+      "030624204924" => Some(GameVersion::France),
+      "030708203047" => Some(GameVersion::Italy),
+      _ => None,
     }
   }
 

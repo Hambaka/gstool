@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::core::{
-  enums::{BuildDate, GameType, GameVersion},
+  enums::{GameType, GameVersion},
   save::format::{
     BUILD_DATE_LOCATION_INDEX, CLEAR_DATA_IDENTIFIER_INDEX, CLEAR_DATA_IDENTIFIER_VALUE,
     FIRST_BUILD_DATE_LOCATION_INDEX, GS_BUILD_DATE, HEADER_CAMELOT_ASCII_STRING,
@@ -113,7 +113,7 @@ pub fn identify_game(raw_save_file: &[u8]) -> Option<GameInfo> {
       raw_save_file[i * SAVE_SLOT_SIZE[0] + BUILD_DATE_LOCATION_INDEX[0][0][1]],
     ]);
 
-    let game_version_option = GameVersion::from_build_date(BuildDate::Bytes(build_date));
+    let game_version_option = GameVersion::from_save_build_date(build_date);
 
     if game_version_option.is_none() {
       continue;
