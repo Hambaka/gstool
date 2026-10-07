@@ -362,18 +362,18 @@ pub fn read_from_bits(password_bits: &mut BitArray, password_grade: PasswordGrad
   }
 }
 
-pub fn info_from_data(save_data: &PasswordData) -> PasswordInfo {
+pub fn info_from_data(data: &PasswordData) -> PasswordInfo {
   // Levels
-  let levels = save_data.levels;
+  let levels = data.levels;
   // Djinn
   let mut venus_djinn_bits = BitArray::new();
   let mut mercury_djinn_bits = BitArray::new();
   let mut mars_djinn_bits = BitArray::new();
   let mut jupiter_djinn_bits = BitArray::new();
-  venus_djinn_bits.push_bits(save_data.djinn[0], 7);
-  mercury_djinn_bits.push_bits(save_data.djinn[1], 7);
-  mars_djinn_bits.push_bits(save_data.djinn[2], 7);
-  jupiter_djinn_bits.push_bits(save_data.djinn[3], 7);
+  venus_djinn_bits.push_bits(data.djinn[0], 7);
+  mercury_djinn_bits.push_bits(data.djinn[1], 7);
+  mars_djinn_bits.push_bits(data.djinn[2], 7);
+  jupiter_djinn_bits.push_bits(data.djinn[3], 7);
   let mut venus_djinn = [false; 7];
   let mut mercury_djinn = [false; 7];
   let mut mars_djinn = [false; 7];
@@ -398,7 +398,7 @@ pub fn info_from_data(save_data: &PasswordData) -> PasswordInfo {
 
   // Events
   let mut events = [false; 6];
-  for (i, event) in save_data.events.iter().enumerate() {
+  for (i, event) in data.events.iter().enumerate() {
     if i == 2 {
       let inverted_event = (event ^ 1) & 1;
       events[i] = inverted_event == 1;
@@ -407,7 +407,7 @@ pub fn info_from_data(save_data: &PasswordData) -> PasswordInfo {
     }
   }
   // Base Stats
-  let base_stats = save_data.stats;
+  let base_stats = data.stats;
   // Stats
   let stats = in_game_stats(base_stats);
 
@@ -415,7 +415,7 @@ pub fn info_from_data(save_data: &PasswordData) -> PasswordInfo {
   // Items
   let mut items = [[(0, 0); 15]; 4];
   for i in 0..15 {
-    let isaac_item = save_data.items[0][i];
+    let isaac_item = data.items[0][i];
     let isaac_item_id = isaac_item & 0x1FF;
     if isaac_item_id != 0 {
       let item_count = if STACKABLE_ITEMS.contains(&isaac_item_id) {
@@ -430,7 +430,7 @@ pub fn info_from_data(save_data: &PasswordData) -> PasswordInfo {
       }
     }
 
-    let garet_item = save_data.items[1][i];
+    let garet_item = data.items[1][i];
     let garet_item_id = garet_item & 0x1FF;
     if garet_item_id != 0 {
       let item_count = if STACKABLE_ITEMS.contains(&garet_item_id) {
@@ -445,7 +445,7 @@ pub fn info_from_data(save_data: &PasswordData) -> PasswordInfo {
       }
     }
 
-    let ivan_item = save_data.items[2][i];
+    let ivan_item = data.items[2][i];
     let ivan_item_id = ivan_item & 0x1FF;
     if ivan_item_id != 0 {
       let item_count = if STACKABLE_ITEMS.contains(&ivan_item_id) {
@@ -460,7 +460,7 @@ pub fn info_from_data(save_data: &PasswordData) -> PasswordInfo {
       }
     }
 
-    let mia_item = save_data.items[3][i];
+    let mia_item = data.items[3][i];
     let mia_item_id = mia_item & 0x1FF;
     if mia_item_id != 0 {
       let item_count = if STACKABLE_ITEMS.contains(&mia_item_id) {
@@ -476,7 +476,7 @@ pub fn info_from_data(save_data: &PasswordData) -> PasswordInfo {
     }
   }
   // Coins
-  let coins = save_data.coins;
+  let coins = data.coins;
 
   PasswordInfo {
     levels,
