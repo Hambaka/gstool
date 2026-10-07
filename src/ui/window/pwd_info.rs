@@ -9,9 +9,10 @@ use crate::{
     enums::PasswordGrade,
     password::{
       decode::{info_from_data, info_from_raw_save, read_from_bits},
+      stats::MAX_VALID_BASE_STATS_VALUES_PWD,
       structs::PasswordInfo,
     },
-    save_game::format::{MAX_VALID_BASE_STATS_VALUES_PWD, PSYNERGY_ITEMS, STACKABLE_ITEMS},
+    save_game::format::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
   },
   widgets::{
     colors::{DANGER, SUCCESS, get_default_svg_color},

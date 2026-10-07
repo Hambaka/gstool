@@ -2,12 +2,10 @@ use crate::core::{
   data::{ALL_DJINN_NAMES, DYRATI_ITEM_NAMES, Language},
   password::{
     decode::{bits_from_bytes, info_from_data, info_from_raw_save, read_from_bits},
+    stats::{DEFAULT_CLASS_MULTIPLIERS, MAX_VALID_IN_GAME_STATS_VALUES},
     structs::{PasswordData, PasswordInfo},
   },
-  save_game::format::{
-    DEFAULT_CLASS_MULTIPLIERS, MAX_VALID_BASE_STATS_VALUES_PWD, MAX_VALID_IN_GAME_STATS_VALUES,
-    STACKABLE_ITEMS,
-  },
+  save_game::format::STACKABLE_ITEMS,
 };
 
 use super::enums::PasswordGrade;
@@ -207,35 +205,4 @@ pub fn get_exported_data_for_dyrati_sheet_by_bytes(
   let save_data = read_from_bits(&mut password_bits, target_grade);
   let pwd_info = info_from_data(&save_data);
   gen_exported_data_for_dyrati_sheet_with_info(&pwd_info)
-}
-
-/*
-fn get_base_stats(input_stats: u16, class_multiplier: f64) -> u16 {
-  ((((input_stats as f64) + 0.9) / class_multiplier).floor()) as u16
-}
-*/
-
-pub fn get_in_game_stats_tla(
-  input_stats: u16,
-  class_multiplier: f64,
-  max_in_game_stats: u16,
-  max_base_stats_pwd: u16,
-) -> u16 {
-  let input_stats_f64 = if input_stats > max_base_stats_pwd {
-    if max_base_stats_pwd == MAX_VALID_BASE_STATS_VALUES_PWD[2] {
-      input_stats & max_base_stats_pwd
-    } else {
-      max_base_stats_pwd
-    }
-  } else {
-    input_stats
-  } as f64;
-
-  let result = ((input_stats_f64 * class_multiplier).floor()) as u16;
-
-  if result > max_in_game_stats {
-    max_in_game_stats
-  } else {
-    result
-  }
 }

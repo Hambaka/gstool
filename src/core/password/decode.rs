@@ -3,13 +3,10 @@ use crate::core::{
   enums::PasswordGrade,
   password::{
     encode::read_from_raw_save,
+    stats::in_game_stats,
     structs::{PasswordData, PasswordInfo},
   },
-  save::get_in_game_stats_tla,
-  save_game::format::{
-    CHECKSUM_INDEX, DEFAULT_CLASS_MULTIPLIERS, MAX_VALID_BASE_STATS_VALUES_PWD,
-    MAX_VALID_IN_GAME_STATS_VALUES, PSYNERGY_ITEMS, STACKABLE_ITEMS,
-  },
+  save_game::format::{CHECKSUM_INDEX, PSYNERGY_ITEMS, STACKABLE_ITEMS},
 };
 
 pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<BitArray> {
@@ -412,17 +409,7 @@ pub fn info_from_data(save_data: &PasswordData) -> PasswordInfo {
   // Base Stats
   let base_stats = save_data.stats;
   // Stats
-  let mut stats = [[0; 6]; 4];
-  for i in 0..6 {
-    for j in 0..4 {
-      stats[j][i] = get_in_game_stats_tla(
-        save_data.stats[j][i],
-        DEFAULT_CLASS_MULTIPLIERS[j][i],
-        MAX_VALID_IN_GAME_STATS_VALUES[i],
-        MAX_VALID_BASE_STATS_VALUES_PWD[i],
-      );
-    }
-  }
+  let stats = in_game_stats(base_stats);
 
   let mut psy_items = [false; 8];
   // Items
