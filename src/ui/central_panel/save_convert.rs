@@ -12,10 +12,7 @@ use crate::{
   App,
   core::{
     enums::{GameType, GameVersion, NameType},
-    save::{
-      convert::convert_save_file,
-      raw::{GameInfo, identify_game},
-    },
+    save::{GameInfo, convert_save_file, identify_game},
   },
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };

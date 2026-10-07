@@ -16,7 +16,7 @@ use crate::{
     password::{
       decode::{bits_from_bytes, read_from_bits},
       dyrati::{from_data, from_password_bytes},
-      encode::encode,
+      encode,
     },
   },
   widgets::buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},

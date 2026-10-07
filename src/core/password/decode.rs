@@ -1,11 +1,7 @@
 use crate::core::{
   bits::BitArray,
   enums::PasswordGrade,
-  password::{
-    encode::read_from_raw_save,
-    stats::in_game_stats,
-    structs::{PasswordData, PasswordInfo},
-  },
+  password::{PasswordData, PasswordInfo, encode::read_from_raw_save, stats::in_game_stats},
   save::format::{CHECKSUM_INDEX, PSYNERGY_ITEMS, STACKABLE_ITEMS},
 };
 

@@ -2,9 +2,9 @@ use crate::core::{
   data::{ALL_DJINN_NAMES, DYRATI_ITEM_NAMES, Language},
   enums::PasswordGrade,
   password::{
-    decode::{bits_from_bytes, info_from_data, info_from_raw_save, read_from_bits},
+    PasswordData, PasswordInfo, bits_from_bytes, info_from_data, info_from_raw_save,
+    read_from_bits,
     stats::{DEFAULT_CLASS_MULTIPLIERS, MAX_VALID_IN_GAME_STATS_VALUES},
-    structs::{PasswordData, PasswordInfo},
   },
   save::format::STACKABLE_ITEMS,
 };
