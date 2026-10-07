@@ -12,19 +12,8 @@ mod core {
   pub mod data;
   pub mod enums;
   pub mod output;
+  pub mod password;
   pub mod save;
-  pub mod save_game {
-    pub mod convert;
-    pub mod format;
-    pub mod raw;
-  }
-  pub mod password {
-    pub mod decode;
-    pub mod dyrati;
-    pub mod encode;
-    pub mod stats;
-    pub mod structs;
-  }
 }
 mod util {
   pub mod bps;

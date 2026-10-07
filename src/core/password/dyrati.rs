@@ -6,7 +6,7 @@ use crate::core::{
     stats::{DEFAULT_CLASS_MULTIPLIERS, MAX_VALID_IN_GAME_STATS_VALUES},
     structs::{PasswordData, PasswordInfo},
   },
-  save_game::format::STACKABLE_ITEMS,
+  save::format::STACKABLE_ITEMS,
 };
 
 use std::fmt::Write as _;

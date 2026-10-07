@@ -10,7 +10,7 @@ use crate::{
     enums::{GameVersion, PasswordGrade, PasswordVersion},
     output,
     password::dyrati::from_password_bytes,
-    save_game::raw::{SaveSlot, collect_slots, find_first_slot_index},
+    save::raw::{SaveSlot, collect_slots, find_first_slot_index},
   },
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };

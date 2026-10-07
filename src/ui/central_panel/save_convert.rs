@@ -12,7 +12,7 @@ use crate::{
   App,
   core::{
     enums::{GameType, GameVersion, NameType},
-    save_game::{
+    save::{
       convert::convert_save_file,
       raw::{GameInfo, identify_game},
     },

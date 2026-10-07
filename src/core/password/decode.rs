@@ -6,7 +6,7 @@ use crate::core::{
     stats::in_game_stats,
     structs::{PasswordData, PasswordInfo},
   },
-  save_game::format::{CHECKSUM_INDEX, PSYNERGY_ITEMS, STACKABLE_ITEMS},
+  save::format::{CHECKSUM_INDEX, PSYNERGY_ITEMS, STACKABLE_ITEMS},
 };
 
 pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<BitArray> {

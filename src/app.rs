@@ -9,7 +9,7 @@ use crate::{
     bits::BitArray,
     data::Language,
     enums::{GameVersion, NameType, PasswordGrade, PasswordVersion},
-    save_game::raw::{GameInfo, SaveSlot},
+    save::raw::{GameInfo, SaveSlot},
   },
   ui::window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
   widgets::{

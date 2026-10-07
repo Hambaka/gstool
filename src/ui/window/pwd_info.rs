@@ -12,7 +12,7 @@ use crate::{
       stats::MAX_VALID_BASE_STATS_VALUES_PWD,
       structs::PasswordInfo,
     },
-    save_game::format::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
+    save::format::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
   },
   widgets::{
     colors::{DANGER, SUCCESS, get_default_svg_color},
