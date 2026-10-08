@@ -145,23 +145,23 @@ pub fn write_cheat_file(
     GameVersion::Germany => writeln!(
       text,
       "{}级别密码的金手指（适用于德版《黄金太阳 失落的时代》，亦适用于法/意版）：",
-      password_grade.get_name()
+      password_grade.name()
     ),
     GameVersion::France => writeln!(
       text,
       "{}级别密码的金手指（适用于法版《黄金太阳 失落的时代》，亦适用于德/意版）：",
-      password_grade.get_name()
+      password_grade.name()
     ),
     GameVersion::Italy => writeln!(
       text,
       "{}级别密码的金手指（适用于意版《黄金太阳 失落的时代》，亦适用于德/法版）：",
-      password_grade.get_name()
+      password_grade.name()
     ),
     _ => writeln!(
       text,
       "{}级别密码的金手指（仅适用于{}版《黄金太阳 失落的时代》）：",
-      password_grade.get_name(),
-      cheat_version.get_name()
+      password_grade.name(),
+      cheat_version.name()
     ),
   };
   let size = password_bytes.len();

@@ -1,8 +1,8 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PasswordGrade {
-  Gold,
-  Silver,
-  Bronze,
+  Gold,   // 0
+  Silver, // 1
+  Bronze, // 2
 }
 
 impl PasswordGrade {
@@ -11,6 +11,14 @@ impl PasswordGrade {
     PasswordGrade::Silver,
     PasswordGrade::Bronze,
   ];
+
+  pub fn from(index: usize) -> Self {
+    match index {
+      0 => PasswordGrade::Gold,
+      1 => PasswordGrade::Silver,
+      _ => PasswordGrade::Bronze,
+    }
+  }
 
   pub fn is_gold(self) -> bool {
     matches!(self, PasswordGrade::Gold)
@@ -24,7 +32,7 @@ impl PasswordGrade {
     matches!(self, PasswordGrade::Bronze)
   }
 
-  pub fn get_name(self) -> &'static str {
+  pub fn name(self) -> &'static str {
     match self {
       PasswordGrade::Gold => "金",
       PasswordGrade::Silver => "银",
@@ -32,7 +40,7 @@ impl PasswordGrade {
     }
   }
 
-  pub fn get_priority(self) -> usize {
+  pub fn priority(self) -> usize {
     self as usize
   }
 }
@@ -56,7 +64,7 @@ impl PasswordVersion {
     }
   }
 
-  pub fn get_name(self) -> &'static str {
+  pub fn name(self) -> &'static str {
     match self {
       PasswordVersion::Japanese => "日文",
       PasswordVersion::English => "英文",
@@ -72,31 +80,19 @@ impl PasswordVersion {
   }
 
   // GSPI
-  pub fn get_diff_u8_gold(self) -> u8 {
-    match self {
-      PasswordVersion::Japanese => 0xEF,
-      PasswordVersion::English => 0xF3,
+  pub fn diff_pos_password(self, grade: PasswordGrade) -> u8 {
+    match (grade, self) {
+      (PasswordGrade::Gold, PasswordVersion::Japanese) => 0xEF,
+      (PasswordGrade::Gold, PasswordVersion::English) => 0xF3,
+      (PasswordGrade::Silver, PasswordVersion::Japanese) => 0x28,
+      (PasswordGrade::Silver, PasswordVersion::English) => 0x2C,
+      (PasswordGrade::Bronze, PasswordVersion::Japanese) => 0x05,
+      (PasswordGrade::Bronze, PasswordVersion::English) => 0x01,
     }
   }
 
   // GSPI
-  pub fn get_diff_u8_silver(self) -> u8 {
-    match self {
-      PasswordVersion::Japanese => 0x28,
-      PasswordVersion::English => 0x2C,
-    }
-  }
-
-  // GSPI
-  pub fn get_diff_u8_bronze(self) -> u8 {
-    match self {
-      PasswordVersion::Japanese => 0x05,
-      PasswordVersion::English => 0x01,
-    }
-  }
-
-  // GSPI
-  pub fn get_diff_u8_other(self) -> u8 {
+  pub fn diff_pos_other(self) -> u8 {
     match self {
       PasswordVersion::Japanese => 0x11,
       PasswordVersion::English => 0x0D,
@@ -124,7 +120,7 @@ impl GameVersion {
     GameVersion::Italy,
   ];
 
-  pub fn get_name(self) -> &'static str {
+  pub fn name(self) -> &'static str {
     match self {
       GameVersion::Japan => "日",
       GameVersion::USA => "美",
@@ -224,7 +220,7 @@ pub enum NameType {
 }
 
 impl NameType {
-  pub fn get_name(self) -> &'static str {
+  pub fn name(self) -> &'static str {
     match self {
       NameType::Japanese => "日文",
       NameType::English => "英文",

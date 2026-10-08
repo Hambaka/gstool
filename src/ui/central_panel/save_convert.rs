@@ -93,29 +93,29 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C2_名字版本")
             .width(100.0)
             .selected_text(match &self.default_name_ver {
-              Some(name_type) => name_type.get_name(),
+              Some(name_type) => name_type.name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.default_name_ver, None, "无");
-              ui.selectable_value(&mut self.default_name_ver, Some(NameType::Japanese), NameType::Japanese.get_name());
-              ui.selectable_value(&mut self.default_name_ver, Some(NameType::English), NameType::English.get_name());
-              ui.selectable_value(&mut self.default_name_ver, Some(NameType::German), NameType::German.get_name());
-              ui.selectable_value(&mut self.default_name_ver, Some(NameType::Spanish), NameType::Spanish.get_name());
-              ui.selectable_value(&mut self.default_name_ver, Some(NameType::French), NameType::French.get_name());
-              ui.selectable_value(&mut self.default_name_ver, Some(NameType::Italian), NameType::Italian.get_name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::Japanese), NameType::Japanese.name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::English), NameType::English.name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::German), NameType::German.name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::Spanish), NameType::Spanish.name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::French), NameType::French.name());
+              ui.selectable_value(&mut self.default_name_ver, Some(NameType::Italian), NameType::Italian.name());
               ui.add_enabled_ui(matches!(val_result.game_type, GameType::TheBrokenSeal), |ui| {
                 ui.selectable_value(
                   &mut self.default_name_ver,
                   Some(NameType::ChineseFanTranslation2023Team),
-                  NameType::ChineseFanTranslation2023Team.get_name(),
+                  NameType::ChineseFanTranslation2023Team.name(),
                 );
               });
               ui.add_enabled_ui(matches!(val_result.game_type, GameType::TheLostAge), |ui| {
                 ui.selectable_value(
                   &mut self.default_name_ver,
                   Some(NameType::ChineseFanTranslationMobileTeam),
-                  NameType::ChineseFanTranslationMobileTeam.get_name(),
+                  NameType::ChineseFanTranslationMobileTeam.name(),
                 );
               });
             });
@@ -142,14 +142,14 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C2_构建日期版本")
             .width(100.0)
             .selected_text(match &self.build_date_ver {
-              Some(version_enum) => version_enum.get_name(),
+              Some(version_enum) => version_enum.name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.build_date_ver, None, "无");
               for ele in GameVersion::GAME_VERSIONS {
                 ui.add_enabled_ui(ele != val_result.version, |ui| {
-                  ui.selectable_value(&mut self.build_date_ver, Some(ele), ele.get_name());
+                  ui.selectable_value(&mut self.build_date_ver, Some(ele), ele.name());
                 });
               }
             });
@@ -271,7 +271,7 @@ impl App {
 
     if let Some(name_type) = self.default_name_ver {
       result_index += 1;
-      let name_type_cn = name_type.get_name();
+      let name_type_cn = name_type.name();
       let _ = writeln!(
         self.out_log_c2,
         "{result_index}. 生成的存档文件已将主角团成员的名字转换为{name_type_cn}版的默认名。"
@@ -279,7 +279,7 @@ impl App {
 
       if let Some(build_date_type) = self.build_date_ver {
         result_index += 1;
-        let build_date_type_cn = build_date_type.get_name();
+        let build_date_type_cn = build_date_type.name();
         let _ = writeln!(
           self.out_log_c2,
           "{result_index}. 生成的存档文件已将构建日期转换为{build_date_type_cn}版。"

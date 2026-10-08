@@ -111,10 +111,10 @@ impl App {
             .on_hover_text("目标密码级别，默认值为“金”");
           ComboBox::from_id_salt("ID_CB_C1S1_密码级别")
             .width(100.0)
-            .selected_text(self.pwd_grade_c1s1.get_name())
+            .selected_text(self.pwd_grade_c1s1.name())
             .show_ui(ui, |ui| {
               for ele in PasswordGrade::PASSWORD_GRADES {
-                ui.selectable_value(&mut self.pwd_grade_c1s1, ele, ele.get_name());
+                ui.selectable_value(&mut self.pwd_grade_c1s1, ele, ele.name());
               }
             });
         } else {
@@ -139,13 +139,13 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C1S1_密码文本版本")
             .width(100.0)
             .selected_text(match &self.pwd_text_ver_c1s1 {
-              Some(password_version_enum) => password_version_enum.get_name(),
+              Some(password_version_enum) => password_version_enum.name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_text_ver_c1s1, None, "无");
               for ele in PasswordVersion::PASSWORD_VERSIONS {
-                ui.selectable_value(&mut self.pwd_text_ver_c1s1, Some(ele), ele.get_name());
+                ui.selectable_value(&mut self.pwd_text_ver_c1s1, Some(ele), ele.name());
               }
             });
         } else {
@@ -185,13 +185,13 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C1S1_生成密码金手指")
             .width(100.0)
             .selected_text(match &self.pwd_cheat_ver_c1s1 {
-              Some(version_enum) => version_enum.get_name(),
+              Some(version_enum) => version_enum.name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, None, "无");
               for ele in GameVersion::GAME_VERSIONS {
-                ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, Some(ele), ele.get_name());
+                ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, Some(ele), ele.name());
               }
             });
         } else {
@@ -362,11 +362,11 @@ impl App {
           );
         }
 
-        let password_grade_cn = self.pwd_grade_c1s1.get_name();
+        let password_grade_cn = self.pwd_grade_c1s1.name();
 
         if let Some(password_version) = self.pwd_text_ver_c1s1 {
           result_index += 1;
-          let password_version_cn = password_version.get_name();
+          let password_version_cn = password_version.name();
           if self.to_export_all_save {
             let _ = writeln!(
               self.out_log_c1s1,
@@ -397,7 +397,7 @@ impl App {
 
         if let Some(cheat_version) = self.pwd_cheat_ver_c1s1 {
           result_index += 1;
-          let cheat_version_cn = cheat_version.get_name();
+          let cheat_version_cn = cheat_version.name();
           if self.to_export_all_save {
             let _ = writeln!(
               self.out_log_c1s1,

@@ -95,14 +95,14 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C1S3_密码级别")
             .width(100.0)
             .selected_text(match &self.pwd_grade_c1s3 {
-              Some(password_grade_enum) => password_grade_enum.get_name(),
+              Some(password_grade_enum) => password_grade_enum.name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_grade_c1s3, None, "无");
               for ele in PasswordGrade::PASSWORD_GRADES {
-                ui.add_enabled_ui(source_grade.get_priority() < ele.get_priority(), |ui|{
-                  ui.selectable_value(&mut self.pwd_grade_c1s3, Some(ele), ele.get_name());
+                ui.add_enabled_ui(source_grade.priority() < ele.priority(), |ui|{
+                  ui.selectable_value(&mut self.pwd_grade_c1s3, Some(ele), ele.name());
                 });
               }
             });
@@ -119,13 +119,13 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C1S3_密码文本版本")
             .width(100.0)
             .selected_text(match &self.pwd_text_ver_c1s3 {
-              Some(password_version_enum) => password_version_enum.get_name(),
+              Some(password_version_enum) => password_version_enum.name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_text_ver_c1s3, None, "无");
               for ele in PasswordVersion::PASSWORD_VERSIONS {
-                ui.selectable_value(&mut self.pwd_text_ver_c1s3, Some(ele), ele.get_name());
+                ui.selectable_value(&mut self.pwd_text_ver_c1s3, Some(ele), ele.name());
               }
             });
         } else {
@@ -141,13 +141,13 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C1S3_生成密码金手指")
             .width(100.0)
             .selected_text(match &self.pwd_cheat_ver_c1s3 {
-              Some(version_enum) => version_enum.get_name(),
+              Some(version_enum) => version_enum.name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_cheat_ver_c1s3, None, "无");
               for ele in GameVersion::GAME_VERSIONS {
-                ui.selectable_value(&mut self.pwd_cheat_ver_c1s3, Some(ele), ele.get_name());
+                ui.selectable_value(&mut self.pwd_cheat_ver_c1s3, Some(ele), ele.name());
               }
             });
         } else {
@@ -284,7 +284,7 @@ impl App {
     self.out_log_c1s3.push_str("运行概况：\n");
 
     let mut result_index = 1;
-    let source_password_grade_cn = self.dmp_src_grade.unwrap().get_name();
+    let source_password_grade_cn = self.dmp_src_grade.unwrap().name();
     let _ = writeln!(
       self.out_log_c1s3,
       "{result_index}. 输入的源文件为{source_password_grade_cn}级别的密码内存转储文件。"
@@ -293,7 +293,7 @@ impl App {
     let mut downgrade_str_option = None;
     if let Some(target_password_grade) = self.pwd_grade_c1s3 {
       result_index += 1;
-      let target_password_grade_cn = target_password_grade.get_name();
+      let target_password_grade_cn = target_password_grade.name();
       downgrade_str_option = Some(target_password_grade_cn);
       let _ = writeln!(
         self.out_log_c1s3,
@@ -303,7 +303,7 @@ impl App {
 
     if let Some(password_version) = self.pwd_text_ver_c1s3 {
       result_index += 1;
-      let password_version_cn = password_version.get_name();
+      let password_version_cn = password_version.name();
       if let Some(target_password_grade_cn) = downgrade_str_option {
         let _ = writeln!(
           self.out_log_c1s3,
@@ -319,7 +319,7 @@ impl App {
 
     if let Some(cheat_version) = self.pwd_cheat_ver_c1s3 {
       result_index += 1;
-      let cheat_version_cn = cheat_version.get_name();
+      let cheat_version_cn = cheat_version.name();
       if let Some(target_password_grade_cn) = downgrade_str_option {
         let _ = writeln!(
           self.out_log_c1s3,

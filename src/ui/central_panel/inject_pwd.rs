@@ -815,17 +815,13 @@ fn inject(
 
       for (index, pos_option) in bin_info.diff_u8_gsb.iter().enumerate() {
         if let Some(pos) = pos_option {
-          let u8_value = match index {
-            0 => password_version.get_diff_u8_gold(),
-            1 => password_version.get_diff_u8_silver(),
-            _ => password_version.get_diff_u8_bronze(),
-          };
+          let u8_value = password_version.diff_pos_password(PasswordGrade::from(index));
           injected_rom[start_index + pos] = u8_value;
         }
       }
 
       for index in bin_info.diff_u8_other {
-        injected_rom[start_index + index] = password_version.get_diff_u8_other();
+        injected_rom[start_index + index] = password_version.diff_pos_other();
       }
 
       for (index, value) in bin_info.diff_u32 {
