@@ -11,10 +11,10 @@ mod core {
   pub mod convert;
   pub mod data;
   pub mod enums;
-  pub mod output;
   pub mod password;
   pub mod save;
 }
+mod io;
 mod util {
   pub mod bps;
 }

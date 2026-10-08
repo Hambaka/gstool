@@ -11,14 +11,10 @@ use crate::core::{
 };
 
 pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<BitArray> {
-  let password_grade = match password_bytes.len() {
-    260 => PasswordGrade::Gold,
-    61 => PasswordGrade::Silver,
-    16 => PasswordGrade::Bronze,
-    _ => unreachable!(),
-  };
+  let size = password_bytes.len();
+  let password_grade = PasswordGrade::from_size(size).unwrap();
 
-  let mut bytes_data = vec![0; password_bytes.len()];
+  let mut bytes_data = vec![0; size];
   /* Remove each byte's position data by minus its index.
   I'm not sure if it's the correct way to do that, but "+ 0x200" works.
   Maybe there is a better way for this...

@@ -1,4 +1,9 @@
-use std::{fmt::Write as _, fs::File, io::Read};
+use std::{
+  fmt::Write as _,
+  fs::File,
+  io::Read,
+  path::{Path, PathBuf},
+};
 
 use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
@@ -8,9 +13,13 @@ use crate::{
   app::SubCommandEnum,
   core::{
     enums::{GameVersion, PasswordGrade, PasswordVersion},
-    output,
-    password::dyrati::from_password_bytes,
+    password::encode::from_raw_save,
     save::{SaveSlot, collect_slots, find_first_slot_index},
+  },
+  io::{
+    path::{derived_output_dir, slot_dir_name},
+    sheet_from_password_bytes, sheet_from_save_slot, write_cheat_code, write_memory_dump,
+    write_password_data_text, write_password_text,
   },
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
@@ -261,63 +270,37 @@ impl App {
   pub fn run_c1s1(&mut self) {
     // Create main output directory.
     let output_dir_str = if self.out_dir_c1s1.is_empty() {
-      match output::create_output_dir(&self.input_file_path_c1s1, false) {
-        Ok(o) => o,
-        Err(e) => {
-          e.clone_into(&mut self.err_msg);
-          self.err_modal_open = true;
-          return;
-        }
-      }
+      derived_output_dir(Path::new(&self.input_file_path_c1s1))
     } else {
-      match output::create_output_dir(&self.out_dir_c1s1, true) {
-        Ok(o) => o,
-        Err(e) => {
-          e.clone_into(&mut self.err_msg);
-          self.err_modal_open = true;
-          return;
-        }
-      }
+      PathBuf::from(&self.out_dir_c1s1)
     };
 
     for (key, val_option) in self.raw_save_data.iter().enumerate() {
       if let Some(val) = val_option {
-        let password_bytes =
-          crate::core::password::encode::from_raw_save(val.get_data(), self.pwd_grade_c1s1);
+        let password_bytes = from_raw_save(val.get_data(), self.pwd_grade_c1s1);
         // Key is save slot number: 0, 1, 2 -> 1, 2, 3
-        let sub_dir_str =
-          match output::create_sav_sub_dir(key + 1, val.get_is_clear(), &output_dir_str) {
-            Ok(o) => o,
-            Err(e) => {
-              e.clone_into(&mut self.err_msg);
-              self.err_modal_open = true;
-              return;
-            }
-          };
+        let sub_dir_name = slot_dir_name(key, val.get_is_clear());
+        let sub_dir_str = output_dir_str.join(sub_dir_name);
 
         if let Some(password_version) = self.pwd_text_ver_c1s1 {
-          if let Err(e) = output::write_password_text_file_with_bytes(
-            &password_bytes,
-            password_version,
-            &sub_dir_str,
-          ) {
-            e.clone_into(&mut self.err_msg);
+          if let Err(e) = write_password_text(&password_bytes, password_version, &sub_dir_str) {
+            self.err_msg = e.to_string();
             self.err_modal_open = true;
             return;
           }
         }
 
         if self.to_export_pwd_bin_c1s1 {
-          if let Err(e) = output::write_memory_dump_file(&password_bytes, &sub_dir_str) {
-            e.clone_into(&mut self.err_msg);
+          if let Err(e) = write_memory_dump(&password_bytes, &sub_dir_str) {
+            self.err_msg = e.to_string();
             self.err_modal_open = true;
             return;
           }
         }
 
         if let Some(cheat_version) = self.pwd_cheat_ver_c1s1 {
-          if let Err(e) = output::write_cheat_file(&password_bytes, cheat_version, &sub_dir_str) {
-            e.clone_into(&mut self.err_msg);
+          if let Err(e) = write_cheat_code(&password_bytes, cheat_version, &sub_dir_str) {
+            self.err_msg = e.to_string();
             self.err_modal_open = true;
             return;
           }
@@ -325,19 +308,18 @@ impl App {
 
         if self.to_export_pwd_data_text_c1s1 {
           if self.pwd_grade_c1s1.is_gold() {
-            if let Err(e) = output::write_game_data_text_file(
-              &crate::core::password::dyrati::from_raw_save(val.get_data()),
-              &sub_dir_str,
-            ) {
-              e.clone_into(&mut self.err_msg);
+            if let Err(e) =
+              write_password_data_text(&sheet_from_save_slot(val.get_data()), &sub_dir_str)
+            {
+              self.err_msg = e.to_string();
               self.err_modal_open = true;
               return;
             }
-          } else if let Err(e) = output::write_game_data_text_file(
-            &from_password_bytes(&password_bytes, self.pwd_grade_c1s1),
+          } else if let Err(e) = write_password_data_text(
+            &sheet_from_password_bytes(&password_bytes, self.pwd_grade_c1s1),
             &sub_dir_str,
           ) {
-            e.clone_into(&mut self.err_msg);
+            self.err_msg = e.to_string();
             self.err_modal_open = true;
             return;
           }
@@ -346,7 +328,11 @@ impl App {
         // More detailed output logs, to improve user experience.
         // Sh*t code, but at least it works.
         self.out_log_c1s1.clear();
-        let _ = write!(self.out_log_c1s1, "输出目录：\n{output_dir_str}\n\n");
+        let _ = write!(
+          self.out_log_c1s1,
+          "输出目录：\n{}\n\n",
+          output_dir_str.to_string_lossy()
+        );
         self.out_log_c1s1.push_str("运行概况：\n");
 
         let mut result_index = 1;

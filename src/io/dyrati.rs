@@ -217,17 +217,17 @@ HP, EP, 攻击, 防御, 敏捷, 幸运
   result
 }
 
-pub fn from_raw_save(raw_save: &[u8]) -> String {
+pub fn sheet_from_save_slot(raw_save: &[u8]) -> String {
   let info = info_from_raw_save(raw_save);
   render(&info)
 }
 
-pub fn from_data(data: &PasswordData) -> String {
+pub fn sheet_from_password_data(data: &PasswordData) -> String {
   let info = info_from_data(data);
   render(&info)
 }
 
-pub fn from_password_bytes(password_bytes: &[u8], target_grade: PasswordGrade) -> String {
+pub fn sheet_from_password_bytes(password_bytes: &[u8], target_grade: PasswordGrade) -> String {
   let mut bits = bits_from_bytes(password_bytes, false).unwrap();
   let data = read_from_bits(&mut bits, target_grade);
   let info = info_from_data(&data);

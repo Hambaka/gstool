@@ -1,5 +1,4 @@
 pub mod decode;
-pub mod dyrati;
 pub mod encode;
 pub mod items;
 pub mod stats;

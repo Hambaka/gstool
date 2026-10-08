@@ -12,6 +12,15 @@ impl PasswordGrade {
     PasswordGrade::Bronze,
   ];
 
+  pub fn from_size(size: usize) -> Option<Self> {
+    match size {
+      260 => Some(Self::Gold),
+      61 => Some(Self::Silver),
+      16 => Some(Self::Bronze),
+      _ => None,
+    }
+  }
+
   pub fn from(index: usize) -> Self {
     match index {
       0 => PasswordGrade::Gold,

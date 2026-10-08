@@ -1,4 +1,9 @@
-use std::{fmt::Write as _, fs::File, io::Read};
+use std::{
+  fmt::Write as _,
+  fs::File,
+  io::Read,
+  path::{Path, PathBuf},
+};
 
 use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
@@ -10,12 +15,14 @@ use crate::{
     bits::BitArray,
     convert,
     enums::{GameVersion, PasswordGrade, PasswordVersion},
-    output,
     password::{
       decode::{bits_from_bytes, read_from_bits},
-      dyrati::{from_data, from_password_bytes},
       encode,
     },
+  },
+  io::{
+    path::derived_output_dir, sheet_from_password_bytes, sheet_from_password_data,
+    write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
   },
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
@@ -208,53 +215,33 @@ impl App {
       None => self.dmp_bytes.clone(),
     };
 
-    // Create output directory.
     let output_dir_str = if self.out_dir_c1s3.is_empty() {
-      match output::create_output_dir(&self.input_file_path_c1s3, false) {
-        Ok(o) => o,
-        Err(e) => {
-          e.clone_into(&mut self.err_msg);
-          self.err_modal_open = true;
-          return;
-        }
-      }
+      derived_output_dir(Path::new(&self.input_file_path_c1s3))
     } else {
-      match output::create_output_dir(&self.out_dir_c1s3, true) {
-        Ok(o) => o,
-        Err(e) => {
-          e.clone_into(&mut self.err_msg);
-          self.err_modal_open = true;
-          return;
-        }
-      }
+      PathBuf::from(&self.out_dir_c1s3)
     };
 
     // Write files.
     if self.pwd_grade_c1s3.is_some() {
-      if let Err(e) = output::write_memory_dump_file(&target_password_bytes, &output_dir_str) {
-        e.clone_into(&mut self.err_msg);
+      if let Err(e) = write_memory_dump(&target_password_bytes, &output_dir_str) {
+        self.err_msg = e.to_string();
         self.err_modal_open = true;
         return;
       }
     }
 
     if let Some(password_version) = self.pwd_text_ver_c1s3 {
-      if let Err(e) = output::write_password_text_file_with_bytes(
-        &target_password_bytes,
-        password_version,
-        &output_dir_str,
-      ) {
-        e.clone_into(&mut self.err_msg);
+      if let Err(e) = write_password_text(&target_password_bytes, password_version, &output_dir_str)
+      {
+        self.err_msg = e.to_string();
         self.err_modal_open = true;
         return;
       }
     }
 
     if let Some(cheat_version) = self.pwd_cheat_ver_c1s3 {
-      if let Err(e) =
-        output::write_cheat_file(&target_password_bytes, cheat_version, &output_dir_str)
-      {
-        e.clone_into(&mut self.err_msg);
+      if let Err(e) = write_cheat_code(&target_password_bytes, cheat_version, &output_dir_str) {
+        self.err_msg = e.to_string();
         self.err_modal_open = true;
         return;
       }
@@ -262,16 +249,18 @@ impl App {
 
     if self.to_export_pwd_data_text_c1s3 {
       if self.pwd_grade_c1s3.is_none() {
-        if let Err(e) = output::write_game_data_text_file(&from_data(&save_data), &output_dir_str) {
-          e.clone_into(&mut self.err_msg);
+        if let Err(e) =
+          write_password_data_text(&sheet_from_password_data(&save_data), &output_dir_str)
+        {
+          self.err_msg = e.to_string();
           self.err_modal_open = true;
           return;
         }
-      } else if let Err(e) = output::write_game_data_text_file(
-        &from_password_bytes(&target_password_bytes, self.pwd_grade_c1s3.unwrap()),
+      } else if let Err(e) = write_password_data_text(
+        &sheet_from_password_bytes(&target_password_bytes, self.pwd_grade_c1s3.unwrap()),
         &output_dir_str,
       ) {
-        e.clone_into(&mut self.err_msg);
+        self.err_msg = e.to_string();
         self.err_modal_open = true;
         return;
       }
@@ -280,7 +269,11 @@ impl App {
     // More detailed output logs, to improve user experience.
     // Sh*t code, but at least it works.
     self.out_log_c1s3.clear();
-    let _ = write!(self.out_log_c1s3, "输出目录：\n{output_dir_str}\n\n");
+    let _ = write!(
+      self.out_log_c1s3,
+      "输出目录：\n{}\n\n",
+      output_dir_str.to_string_lossy()
+    );
     self.out_log_c1s3.push_str("运行概况：\n");
 
     let mut result_index = 1;
@@ -361,13 +354,10 @@ fn validate_input_file(path_str: &str) -> Result<(Vec<u8>, BitArray, PasswordGra
 
   // Check its file size, and get its grade.
   let file_size = input_file.metadata().unwrap().len();
-  let source_password_grade = match file_size {
-    260 => PasswordGrade::Gold,
-    61 => PasswordGrade::Silver,
-    16 => PasswordGrade::Bronze,
-    _ => {
-      return Err("文件大小应为 16 字节，61 字节或 260 字节！");
-    }
+
+  let source_password_grade = match PasswordGrade::from_size(file_size as usize) {
+    Some(grade) => grade,
+    None => return Err("文件大小应为 16 字节，61 字节或 260 字节！"),
   };
 
   let mut password_bytes = Vec::new();
