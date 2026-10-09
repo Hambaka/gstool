@@ -2,16 +2,17 @@ use crate::core::{
   data::{ALL_DJINN_NAMES, DYRATI_ITEM_NAMES, Language},
   enums::PasswordGrade,
   password::{
-    PasswordData, PasswordInfo, bits_from_bytes, info_from_data, info_from_raw_save,
+    PasswordData, PasswordView, bits_from_bytes,
     items::STACKABLE_ITEMS,
     read_from_bits,
-    stats::{DEFAULT_CLASS_MULTIPLIERS, MAX_VALID_IN_GAME_STATS_VALUES},
+    stats::{DEFAULT_CLASS_MULTIPLIERS, MAX_IN_GAME_STATS},
+    view_from_data, view_from_raw_save,
   },
 };
 
 use std::fmt::Write as _;
 
-fn render(info: &PasswordInfo) -> String {
+fn render(view: &PasswordView) -> String {
   let mut result = String::with_capacity(8192);
 
   // https://doc.rust-lang.org/rust-by-example/std/str.html
@@ -33,8 +34,8 @@ fn render(info: &PasswordInfo) -> String {
   );
 
   // Levels
-  for (i, level) in info.levels.iter().enumerate() {
-    let ch = if i == info.levels.len() - 1 {
+  for (i, level) in view.levels.iter().enumerate() {
+    let ch = if i == view.levels.len() - 1 {
       '\n'
     } else {
       '\t'
@@ -59,8 +60,8 @@ fn render(info: &PasswordInfo) -> String {
   // Djinn
   for i in 0..7 {
     for j in 0..4 {
-      let djinn_name = if info.djinn[j][i] {
-        ALL_DJINN_NAMES[j][i].get_name(Language::English)
+      let djinn_name = if view.djinn[j][i] {
+        ALL_DJINN_NAMES[j][i].name(Language::English)
       } else {
         ""
       };
@@ -90,7 +91,7 @@ fn render(info: &PasswordInfo) -> String {
   );
 
   // Events
-  for event in info.events {
+  for event in view.events {
     let _ = writeln!(result, "{}", if event { "1" } else { "0" });
   }
 
@@ -114,15 +115,14 @@ HP, EP, 攻击, 防御, 敏捷, 幸运
 
   // Base Stats
   // Stats cap in dyrati sheet.
-  let mut dyrati_base_stats = info.base_stats;
-  let mut dyrati_stats = info.stats;
+  let mut dyrati_base_stats = view.base_stats;
+  let mut dyrati_stats = view.stats;
   for i in 0..6 {
     for j in 0..4 {
-      if dyrati_base_stats[j][i] > MAX_VALID_IN_GAME_STATS_VALUES[i] {
-        dyrati_base_stats[j][i] = MAX_VALID_IN_GAME_STATS_VALUES[i];
-        dyrati_stats[j][i] = (MAX_VALID_IN_GAME_STATS_VALUES[i] as f64
-          * DEFAULT_CLASS_MULTIPLIERS[j][i])
-          .floor() as u16;
+      if dyrati_base_stats[j][i] > MAX_IN_GAME_STATS[i] {
+        dyrati_base_stats[j][i] = MAX_IN_GAME_STATS[i];
+        dyrati_stats[j][i] =
+          (MAX_IN_GAME_STATS[i] as f64 * DEFAULT_CLASS_MULTIPLIERS[j][i]).floor() as u16;
       }
     }
   }
@@ -179,7 +179,7 @@ HP, EP, 攻击, 防御, 敏捷, 幸运
   // Items
   for i in 0..15 {
     for j in 0..4 {
-      let (item_id, item_count) = info.items[j][i];
+      let (item_id, item_count) = view.items[j][i];
 
       let item_name = if item_id != 0 {
         let item_index = (item_id - 1) as usize;
@@ -212,24 +212,24 @@ HP, EP, 攻击, 防御, 敏捷, 幸运
   );
 
   // Coins
-  let _ = writeln!(result, "{}\n====结束====", info.coins);
+  let _ = writeln!(result, "{}\n====结束====", view.coins);
 
   result
 }
 
 pub fn sheet_from_save_slot(raw_save: &[u8]) -> String {
-  let info = info_from_raw_save(raw_save);
+  let info = view_from_raw_save(raw_save);
   render(&info)
 }
 
 pub fn sheet_from_password_data(data: &PasswordData) -> String {
-  let info = info_from_data(data);
+  let info = view_from_data(data);
   render(&info)
 }
 
 pub fn sheet_from_password_bytes(password_bytes: &[u8], target_grade: PasswordGrade) -> String {
   let mut bits = bits_from_bytes(password_bytes, false).unwrap();
   let data = read_from_bits(&mut bits, target_grade);
-  let info = info_from_data(&data);
+  let info = view_from_data(&data);
   render(&info)
 }

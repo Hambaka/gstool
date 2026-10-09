@@ -6,9 +6,9 @@ use image::GenericImageView;
 
 use crate::{
   core::{
-    bits::BitArray,
+    bits::BitVec,
     data::Language,
-    enums::{GameVersion, NameType, PasswordGrade, PasswordVersion},
+    enums::{GameRegion, NameType, PasswordGrade, PasswordVersion},
     save::{GameInfo, SaveSlot},
   },
   ui::window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
@@ -38,11 +38,11 @@ impl<'a> egui::IntoAtoms<'a> for AtomsEnum {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CommandEnum {
-  First,
-  Second,
-  Third,
-  Fourth,
-  Fifth,
+  First = 0,
+  Second = 1,
+  Third = 2,
+  Fourth = 3,
+  Fifth = 4,
 }
 
 impl CommandEnum {
@@ -90,11 +90,11 @@ impl CommandEnum {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SubCommandEnum {
   /// ❶ 密码导出功能 -> 🅰 游戏存档
-  First,
+  First = 0,
   /// ❶ 密码导出功能 -> 🅱 密码文本
-  Second,
+  Second = 1,
   /// ❶ 密码导出功能 -> 🅲 内存转储
-  Third,
+  Third = 2,
 }
 
 impl SubCommandEnum {
@@ -159,7 +159,7 @@ pub struct App {
   pub pwd_grade_c1s1: PasswordGrade,
   pub pwd_text_ver_c1s1: Option<PasswordVersion>,
   pub to_export_pwd_bin_c1s1: bool,
-  pub pwd_cheat_ver_c1s1: Option<GameVersion>,
+  pub pwd_cheat_ver_c1s1: Option<GameRegion>,
   pub to_export_pwd_data_text_c1s1: bool,
   pub out_dir_c1s1: String,
   pub out_log_c1s1: String,
@@ -167,23 +167,23 @@ pub struct App {
   pub input_file_path_c1s2: String,
   pub txt_file: String,
   pub txt_bytes: Vec<u8>,
-  pub txt_bits: Option<BitArray>,
+  pub txt_bits: Option<BitVec>,
   pub txt_src_grade_version: Option<(PasswordGrade, PasswordVersion)>,
   pub pwd_grade_c1s2: Option<PasswordGrade>,
   pub to_convert_pwd_text_ver: bool,
   pub to_export_pwd_bin_c1s2: bool,
-  pub pwd_cheat_ver_c1s2: Option<GameVersion>,
+  pub pwd_cheat_ver_c1s2: Option<GameRegion>,
   pub to_export_pwd_data_text_c1s2: bool,
   pub out_dir_c1s2: String,
   pub out_log_c1s2: String,
   // 1.3 使用内存转储文件
   pub input_file_path_c1s3: String,
   pub dmp_bytes: Vec<u8>,
-  pub dmp_bits: Option<BitArray>,
+  pub dmp_bits: Option<BitVec>,
   pub dmp_src_grade: Option<PasswordGrade>,
   pub pwd_grade_c1s3: Option<PasswordGrade>,
   pub pwd_text_ver_c1s3: Option<PasswordVersion>,
-  pub pwd_cheat_ver_c1s3: Option<GameVersion>,
+  pub pwd_cheat_ver_c1s3: Option<GameRegion>,
   pub to_export_pwd_data_text_c1s3: bool,
   pub out_dir_c1s3: String,
   pub out_log_c1s3: String,
@@ -192,7 +192,7 @@ pub struct App {
   pub save_file: Vec<u8>,
   pub save_src_type_index: Option<GameInfo>,
   pub default_name_ver: Option<NameType>,
-  pub build_date_ver: Option<GameVersion>,
+  pub build_date_ver: Option<GameRegion>,
   pub out_dir_c2: String,
   pub out_log_c2: String,
   // 3. 自定义角色名部分

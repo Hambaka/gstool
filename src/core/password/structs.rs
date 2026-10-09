@@ -9,7 +9,7 @@ pub struct PasswordData {
 }
 
 #[derive(Debug, Clone)]
-pub struct PasswordInfo {
+pub struct PasswordView {
   pub levels: [u8; 4],
   pub djinn: [[bool; 7]; 4],
   pub events: [bool; 6],

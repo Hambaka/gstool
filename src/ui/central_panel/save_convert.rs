@@ -11,8 +11,8 @@ use rfd::FileDialog;
 use crate::{
   App,
   core::{
-    enums::{GameType, GameVersion, NameType},
-    save::{GameInfo, convert_save_file, identify_game},
+    enums::{GameRegion, GameTitle, NameType},
+    save::{GameInfo, convert_save, identify_game},
   },
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };
@@ -104,14 +104,14 @@ impl App {
               ui.selectable_value(&mut self.default_name_ver, Some(NameType::Spanish), NameType::Spanish.name());
               ui.selectable_value(&mut self.default_name_ver, Some(NameType::French), NameType::French.name());
               ui.selectable_value(&mut self.default_name_ver, Some(NameType::Italian), NameType::Italian.name());
-              ui.add_enabled_ui(matches!(val_result.game_type, GameType::TheBrokenSeal), |ui| {
+              ui.add_enabled_ui(matches!(val_result.title, GameTitle::TheBrokenSeal), |ui| {
                 ui.selectable_value(
                   &mut self.default_name_ver,
                   Some(NameType::ChineseFanTranslation2023Team),
                   NameType::ChineseFanTranslation2023Team.name(),
                 );
               });
-              ui.add_enabled_ui(matches!(val_result.game_type, GameType::TheLostAge), |ui| {
+              ui.add_enabled_ui(matches!(val_result.title, GameTitle::TheLostAge), |ui| {
                 ui.selectable_value(
                   &mut self.default_name_ver,
                   Some(NameType::ChineseFanTranslationMobileTeam),
@@ -142,14 +142,14 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C2_构建日期版本")
             .width(100.0)
             .selected_text(match &self.build_date_ver {
-              Some(version_enum) => version_enum.name(),
+              Some(version_enum) => version_enum.short_name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.build_date_ver, None, "无");
-              for ele in GameVersion::GAME_VERSIONS {
-                ui.add_enabled_ui(ele != val_result.version, |ui| {
-                  ui.selectable_value(&mut self.build_date_ver, Some(ele), ele.name());
+              for ele in GameRegion::ALL {
+                ui.add_enabled_ui(ele != val_result.region, |ui| {
+                  ui.selectable_value(&mut self.build_date_ver, Some(ele), ele.short_name());
                 });
               }
             });
@@ -195,10 +195,12 @@ impl App {
   }
 
   pub fn run_c2(&mut self) {
+    let mut new_save_file = self.save_file.clone();
+
     // Convert save data.
-    let new_save_file = convert_save_file(
-      &mut self.save_file.clone(),
-      self.save_src_type_index.unwrap().game_type,
+    convert_save(
+      &mut new_save_file,
+      self.save_src_type_index.unwrap().title,
       self.save_src_type_index.unwrap().slot_index,
       self.default_name_ver,
       self.build_date_ver,
@@ -260,9 +262,9 @@ impl App {
 
     let mut result_index = 0;
     result_index += 1;
-    let game_type_cn = match self.save_src_type_index.unwrap().game_type {
-      GameType::TheBrokenSeal => "《黄金太阳 开启的封印》",
-      GameType::TheLostAge => "《黄金太阳 失落的时代》",
+    let game_type_cn = match self.save_src_type_index.unwrap().title {
+      GameTitle::TheBrokenSeal => "《黄金太阳 开启的封印》",
+      GameTitle::TheLostAge => "《黄金太阳 失落的时代》",
     };
     let _ = writeln!(
       self.out_log_c2,
@@ -279,7 +281,7 @@ impl App {
 
       if let Some(build_date_type) = self.build_date_ver {
         result_index += 1;
-        let build_date_type_cn = build_date_type.name();
+        let build_date_type_cn = build_date_type.short_name();
         let _ = writeln!(
           self.out_log_c2,
           "{result_index}. 生成的存档文件已将构建日期转换为{build_date_type_cn}版。"

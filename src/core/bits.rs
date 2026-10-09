@@ -1,27 +1,30 @@
 // Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-pub struct BitArray {
+#[derive(Debug, Clone)]
+pub struct BitVec {
   bits: Vec<u8>,
 }
 
 // Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
-impl Default for BitArray {
+impl Default for BitVec {
   fn default() -> Self {
     Self::new()
   }
 }
 
-impl BitArray {
-  pub fn new() -> Self {
-    BitArray { bits: Vec::new() }
-  }
-
-  pub fn from(value: &[u8]) -> Self {
-    BitArray {
+impl From<&[u8]> for BitVec {
+  fn from(value: &[u8]) -> Self {
+    BitVec {
       bits: Vec::from(value),
     }
   }
+}
 
-  pub fn get_bits(&self) -> &[u8] {
+impl BitVec {
+  pub fn new() -> Self {
+    BitVec { bits: Vec::new() }
+  }
+
+  pub fn as_slice(&self) -> &[u8] {
     self.bits.as_slice()
   }
 
@@ -57,7 +60,7 @@ impl BitArray {
   }
 
   // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L23
-  pub fn sub_bits_u8(&mut self, min: usize, max: usize) -> u8 {
+  pub fn sub_bits_u8(&self, min: usize, max: usize) -> u8 {
     let mut acc = 0;
     for i in 0..=(max - min) {
       if min < self.bits.len() {
@@ -70,7 +73,7 @@ impl BitArray {
   }
 
   // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L23
-  pub fn sub_bits_u16(&mut self, min: usize, max: usize) -> u16 {
+  pub fn sub_bits_u16(&self, min: usize, max: usize) -> u16 {
     let mut acc = 0;
     for i in 0..=(max - min) {
       if min < self.bits.len() {
@@ -83,7 +86,7 @@ impl BitArray {
   }
 
   // Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L23
-  pub fn sub_bits_u32(&mut self, min: usize, max: usize) -> u32 {
+  pub fn sub_bits_u32(&self, min: usize, max: usize) -> u32 {
     let mut acc = 0;
     for i in 0..=(max - min) {
       if min < self.bits.len() {

@@ -15,16 +15,16 @@ fn gen_essential(file: &mut BufWriter<File>) {
     file,
     r#"#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Language {{
-  Japanese,
-  English,
-  ChineseTBS,
-  ChineseTLA,
+  Japanese = 0,
+  English = 1,
+  ChineseTBS = 2,
+  ChineseTLA= 3,
 }}
 
 impl Language {{
   pub const LANGUAGES: [Self; 4] = [Language::Japanese, Language::English, Language::ChineseTBS, Language::ChineseTLA];
 
-  pub fn get_name(self) -> &'static str {{
+  pub fn name(self) -> &'static str {{
     match self {{
       Language::Japanese => "日文",
       Language::English => "英文",
@@ -46,11 +46,10 @@ impl Language {{
 }}
 
 impl PreviewObject {{
-  pub fn get_name(&self, lang: Language) -> &'static str {{
+  pub fn name(&self, lang: Language) -> &'static str {{
     self.name[lang as usize]
   }}
 }}
-
 "
   )
   .unwrap();
@@ -126,6 +125,7 @@ fn gen_jinn_db(file: &mut BufWriter<File>) {
   )
   .unwrap();
 
+  // 与 Element::GAMEPLAY_ORDER 保持一致
   let gameplay_order = [0, 2, 3, 1];
 
   for i in 0..4 {
@@ -162,7 +162,7 @@ fn gen_icon_db(file: &mut BufWriter<File>) {
   // "Rusty Staff"
   let mut first_rusty_staff = None;
 
-  writeln!(file, "pub fn get_icon_id(item_id: u16) -> usize {{").unwrap();
+  writeln!(file, "pub fn icon_id(item_id: u16) -> usize {{").unwrap();
   writeln!(file, "  match item_id {{").unwrap();
 
   let mut counter = 0;

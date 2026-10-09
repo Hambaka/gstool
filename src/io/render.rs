@@ -1,4 +1,4 @@
-use crate::core::enums::{GameVersion, PasswordGrade, PasswordVersion};
+use crate::core::enums::{GameRegion, PasswordGrade, PasswordVersion};
 
 use std::fmt::Write as _;
 
@@ -23,31 +23,40 @@ pub fn password_text_beautify(converted: &str, version: PasswordVersion) -> Stri
   text
 }
 
-pub fn cheat_code_text(password_bytes: &[u8], version: GameVersion) -> String {
+pub fn cheat_code_text(password_bytes: &[u8], region: GameRegion) -> String {
   // The address for password input screen in Golden Sun: The Lost Age
-  let mut address = version.get_tla_pwd_buffer_address();
+  let mut address = region.get_tla_pwd_buffer_address();
   let mut text = String::with_capacity(2048);
 
   let size = password_bytes.len();
   let password_grade = PasswordGrade::from_size(size).unwrap();
 
-  let version_tip = match version {
-    GameVersion::Germany => format!(
-      "{}级别密码的金手指（适用于德版《黄金太阳 失落的时代》，亦适用于法/意版）：",
-      password_grade.name()
+  let version_tip = match region {
+    GameRegion::Germany => format!(
+      "{}级别密码的金手指（适用于{}版《黄金太阳 失落的时代》，亦适用于{}/{}版）：",
+      password_grade.short_name(),
+      region.short_name(),
+      GameRegion::France.short_name(),
+      GameRegion::Italy.short_name(),
     ),
-    GameVersion::France => format!(
-      "{}级别密码的金手指（适用于法版《黄金太阳 失落的时代》，亦适用于德/意版）：",
-      password_grade.name()
+    GameRegion::France => format!(
+      "{}级别密码的金手指（适用于{}版《黄金太阳 失落的时代》，亦适用于{}/{}版）：",
+      password_grade.short_name(),
+      region.short_name(),
+      GameRegion::Germany.short_name(),
+      GameRegion::Italy.short_name(),
     ),
-    GameVersion::Italy => format!(
-      "{}级别密码的金手指（适用于意版《黄金太阳 失落的时代》，亦适用于德/法版）：",
-      password_grade.name()
+    GameRegion::Italy => format!(
+      "{}级别密码的金手指（适用于{}版《黄金太阳 失落的时代》，亦适用于{}/{}版）：",
+      password_grade.short_name(),
+      region.short_name(),
+      GameRegion::Germany.short_name(),
+      GameRegion::France.short_name(),
     ),
     _ => format!(
       "{}级别密码的金手指（仅适用于{}版《黄金太阳 失落的时代》）：",
-      password_grade.name(),
-      version.name()
+      password_grade.short_name(),
+      region.short_name()
     ),
   };
 

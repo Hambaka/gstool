@@ -8,7 +8,6 @@ mod widgets {
 }
 mod core {
   pub mod bits;
-  pub mod convert;
   pub mod data;
   pub mod enums;
   pub mod password;
@@ -17,6 +16,7 @@ mod core {
 mod io;
 mod util {
   pub mod bps;
+  pub mod whitespace;
 }
 pub mod ui {
   pub mod central_panel {

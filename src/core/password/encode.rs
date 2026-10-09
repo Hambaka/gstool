@@ -1,5 +1,5 @@
 use crate::core::{
-  bits::BitArray,
+  bits::BitVec,
   enums::PasswordGrade,
   password::{
     items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
@@ -17,7 +17,7 @@ fn event_flag(raw_save: &[u8], flag: u32) -> u8 {
 
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
 Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L35 */
-pub fn read_from_raw_save(raw_save: &[u8]) -> PasswordData {
+pub fn password_data_from_save_slot(raw_save: &[u8]) -> PasswordData {
   // [u8; 4]
   let mut levels = [0; 4];
   // [u32; 4]
@@ -95,11 +95,11 @@ pub fn read_from_raw_save(raw_save: &[u8]) -> PasswordData {
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
 Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L79 */
 pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
-  let mut bits = BitArray::new();
+  let mut bits = BitVec::new();
 
   // Insert 7 bits per level, 7 bits per jinn element
-  let mut level_bits = BitArray::new();
-  let mut djinn_bits = BitArray::new();
+  let mut level_bits = BitVec::new();
+  let mut djinn_bits = BitVec::new();
   for i in (0..=3).rev() {
     level_bits.push_bits(u32::from(data.levels[i]), 7);
   }
@@ -267,6 +267,6 @@ pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
 }
 
 pub fn from_raw_save(raw_save: &[u8], grade: PasswordGrade) -> Vec<u8> {
-  let data = read_from_raw_save(raw_save);
+  let data = password_data_from_save_slot(raw_save);
   encode(&data, grade)
 }

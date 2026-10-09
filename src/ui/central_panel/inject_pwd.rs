@@ -12,8 +12,8 @@ use crate::{
   App,
   app::{AtomsEnum, SubCommandEnum},
   core::{
-    bits::BitArray,
-    enums::{GameVersion, PasswordGrade, PasswordVersion},
+    bits::BitVec,
+    enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::{
       decode::read_from_bits,
       encode::{encode, from_raw_save},
@@ -53,13 +53,13 @@ const DESC_C5: &str = r"使用该功能可为《黄金太阳 失落的时代》�
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum InjectPasswordCombination {
-  GoldSilverBronze,
-  GoldSilver,
-  GoldBronze,
-  SilverBronze,
-  Gold,
-  Silver,
-  Bronze,
+  GoldSilverBronze = 0,
+  GoldSilver = 1,
+  GoldBronze = 2,
+  SilverBronze = 3,
+  Gold = 4,
+  Silver = 5,
+  Bronze = 6,
 }
 
 impl InjectPasswordCombination {
@@ -106,7 +106,7 @@ struct FileInfo {
   /// Header
   inject_offset: usize,
   blank_byte: u8,
-  base_game_version: GameVersion,
+  base_game_version: GameRegion,
   rom_name: String,
 }
 
@@ -336,11 +336,11 @@ impl App {
       match sub_command {
         SubCommandEnum::First => {
           let save_slot = &self.pwd_src_slot[0].unwrap();
-          let raw_save_data = self.raw_save_data[*save_slot as usize]
+          let raw_save_data = &self.raw_save_data[*save_slot as usize]
             .as_ref()
             .unwrap()
-            .get_data();
-          let password_bytes = from_raw_save(raw_save_data, PasswordGrade::Gold);
+            .data;
+          let password_bytes = from_raw_save(&raw_save_data, PasswordGrade::Gold);
           Some(password_bytes)
         }
         SubCommandEnum::Second => Some(self.txt_bytes.clone()),
@@ -354,11 +354,11 @@ impl App {
       match sub_command {
         SubCommandEnum::First => {
           let save_slot = &self.pwd_src_slot[1].unwrap();
-          let raw_save_data = self.raw_save_data[*save_slot as usize]
+          let raw_save_data = &self.raw_save_data[*save_slot as usize]
             .as_ref()
             .unwrap()
-            .get_data();
-          let password_bytes = from_raw_save(raw_save_data, PasswordGrade::Silver);
+            .data;
+          let password_bytes = from_raw_save(&raw_save_data, PasswordGrade::Silver);
           Some(password_bytes)
         }
         SubCommandEnum::Second => match self.txt_src_grade_version {
@@ -366,7 +366,7 @@ impl App {
             if src_grade == PasswordGrade::Silver {
               Some(self.txt_bytes.clone())
             } else {
-              let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
+              let mut password_bits = BitVec::from(self.txt_bits.as_ref().unwrap().as_slice());
 
               let save_data =
                 read_from_bits(&mut password_bits, self.txt_src_grade_version.unwrap().0);
@@ -382,7 +382,7 @@ impl App {
             if src_grade == PasswordGrade::Silver {
               Some(self.dmp_bytes.clone())
             } else {
-              let mut password_bits = BitArray::from(&self.dmp_bits.as_ref().unwrap().get_bits());
+              let mut password_bits = BitVec::from(self.dmp_bits.as_ref().unwrap().as_slice());
               let save_data = read_from_bits(&mut password_bits, self.dmp_src_grade.unwrap());
 
               let target_password_bytes = encode(&save_data, PasswordGrade::Silver);
@@ -400,11 +400,11 @@ impl App {
       match sub_command {
         SubCommandEnum::First => {
           let save_slot = &self.pwd_src_slot[2].unwrap();
-          let raw_save_data = self.raw_save_data[*save_slot as usize]
+          let raw_save_data = &self.raw_save_data[*save_slot as usize]
             .as_ref()
             .unwrap()
-            .get_data();
-          let password_bytes = from_raw_save(raw_save_data, PasswordGrade::Bronze);
+            .data;
+          let password_bytes = from_raw_save(&raw_save_data, PasswordGrade::Bronze);
           Some(password_bytes)
         }
         SubCommandEnum::Second => match self.txt_src_grade_version {
@@ -412,7 +412,7 @@ impl App {
             if src_grade == PasswordGrade::Bronze {
               Some(self.txt_bytes.clone())
             } else {
-              let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
+              let mut password_bits = BitVec::from(self.txt_bits.as_ref().unwrap().as_slice());
 
               let save_data =
                 read_from_bits(&mut password_bits, self.txt_src_grade_version.unwrap().0);
@@ -428,7 +428,7 @@ impl App {
             if src_grade == PasswordGrade::Bronze {
               Some(self.dmp_bytes.clone())
             } else {
-              let mut password_bits = BitArray::from(&self.dmp_bits.as_ref().unwrap().get_bits());
+              let mut password_bits = BitVec::from(self.dmp_bits.as_ref().unwrap().as_slice());
               let save_data = read_from_bits(&mut password_bits, self.dmp_src_grade.unwrap());
 
               let target_password_bytes = encode(&save_data, PasswordGrade::Bronze);
@@ -608,15 +608,15 @@ fn validate_input_file(
         .into_owned();
     if software_title == SOFTWARE_TITLE_VALUE[PasswordVersion::Japanese as usize] {
       // 仅有日版或者基于日版修改的版本的标题文本才会是“OUGONTAIYO_B”
-      base_game_version = GameVersion::Japan;
-      rom_name = String::from(BASE_ROM_NAME[GameVersion::Japan as usize]);
+      base_game_version = GameRegion::Japan;
+      rom_name = String::from(BASE_ROM_NAME[GameRegion::Japan as usize]);
     } else if software_title == SOFTWARE_TITLE_VALUE[PasswordVersion::English as usize] {
       // 其余的美、德、西、法、意版本的标题文本都是“GOLDEN_SUN_B”
       // 直接根据游戏ROM内的构建日期信息判断游戏ROM的版本
       let rom_build_date =
         String::from_utf8_lossy(&rom_bytes[ROM_BUILD_DATE_OFFSET..ROM_BUILD_DATE_OFFSET + 12])
           .into_owned();
-      let game_version_option = GameVersion::from_rom_build_date(&rom_build_date);
+      let game_version_option = GameRegion::from_rom_build_date(&rom_build_date);
       if game_version_option.is_none() {
         return Err("无法确定该《黄金太阳 失落的时代》ROM的版本！");
       } else {
@@ -635,7 +635,7 @@ fn validate_input_file(
     );
 
     // 日、美、德、西、法、意版的ROM在此处的值都各不相同
-    if GameVersion::from_target_address(target_address).is_some() {
+    if GameRegion::from_target_address(target_address).is_some() {
       // 若能匹配，则证明游戏ROM没有被注入自动输入密码的程序
       let last_byte = rom_bytes[file_size - 1];
 

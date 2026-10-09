@@ -1,16 +1,29 @@
 use crate::core::{
-  bits::BitArray,
+  bits::BitVec,
   enums::PasswordGrade,
   password::{
-    PasswordData, PasswordInfo,
-    encode::read_from_raw_save,
+    PasswordData,
     items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
-    stats::in_game_stats,
   },
-  save::format::CHECKSUM_INDEX,
 };
 
-pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<BitArray> {
+/// Bronze: 9
+/// Silver: 9, 19, 29, 39, 49, 59
+/// Gold  : 9, 19, 29, 39, 49, 59, 69, 79, 89, 99, 109, 119, 129, 139, 149, 159, 169, 179, 189, 199, 209, 219, 229, 239, 249, 259
+///
+/// The values we want :
+/// 9 - 0, 19 - 1, 29 - 2, 39 - 3, 49 - 4,
+/// 59 - 5, 69 - 6, 79 - 7, 89 - 8, 99 - 9,
+/// 109 - 10, 119 - 11, 129 - 12, 139 - 13, 149 - 14,
+/// 159 - 15, 169 - 16, 179 - 17, 189 - 18, 199 - 19,
+/// 209 - 20, 219 - 21, 229 - 22, 239 - 23, 249 - 24,
+/// 259 - 25
+const PASSWORD_CHECKSUM_POSITIONS: [usize; 26] = [
+  9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99, 108, 117, 126, 135, 144, 153, 162, 171, 180, 189, 198,
+  207, 216, 225, 234,
+];
+
+pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<BitVec> {
   let size = password_bytes.len();
   let password_grade = PasswordGrade::from_size(size).unwrap();
 
@@ -39,18 +52,18 @@ pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<Bi
   match password_grade {
     PasswordGrade::Gold => {
       // Or you can use: for i in 9..260.step_by(9)
-      for i in CHECKSUM_INDEX {
+      for i in PASSWORD_CHECKSUM_POSITIONS {
         bytes_data.remove(i);
       }
     }
     PasswordGrade::Silver => {
       // Or you can use: for i in 9..61.step_by(9)
-      for index in CHECKSUM_INDEX.iter().take(6) {
+      for index in PASSWORD_CHECKSUM_POSITIONS.iter().take(6) {
         bytes_data.remove(*index);
       }
     }
     PasswordGrade::Bronze => {
-      bytes_data.remove(CHECKSUM_INDEX[0]);
+      bytes_data.remove(PASSWORD_CHECKSUM_POSITIONS[0]);
     }
   }
 
@@ -63,7 +76,7 @@ pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<Bi
     // Bronze: 16 - 1 = 15 => 9
     PasswordGrade::Bronze => 9,
   };
-  let mut bits = BitArray::new();
+  let mut bits = BitVec::new();
   let max_size = (size + 2) * 8;
 
   for (j, i) in (0..max_size).step_by(6).enumerate() {
@@ -129,7 +142,7 @@ pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<Bi
   }
 }
 
-pub fn read_from_bits(bits: &mut BitArray, grade: PasswordGrade) -> PasswordData {
+pub fn read_from_bits(bits: &mut BitVec, grade: PasswordGrade) -> PasswordData {
   /* [u8; 4]
   TEMP Default Values
   Order: Isaac, Garet, Ivan, Mia */
@@ -241,7 +254,7 @@ pub fn read_from_bits(bits: &mut BitArray, grade: PasswordGrade) -> PasswordData
   /* Get level bits, rearrange it to normal order.
   Each level value has 7 bits.
   Order is: Mia, Ivan, Garet, Isaac */
-  let mut level_bits = BitArray::new();
+  let mut level_bits = BitVec::new();
   level_bits.push_bits(u32::from(bits.sub_bits_u8(24, 27)), 4);
   for i in (7..=23).rev().step_by(8) {
     level_bits.push_bits(u32::from(bits.sub_bits_u8(i - 7, i)), 8);
@@ -253,7 +266,7 @@ pub fn read_from_bits(bits: &mut BitArray, grade: PasswordGrade) -> PasswordData
   /* Get djinn bits, rearrange it to normal order.
   Each element has 7 bits.
   Order is: Jupiter, Mars, Mercury, Venus */
-  let mut djinn_bits = BitArray::new();
+  let mut djinn_bits = BitVec::new();
   for i in (39..=55).rev().step_by(8) {
     djinn_bits.push_bits(u32::from(bits.sub_bits_u8(i - 7, i)), 8);
   }
@@ -351,99 +364,4 @@ pub fn read_from_bits(bits: &mut BitArray, grade: PasswordGrade) -> PasswordData
     items,
     coins,
   }
-}
-
-pub fn info_from_data(data: &PasswordData) -> PasswordInfo {
-  // Levels
-  let levels = data.levels;
-  // Djinn
-  let mut venus_djinn_bits = BitArray::new();
-  let mut mercury_djinn_bits = BitArray::new();
-  let mut mars_djinn_bits = BitArray::new();
-  let mut jupiter_djinn_bits = BitArray::new();
-
-  venus_djinn_bits.push_bits(data.djinn[0], 7);
-  mercury_djinn_bits.push_bits(data.djinn[1], 7);
-  mars_djinn_bits.push_bits(data.djinn[2], 7);
-  jupiter_djinn_bits.push_bits(data.djinn[3], 7);
-
-  let mut venus_djinn = [false; 7];
-  let mut mercury_djinn = [false; 7];
-  let mut mars_djinn = [false; 7];
-  let mut jupiter_djinn = [false; 7];
-
-  // Reversed order
-  for i in 0..7 {
-    if venus_djinn_bits.bit_at(6 - i) == 1 {
-      venus_djinn[i] = true;
-    }
-    if mars_djinn_bits.bit_at(6 - i) == 1 {
-      mars_djinn[i] = true;
-    }
-    if jupiter_djinn_bits.bit_at(6 - i) == 1 {
-      jupiter_djinn[i] = true;
-    }
-    if mercury_djinn_bits.bit_at(6 - i) == 1 {
-      mercury_djinn[i] = true;
-    }
-  }
-
-  //let djinn = [venus_djinn, mercury_djinn, mars_djinn, jupiter_djinn];
-  let djinn = [venus_djinn, mars_djinn, jupiter_djinn, mercury_djinn];
-
-  // Events
-  let mut events = [false; 6];
-  for (i, event) in data.events.iter().enumerate() {
-    events[i] = if i == 2 {
-      let inverted_event = (event ^ 1) & 1;
-      inverted_event == 1
-    } else {
-      *event == 1
-    }
-  }
-  // Base Stats
-  let base_stats = data.stats;
-  // Stats
-  let stats = in_game_stats(base_stats);
-  // Psynergy Items
-  let mut psy_items = [false; 8];
-  // Items
-  let mut items = [[(0, 0); 15]; 4];
-  for i in 0..15 {
-    for j in 0..4 {
-      let item = data.items[j][i];
-      let item_id = item & 0x1FF;
-
-      if item_id != 0 {
-        let count = if STACKABLE_ITEMS.contains(&item_id) {
-          (item >> 11) + 1
-        } else {
-          1
-        };
-        items[j][i] = (item_id, count as u8);
-
-        if PSYNERGY_ITEMS.contains(&item_id) {
-          psy_items[(item_id - PSYNERGY_ITEMS[0]) as usize] = true;
-        }
-      }
-    }
-  }
-  // Coins
-  let coins = data.coins;
-
-  PasswordInfo {
-    levels,
-    djinn,
-    events,
-    base_stats,
-    stats,
-    psy_items,
-    items,
-    coins,
-  }
-}
-
-pub fn info_from_raw_save(raw_save: &[u8]) -> PasswordInfo {
-  let save_data = read_from_raw_save(raw_save);
-  info_from_data(&save_data)
 }

@@ -55,22 +55,22 @@ const ROM_NAME: [&str; 16] = [
 ];
 
 const GAME_VERSIONS: [&str; 16] = [
-  "GameVersion::Japan",
-  "GameVersion::USA",
-  "GameVersion::Germany",
-  "GameVersion::Spain",
-  "GameVersion::France",
-  "GameVersion::Italy",
-  "GameVersion::Japan",
-  "GameVersion::USA",
-  "GameVersion::USA",
-  "GameVersion::USA",
-  "GameVersion::USA",
-  "GameVersion::USA",
-  "GameVersion::Japan",
-  "GameVersion::Japan",
-  "GameVersion::Japan",
-  "GameVersion::Japan",
+  "GameRegion::Japan",
+  "GameRegion::USA",
+  "GameRegion::Germany",
+  "GameRegion::Spain",
+  "GameRegion::France",
+  "GameRegion::Italy",
+  "GameRegion::Japan",
+  "GameRegion::USA",
+  "GameRegion::USA",
+  "GameRegion::USA",
+  "GameRegion::USA",
+  "GameRegion::USA",
+  "GameRegion::Japan",
+  "GameRegion::Japan",
+  "GameRegion::Japan",
+  "GameRegion::Japan",
 ];
 
 const INJECT_INDEX: [usize; 16] = [
@@ -211,7 +211,7 @@ pub fn run() {
 
   writeln!(
     file,
-    "static KNOWN_INPUT_ROM_INFO_MAP: phf::Map<u32, (&'static str, GameVersion, usize, u8)> = phf_map! {{"
+    "static KNOWN_INPUT_ROM_INFO_MAP: phf::Map<u32, (&'static str, GameRegion, usize, u8)> = phf_map! {{"
   )
   .unwrap();
   for i in 0..16 {

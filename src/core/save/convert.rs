@@ -1,57 +1,61 @@
 use crate::core::{
-  enums::{GameType, GameVersion, NameType},
+  enums::{GameRegion, GameTitle, NameType},
   save::format::{
-    BUILD_DATE_LOCATION_INDEX, CHECKSUM_RANGE, GS_BUILD_DATE, HEADER_CHECKSUM_LOCATION_INDEX,
-    HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX, MAX_LOOP_COUNT, MAX_VALID_SLOT_NUMBER,
-    PARTY_MAIN_LEADER_INDEX, PARTY_MEMBERS_COUNT, PC_NAME, PC_NAME_LOCATION_INDEX, SAVE_SLOT_SIZE,
+    CHECKSUM_OFFSET, LEADER_NAME_FIELD_SIZE, MAX_VALID_SLOT_INDEX, PC_NAME_FIELD_SIZE,
+    PC_RECORD_SIZE, SLOT_HEADER_SIZE, SLOT_NUMBER_OFFSET,
   },
 };
 
-pub fn convert_save_file(
+pub fn convert_save(
   raw_save_file: &mut [u8],
-  game_type: GameType,
+  game_title: GameTitle,
   loop_start_index: usize,
-  pc_name_type_option: Option<NameType>,
-  build_date_type_option: Option<GameVersion>,
-) -> Vec<u8> {
-  let game_type_index = game_type as usize;
+  rename_pcs: Option<NameType>,
+  target_region: Option<GameRegion>,
+) {
+  let save_layout = game_title.save_layout(rename_pcs);
 
-  for i in loop_start_index..MAX_LOOP_COUNT[game_type_index] {
-    // Skip "invalid" save data.
-    if raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + HEADER_SAVE_SLOT_NUMBER_LOCATION_INDEX]
-      > MAX_VALID_SLOT_NUMBER
-    {
+  for i in loop_start_index..save_layout.max_loop {
+    let start_offset = i * save_layout.slot_size;
+    let leader_name_offset = start_offset + SLOT_HEADER_SIZE;
+    // 虽然游戏的存档文件会记录很多个存档，但是玩家只能在主菜单选择其中的3个存档。
+    // 这3个可供玩家选择的存档槽位数字分别是0、1、2
+    // 其中，《黄金太阳 开启的封印》有特殊情况：一个完整的存档还有下半部分，也就是分别对应槽位数字3、4、5。
+    // 举例来说，0+3组合起来才是一份完整的存档，但在这个场景下存档的下半部分完全可以忽略。
+    if raw_save_file[start_offset + SLOT_NUMBER_OFFSET] > MAX_VALID_SLOT_INDEX {
       continue;
     }
-    // Skip "invalid" save data.
+
+    // 简易验证一下存档中第一处记录游戏构建日期的数据，如果没有匹配结果就跳过这个槽位的数据
     let build_date_from_raw_save = u16::from_le_bytes([
-      raw_save_file
-        [i * SAVE_SLOT_SIZE[game_type_index] + BUILD_DATE_LOCATION_INDEX[game_type_index][0][0]],
-      raw_save_file
-        [i * SAVE_SLOT_SIZE[game_type_index] + BUILD_DATE_LOCATION_INDEX[game_type_index][0][1]],
+      raw_save_file[start_offset + save_layout.build_date_offset[0]],
+      raw_save_file[start_offset + save_layout.build_date_offset[0] + 1],
     ]);
-    if !GS_BUILD_DATE[game_type_index].contains(&build_date_from_raw_save) {
+    if !save_layout.build_dates.contains(&build_date_from_raw_save) {
       continue;
     }
 
-    if let Some(pc_name_type) = pc_name_type_option {
-      let pc_name_type_index = pc_name_type as usize;
+    if rename_pcs.is_some() {
+      let pc_default_names = save_layout.pc_default_names.unwrap();
+      // 7
+      let name_byte_len = pc_default_names[0].len();
 
       let mut is_main_leader = true;
-      /* The party leader name.
-      This name only shows in save select menu, it's different from the actual names for party members.
-      The max size for this name is 12 bytes, though normally the max size we can use for character name is 10 bytes (Like those Kana in Japanese version)
+      /*
+      队长角色的名字，但这里指的是仅仅只在存档选择界面出现的名字。
+      主角团中的队长名字在存档中有两处，其他主角团成员的名字都只有一处。
+      这里的名字最大可12字节，不过一般允许的角色名最大10字节（例如日文版的假名）。
 
-      Robin (Isaac) is the only possible party leader in Golden Sun.
-      But in Golden Sun: The Lost Age, there are two possible party leaders: Garcia (Felix) and Jasmine (Jenna).
-      Garcia is the main leader in TLA. */
-      if game_type_index == 1 {
-        for j in 0..12 {
-          // Compare the name to Garcia's name, to see if this name is same as main leader Garcia's name.
-          if raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j]
-            != raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
-              + PC_NAME_LOCATION_INDEX[game_type_index]
-              + PARTY_MAIN_LEADER_INDEX[game_type_index] * 0x14C
+      在《黄金太阳 开启的封印》中，主角团唯一的队长是罗宾。
+      在《黄金太阳 失落的时代》中，虽然加西亚是主角团的队长，但是游戏的序幕加斯敏亦是队长。
+      */
+      if game_title == GameTitle::TheLostAge {
+        for j in 0..LEADER_NAME_FIELD_SIZE {
+          // 将存档界面的队长名字和游戏实际使用的加西亚的名字进行对比，以此判断当前队长是否是加西亚
+          if raw_save_file[leader_name_offset + j]
+            != raw_save_file[start_offset
+              + save_layout.pc_name_offset
+              + save_layout.main_leader_pc_index * PC_RECORD_SIZE
               + j]
           {
             is_main_leader = false;
@@ -61,76 +65,75 @@ pub fn convert_save_file(
       }
 
       if is_main_leader {
-        /* Golden Sun + is_main_leader(always true) -> Robin
-        Golden Sun: The Lost Age + is_main_leader -> Garcia */
-        for j in 0..12 {
-          if j < 7 {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] =
-              PC_NAME[pc_name_type_index][PARTY_MAIN_LEADER_INDEX[game_type_index]][j];
+        /*
+        《黄金太阳 开启的封印》 + is_main_leader -> 罗宾（is_main_leader永远为真）
+        《黄金太阳 失落的时代》 + is_main_leader -> 加西亚
+        */
+        for j in 0..LEADER_NAME_FIELD_SIZE {
+          if j < name_byte_len {
+            raw_save_file[leader_name_offset + j] =
+              name_byte(&pc_default_names, save_layout.main_leader_pc_index, j);
           } else {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] = 0x00;
+            raw_save_file[leader_name_offset + j] = 0;
           }
         }
       } else {
-        // Golden Sun: The Lost Age + !is_main_leader -> Jasmine
-        for j in 0..12 {
-          if j < 7 {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] =
-              PC_NAME[pc_name_type_index][PARTY_MAIN_LEADER_INDEX[game_type_index] + 1][j];
+        // 《黄金太阳 失落的时代》 + !is_main_leader -> 加斯敏
+        // 因为加西亚的下一位就是加斯敏，所以索引直接基于加西亚的加1即可。
+        for j in 0..LEADER_NAME_FIELD_SIZE {
+          if j < name_byte_len {
+            raw_save_file[leader_name_offset + j] =
+              name_byte(&pc_default_names, save_layout.main_leader_pc_index + 1, j);
           } else {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j] = 0x00;
+            raw_save_file[leader_name_offset + j] = 0;
           }
         }
       }
 
-      // Change all party members' names.
-      for j in 0..PARTY_MEMBERS_COUNT[game_type_index] {
-        for k in 0..15 {
-          if k < 7 {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
-              + PC_NAME_LOCATION_INDEX[game_type_index]
-              + j * 0x14C
-              + k] = PC_NAME[pc_name_type_index][j][k];
+      // 更改主角团所有人的名字
+      for j in 0..save_layout.pc_name_record_count {
+        for k in 0..PC_NAME_FIELD_SIZE {
+          if k < name_byte_len {
+            raw_save_file[start_offset + save_layout.pc_name_offset + j * PC_RECORD_SIZE + k] =
+              name_byte(&pc_default_names, j, j);
           } else {
-            raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
-              + PC_NAME_LOCATION_INDEX[game_type_index]
-              + j * 0x14C
-              + k] = 0x00;
+            raw_save_file[start_offset + save_layout.pc_name_offset + j * PC_RECORD_SIZE + k] = 0;
           }
         }
       }
     }
 
-    /* Change build date (to "convert" save data "version")
-    If the build date in save data doesn't match the one in game,
-    the game will force player to start from sanctum after loading save.
-    Every language version has a different build date. */
-    if let Some(build_date_type) = build_date_type_option {
-      let build_date = GS_BUILD_DATE[game_type_index][build_date_type as usize].to_le_bytes();
-      for j in 0..2 {
-        raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
-          + BUILD_DATE_LOCATION_INDEX[game_type_index][0][j]] = build_date[j];
-        raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
-          + BUILD_DATE_LOCATION_INDEX[game_type_index][1][j]] = build_date[j];
-        raw_save_file[i * SAVE_SLOT_SIZE[game_type_index]
-          + BUILD_DATE_LOCATION_INDEX[game_type_index][2][j]] = build_date[j];
+    /*
+    修改存档中的构建日期（以此实现“转换”存档版本）。
+    如果存档文件中的构建日期与游戏的构建日期不匹配，游戏会在读取存档后强制玩家从神殿开始游戏。
+    各个语言版本都有各自的构建日期。
+    */
+    if let Some(region) = target_region {
+      let build_date = save_layout.build_dates[region.index()].to_le_bytes();
+      for byte_index in 0..2 {
+        for entry_index in 0..3 {
+          raw_save_file[start_offset + save_layout.build_date_offset[entry_index] + byte_index] =
+            build_date[byte_index];
+        }
       }
     }
 
-    /* Calculate save's checksum (16 bit, doesn't need to calculate each save's first 0x10 header),
-    if the checksum of save data doesn't match the one in header,
-    the game will not consider it as a valid save.
-    If the checksum exceeds 4 digits(Hexadecimal, not decimal), just discard extra digits. */
+    /*
+    计算存档的校验和（16位，但无需计算每个槽位存档的开始的16字节的header）
+    如果存档的校验和与header中记录的不一致，游戏将不认为是有效的存档。
+    如果校验和的值超过了4位（16进制的4位），直接舍弃多余的位。
+    */
     let mut checksum = 0;
-    for j in 0..CHECKSUM_RANGE[game_type_index] {
-      checksum += u32::from(raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + 0x10 + j]);
+    for j in 0..save_layout.checksum_byte_count {
+      checksum += u32::from(raw_save_file[leader_name_offset + j]);
     }
     let checksum_bytes = checksum.to_le_bytes();
-    for j in 0..2 {
-      raw_save_file[i * SAVE_SLOT_SIZE[game_type_index] + HEADER_CHECKSUM_LOCATION_INDEX[j]] =
-        checksum_bytes[j];
+    for byte_index in 0..2 {
+      raw_save_file[start_offset + CHECKSUM_OFFSET + byte_index] = checksum_bytes[byte_index];
     }
   }
+}
 
-  Vec::from(raw_save_file)
+fn name_byte(bytes: &[[u8; 7]; 8], pc_index: usize, byte_index: usize) -> u8 {
+  bytes[pc_index][byte_index]
 }

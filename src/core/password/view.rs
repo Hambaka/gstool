@@ -1,0 +1,107 @@
+use crate::core::{
+  bits::BitVec,
+  password::{
+    PasswordData, PasswordView,
+    encode::password_data_from_save_slot,
+    items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
+    stats::in_game_stats,
+  },
+};
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Element {
+  Venus = 0,
+  Mercury = 1,
+  Mars = 2,
+  Jupiter = 3,
+}
+
+impl Element {
+  pub const ALL: [Element; 4] = [Self::Venus, Self::Mercury, Self::Mars, Self::Jupiter];
+
+  /// 游戏内展示顺序（地/火/风/水），用于 PasswordView（密码预览窗口）与Dyrati数据文本。
+  pub const GAMEPLAY_ORDER: [Element; 4] = [Self::Venus, Self::Mars, Self::Jupiter, Self::Mercury];
+
+  pub fn index(self) -> usize {
+    self as usize
+  }
+}
+
+pub fn view_from_data(data: &PasswordData) -> PasswordView {
+  // Levels
+  let levels = data.levels;
+  // Djinn
+
+  let mut djinn_bits = vec![BitVec::new(); 4];
+
+  for ele in Element::ALL {
+    djinn_bits[ele.index()].push_bits(data.djinn[ele.index()], 7);
+  }
+
+  let mut djinn = [[false; 7]; 4];
+
+  // Reversed bit order & Adjust djinn to gameplay order for easier viewing.
+  for i in 0..7 {
+    for (original_ele, new_order_ele) in Element::ALL.iter().zip(Element::GAMEPLAY_ORDER.iter()) {
+      if djinn_bits[new_order_ele.index()].bit_at(6 - i) == 1 {
+        djinn[original_ele.index()][i] = true;
+      }
+    }
+  }
+
+  // Events
+  let mut events = [false; 6];
+  for (i, event) in data.events.iter().enumerate() {
+    events[i] = if i == 2 {
+      let inverted_event = (event ^ 1) & 1;
+      inverted_event == 1
+    } else {
+      *event == 1
+    }
+  }
+  // Base Stats
+  let base_stats = data.stats;
+  // Stats
+  let stats = in_game_stats(base_stats);
+  // Psynergy Items
+  let mut psy_items = [false; 8];
+  // Items
+  let mut items = [[(0, 0); 15]; 4];
+  for i in 0..15 {
+    for j in 0..4 {
+      let item = data.items[j][i];
+      let item_id = item & 0x1FF;
+
+      if item_id != 0 {
+        let count = if STACKABLE_ITEMS.contains(&item_id) {
+          (item >> 11) + 1
+        } else {
+          1
+        };
+        items[j][i] = (item_id, count as u8);
+
+        if PSYNERGY_ITEMS.contains(&item_id) {
+          psy_items[(item_id - PSYNERGY_ITEMS[0]) as usize] = true;
+        }
+      }
+    }
+  }
+  // Coins
+  let coins = data.coins;
+
+  PasswordView {
+    levels,
+    djinn,
+    events,
+    base_stats,
+    stats,
+    psy_items,
+    items,
+    coins,
+  }
+}
+
+pub fn view_from_raw_save(raw_save: &[u8]) -> PasswordView {
+  let save_data = password_data_from_save_slot(raw_save);
+  view_from_data(&save_data)
+}

@@ -20,7 +20,7 @@ pub const DEFAULT_CLASS_MULTIPLIERS: [[f64; 6]; 4] = [
 /// For those more technically inclined, this means that the highest bit is ignored and treated as 0.
 /// Rather surprising, but oh well... :-}"
 #[rustfmt::skip]
-pub const MAX_VALID_BASE_STATS_VALUES_PWD: [u16; 6] = [
+pub const MAX_BASE_STATS: [u16; 6] = [
   // 11 bits, 0111 1111 1111, 2047 -> 1999
   2047,
   2047,
@@ -34,7 +34,7 @@ pub const MAX_VALID_BASE_STATS_VALUES_PWD: [u16; 6] = [
 ];
 
 #[rustfmt::skip]
-pub const MAX_VALID_IN_GAME_STATS_VALUES: [u16; 6] = [
+pub const MAX_IN_GAME_STATS: [u16; 6] = [
   1999,
   1999,
   999,
@@ -42,6 +42,10 @@ pub const MAX_VALID_IN_GAME_STATS_VALUES: [u16; 6] = [
   999,
   99,
 ];
+
+/// 511
+/// Because ATK, DEF, AGI only keep 9 bits value via password transfer, so it's a special case.
+const MAX_BASE_STATS_SPECIAL_CASE: u16 = 0b1_1111_1111;
 
 /*
 fn base_stats(input_stats: u16, class_multiplier: f64) -> u16 {
@@ -51,16 +55,15 @@ fn base_stats(input_stats: u16, class_multiplier: f64) -> u16 {
 
 pub fn in_game_stats(base_stats: [[u16; 6]; 4]) -> [[u16; 6]; 4] {
   let mut in_game_stats = [[0; 6]; 4];
-
   for i in 0..6 {
     for j in 0..4 {
       let value = base_stats[j][i];
       let class_multiplier = DEFAULT_CLASS_MULTIPLIERS[j][i];
-      let max_in_game_stats = MAX_VALID_IN_GAME_STATS_VALUES[i];
-      let max_base_stats_pwd = MAX_VALID_BASE_STATS_VALUES_PWD[i];
+      let max_in_game_stats = MAX_IN_GAME_STATS[i];
+      let max_base_stats_pwd = MAX_BASE_STATS[i];
 
       let input_stats_f64 = if value > max_base_stats_pwd {
-        if max_base_stats_pwd == MAX_VALID_BASE_STATS_VALUES_PWD[2] {
+        if max_base_stats_pwd == MAX_BASE_STATS_SPECIAL_CASE {
           value & max_base_stats_pwd
         } else {
           max_base_stats_pwd

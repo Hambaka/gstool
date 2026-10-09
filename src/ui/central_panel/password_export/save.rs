@@ -12,7 +12,7 @@ use crate::{
   App,
   app::SubCommandEnum,
   core::{
-    enums::{GameVersion, PasswordGrade, PasswordVersion},
+    enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::encode::from_raw_save,
     save::{SaveSlot, collect_slots, find_first_slot_index},
   },
@@ -120,10 +120,10 @@ impl App {
             .on_hover_text("目标密码级别，默认值为“金”");
           ComboBox::from_id_salt("ID_CB_C1S1_密码级别")
             .width(100.0)
-            .selected_text(self.pwd_grade_c1s1.name())
+            .selected_text(self.pwd_grade_c1s1.short_name())
             .show_ui(ui, |ui| {
-              for ele in PasswordGrade::PASSWORD_GRADES {
-                ui.selectable_value(&mut self.pwd_grade_c1s1, ele, ele.name());
+              for ele in PasswordGrade::ALL {
+                ui.selectable_value(&mut self.pwd_grade_c1s1, ele, ele.short_name());
               }
             });
         } else {
@@ -153,7 +153,7 @@ impl App {
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_text_ver_c1s1, None, "无");
-              for ele in PasswordVersion::PASSWORD_VERSIONS {
+              for ele in PasswordVersion::ALL {
                 ui.selectable_value(&mut self.pwd_text_ver_c1s1, Some(ele), ele.name());
               }
             });
@@ -194,13 +194,13 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C1S1_生成密码金手指")
             .width(100.0)
             .selected_text(match &self.pwd_cheat_ver_c1s1 {
-              Some(version_enum) => version_enum.name(),
+              Some(version_enum) => version_enum.short_name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, None, "无");
-              for ele in GameVersion::GAME_VERSIONS {
-                ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, Some(ele), ele.name());
+              for ele in GameRegion::ALL {
+                ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, Some(ele), ele.short_name());
               }
             });
         } else {
@@ -277,9 +277,9 @@ impl App {
 
     for (key, val_option) in self.raw_save_data.iter().enumerate() {
       if let Some(val) = val_option {
-        let password_bytes = from_raw_save(val.get_data(), self.pwd_grade_c1s1);
+        let password_bytes = from_raw_save(&val.data, self.pwd_grade_c1s1);
         // Key is save slot number: 0, 1, 2 -> 1, 2, 3
-        let sub_dir_name = slot_dir_name(key, val.get_is_clear());
+        let sub_dir_name = slot_dir_name(key, val.is_clear_data);
         let sub_dir_str = output_dir_str.join(sub_dir_name);
 
         if let Some(password_version) = self.pwd_text_ver_c1s1 {
@@ -308,8 +308,7 @@ impl App {
 
         if self.to_export_pwd_data_text_c1s1 {
           if self.pwd_grade_c1s1.is_gold() {
-            if let Err(e) =
-              write_password_data_text(&sheet_from_save_slot(val.get_data()), &sub_dir_str)
+            if let Err(e) = write_password_data_text(&sheet_from_save_slot(&val.data), &sub_dir_str)
             {
               self.err_msg = e.to_string();
               self.err_modal_open = true;
@@ -348,7 +347,7 @@ impl App {
           );
         }
 
-        let password_grade_cn = self.pwd_grade_c1s1.name();
+        let password_grade_cn = self.pwd_grade_c1s1.short_name();
 
         if let Some(password_version) = self.pwd_text_ver_c1s1 {
           result_index += 1;
@@ -383,7 +382,7 @@ impl App {
 
         if let Some(cheat_version) = self.pwd_cheat_ver_c1s1 {
           result_index += 1;
-          let cheat_version_cn = cheat_version.name();
+          let cheat_version_cn = cheat_version.short_name();
           if self.to_export_all_save {
             let _ = writeln!(
               self.out_log_c1s1,
@@ -452,7 +451,7 @@ fn validate_input_file(
 
   /* Get save data from save file with slot number.
   Also check if the save data is clear data. */
-  let save_data_map = collect_slots(to_export_all_save, &raw_save_file, loop_start_index);
+  let save_data_map = collect_slots(&raw_save_file, loop_start_index, to_export_all_save);
   if save_data_map.is_empty() {
     if to_export_all_save {
       return Err("存档文件中没有数据！");

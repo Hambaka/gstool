@@ -14,12 +14,15 @@ use crate::{
   App,
   app::SubCommandEnum,
   core::{
-    bits::BitArray,
-    convert,
-    enums::{GameVersion, PasswordGrade, PasswordVersion},
+    bits::BitVec,
+    enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::{
       decode::{bits_from_bytes, read_from_bits},
       encode,
+      text::{
+        contains_invalid_char_en, contains_invalid_char_jp, detect_password_version,
+        txt_to_another_version, txt_to_dmp,
+      },
     },
   },
   io::{
@@ -27,6 +30,7 @@ use crate::{
     write_cheat_code, write_converted_password_text, write_memory_dump, write_password_data_text,
     write_password_text,
   },
+  util,
   widgets::buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
@@ -133,15 +137,15 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C1S2_密码级别")
             .width(100.0)
             .selected_text(match &self.pwd_grade_c1s2 {
-              Some(password_grade_enum) => password_grade_enum.name(),
+              Some(password_grade_enum) => password_grade_enum.short_name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_grade_c1s2, None, "无");
               if let Some((source_grade, _)) = self.txt_src_grade_version {
-                for ele in PasswordGrade::PASSWORD_GRADES {
+                for ele in PasswordGrade::ALL {
                   ui.add_enabled_ui(source_grade.priority() < ele.priority(), |ui|{
-                    ui.selectable_value(&mut self.pwd_grade_c1s2, Some(ele), ele.name());
+                    ui.selectable_value(&mut self.pwd_grade_c1s2, Some(ele), ele.short_name());
                   });
                 }
               }
@@ -177,13 +181,13 @@ impl App {
           ComboBox::from_id_salt("ID_CB_C1S2_生成密码金手指")
             .width(100.0)
             .selected_text(match &self.pwd_cheat_ver_c1s2 {
-              Some(version_enum) => version_enum.name(),
+              Some(version_enum) => version_enum.short_name(),
               None => "无",
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_cheat_ver_c1s2, None, "无");
-              for ele in GameVersion::GAME_VERSIONS {
-                ui.selectable_value(&mut self.pwd_cheat_ver_c1s2, Some(ele), ele.name());
+              for ele in GameRegion::ALL {
+                ui.selectable_value(&mut self.pwd_cheat_ver_c1s2, Some(ele), ele.short_name());
               }
             });
         } else {
@@ -235,7 +239,7 @@ impl App {
   }
 
   pub fn run_c1s2(&mut self) {
-    let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
+    let mut password_bits = BitVec::from(self.txt_bits.as_ref().unwrap().as_slice());
     let password_version = self.txt_src_grade_version.unwrap().1;
 
     // Generate save data, and set target password bytes
@@ -257,7 +261,7 @@ impl App {
       if self.pwd_grade_c1s2.is_some() {
         if let Err(e) = write_password_text(
           &target_password_bytes,
-          password_version.rev(),
+          password_version.opposite(),
           &output_dir_str,
         ) {
           self.err_msg = e.to_string();
@@ -265,8 +269,8 @@ impl App {
           return;
         }
       } else if let Err(e) = write_converted_password_text(
-        &convert::txt_to_another_version(&self.txt_file, password_version),
-        password_version.rev(),
+        &txt_to_another_version(&self.txt_file, password_version),
+        password_version.opposite(),
         &output_dir_str,
       ) {
         self.err_msg = e.to_string();
@@ -328,7 +332,7 @@ impl App {
     self.out_log_c1s2.push_str("运行概况：\n");
 
     let mut result_index = 1;
-    let source_password_grade_cn = self.txt_src_grade_version.unwrap().0.name();
+    let source_password_grade_cn = self.txt_src_grade_version.unwrap().0.short_name();
     let source_password_version_cn = password_version.name();
 
     let _ = writeln!(
@@ -337,14 +341,14 @@ impl App {
     );
 
     let convert_flag_str_option = if self.to_convert_pwd_text_ver {
-      Some(password_version.rev().name())
+      Some(password_version.opposite().name())
     } else {
       None
     };
 
     let mut downgrade_str_option = None;
     if let Some(target_password_grade) = self.pwd_grade_c1s2 {
-      let target_password_grade_cn = target_password_grade.name();
+      let target_password_grade_cn = target_password_grade.short_name();
       downgrade_str_option = Some(target_password_grade_cn);
     }
 
@@ -392,7 +396,7 @@ impl App {
 
     if let Some(cheat_version) = self.pwd_cheat_ver_c1s2 {
       result_index += 1;
-      let cheat_version_cn = cheat_version.name();
+      let cheat_version_cn = cheat_version.short_name();
       if let Some(target_password_grade_cn) = downgrade_str_option {
         let _ = writeln!(
           self.out_log_c1s2,
@@ -425,7 +429,7 @@ impl App {
 
 fn validate_input_file(
   path_str: &str,
-) -> Result<(String, Vec<u8>, BitArray, PasswordGrade, PasswordVersion), &'static str> {
+) -> Result<(String, Vec<u8>, BitVec, PasswordGrade, PasswordVersion), &'static str> {
   // Read password text file.
   let input_file_result = File::open(path_str);
   let mut input_file;
@@ -458,7 +462,7 @@ fn validate_input_file(
 }
 
 fn validate_clipboard_text()
--> Result<(String, Vec<u8>, BitArray, PasswordGrade, PasswordVersion), &'static str> {
+-> Result<(String, Vec<u8>, BitVec, PasswordGrade, PasswordVersion), &'static str> {
   let clipboard_result = Clipboard::new();
   if clipboard_result.is_err() {
     return Err("访问剪贴板时出现错误！");
@@ -476,14 +480,14 @@ fn validate_clipboard_text()
 
 fn validate_password_string(
   password: &str,
-) -> Result<(String, Vec<u8>, BitArray, PasswordGrade, PasswordVersion), &'static str> {
+) -> Result<(String, Vec<u8>, BitVec, PasswordGrade, PasswordVersion), &'static str> {
   // If the text file is empty...
   if password.is_empty() {
     return Err("文本中没有任何内容！");
   }
 
   // Remove all line break and whitespace.
-  let password_without_whitespace = convert::remove_whitespace(&password);
+  let password_without_whitespace = util::whitespace::remove(&password);
   // Check password's length, and get its grade.
   let chars_count = password_without_whitespace.chars().count();
 
@@ -496,7 +500,7 @@ fn validate_password_string(
   };
 
   // Check its password version.
-  let password_version = match convert::detect_password_version(&password_without_whitespace) {
+  let password_version = match detect_password_version(&password_without_whitespace) {
     Some(version) => version,
     None => {
       unreachable!()
@@ -504,15 +508,15 @@ fn validate_password_string(
   };
   // Check if it contains invalid char
   let has_invalid_char = match password_version {
-    PasswordVersion::Japanese => convert::contains_invalid_char_jp(&password_without_whitespace),
-    PasswordVersion::English => convert::contains_invalid_char_en(&password_without_whitespace),
+    PasswordVersion::Japanese => contains_invalid_char_jp(&password_without_whitespace),
+    PasswordVersion::English => contains_invalid_char_en(&password_without_whitespace),
   };
   if has_invalid_char {
     return Err("密码文本包含无效字符！");
   }
 
   // Check if the password is valid.
-  let password_bytes = convert::txt_to_dmp(&password_without_whitespace, password_version);
+  let password_bytes = txt_to_dmp(&password_without_whitespace, password_version);
   let password_bits;
   if let Some(bits) = bits_from_bytes(&password_bytes, true) {
     password_bits = bits;

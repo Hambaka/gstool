@@ -4,14 +4,15 @@ use crate::{
   App,
   app::SubCommandEnum,
   core::{
-    bits::BitArray,
-    data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, get_icon_id},
+    bits::BitVec,
+    data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, icon_id},
     enums::PasswordGrade,
     password::{
-      decode::{info_from_data, info_from_raw_save, read_from_bits},
       items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
-      stats::MAX_VALID_BASE_STATS_VALUES_PWD,
-      structs::PasswordInfo,
+      read_from_bits,
+      stats::MAX_BASE_STATS,
+      structs::PasswordView,
+      view_from_data, view_from_raw_save,
     },
   },
   widgets::{
@@ -38,9 +39,9 @@ const PSYNERGY_ITEM_GAMEPLAY_ORDER: [usize; 8] = [7, 0, 1, 2, 3, 4, 5, 6];
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SaveSlotEnum {
-  First,
-  Second,
-  Third,
+  First = 0,
+  Second = 1,
+  Third = 2,
 }
 
 impl SaveSlotEnum {
@@ -92,26 +93,26 @@ impl SaveSlotEnum {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PreviewPageEnum {
-  Character,
-  Item,
-  Djinn,
-  Misc,
+  Character = 0,
+  Item = 1,
+  Djinn = 2,
+  Misc = 3,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PreviewModeEnum {
-  Main,
-  Alt,
+  Main = 0,
+  Alt = 1,
 }
 
 #[derive(Debug, Clone)]
 pub struct PreviewData {
   grade: PasswordGrade,
-  info: PasswordInfo,
+  info: PasswordView,
 }
 
 impl PreviewData {
-  pub fn new(grade: PasswordGrade, info: PasswordInfo) -> Self {
+  pub fn new(grade: PasswordGrade, info: PasswordView) -> Self {
     PreviewData { grade, info }
   }
 
@@ -319,11 +320,11 @@ impl App {
                         let stats_string = match self.stats_mode {
                           PreviewModeEnum::Main => {
                             let value = current_data.get_base_stats(i, j);
-                            if value > MAX_VALID_BASE_STATS_VALUES_PWD[i] {
+                            if value > MAX_BASE_STATS[i] {
                               let real_value = match i {
                                 // Attack, Defense, Agility
-                                2 | 3 | 4 => value & MAX_VALID_BASE_STATS_VALUES_PWD[i],
-                                _ => MAX_VALID_BASE_STATS_VALUES_PWD[i],
+                                2 | 3 | 4 => value & MAX_BASE_STATS[i],
+                                _ => MAX_BASE_STATS[i],
                               };
 
                               format!("{value} ({real_value})")
@@ -352,10 +353,10 @@ impl App {
                   .on_hover_text("默认值为“1代汉化”");
                 ComboBox::from_id_salt("物品名语言版本")
                   .width(100.0)
-                  .selected_text(self.item_preview_lang.get_name())
+                  .selected_text(self.item_preview_lang.name())
                   .show_ui(ui, |ui| {
                     for ele in Language::LANGUAGES {
-                      ui.selectable_value(&mut self.item_preview_lang, ele, ele.get_name());
+                      ui.selectable_value(&mut self.item_preview_lang, ele, ele.name());
                     }
                   });
               });
@@ -395,20 +396,19 @@ impl App {
                             Label::new("").selectable(false).ui(ui);
                           } else {
                             ui.horizontal(|ui| {
-                              let icon_img =
-                                egui::Image::new(&self.item_icon_img[get_icon_id(id - 1)])
-                                  .fit_to_exact_size(egui::vec2(16.0, 16.0));
+                              let icon_img = egui::Image::new(&self.item_icon_img[icon_id(id - 1)])
+                                .fit_to_exact_size(egui::vec2(16.0, 16.0));
                               ui.add(icon_img);
 
                               let item_str = if STACKABLE_ITEMS.contains(&id) {
                                 &format!(
                                   "{}×{amount}",
-                                  ITEM_NAMES[id as usize - 1].get_name(self.item_preview_lang)
+                                  ITEM_NAMES[id as usize - 1].name(self.item_preview_lang)
                                 )
                               } else {
                                 &format!(
                                   "{}",
-                                  ITEM_NAMES[id as usize - 1].get_name(self.item_preview_lang)
+                                  ITEM_NAMES[id as usize - 1].name(self.item_preview_lang)
                                 )
                               };
                               Label::new(item_str).selectable(false).ui(ui);
@@ -431,7 +431,7 @@ impl App {
                           );
 
                           let icon_img = egui::Image::new(
-                            &self.item_icon_img[get_icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
+                            &self.item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
                           )
                           .fit_to_exact_size(egui::vec2(16.0, 16.0));
                           ui.add(icon_img);
@@ -439,7 +439,7 @@ impl App {
                           Label::new(format!(
                             "{}",
                             ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
-                              .get_name(self.item_preview_lang)
+                              .name(self.item_preview_lang)
                           ))
                           .selectable(false)
                           .ui(ui);
@@ -449,7 +449,7 @@ impl App {
                           ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
 
                           let icon_img = egui::Image::new(
-                            &self.item_icon_img[get_icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
+                            &self.item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
                           )
                           .fit_to_exact_size(egui::vec2(16.0, 16.0));
                           ui.add(icon_img);
@@ -458,7 +458,7 @@ impl App {
                             RichText::new(format!(
                               "{}",
                               ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
-                                .get_name(self.item_preview_lang)
+                                .name(self.item_preview_lang)
                             ))
                             .weak()
                             .strikethrough(),
@@ -480,10 +480,10 @@ impl App {
                   .on_hover_text("默认值为“1代汉化”");
                 ComboBox::from_id_salt("精灵名语言版本")
                   .width(100.0)
-                  .selected_text(self.djinn_preview_lang.get_name())
+                  .selected_text(self.djinn_preview_lang.name())
                   .show_ui(ui, |ui| {
                     for ele in Language::LANGUAGES {
-                      ui.selectable_value(&mut self.djinn_preview_lang, ele, ele.get_name());
+                      ui.selectable_value(&mut self.djinn_preview_lang, ele, ele.name());
                     }
                   });
               });
@@ -524,7 +524,7 @@ impl App {
                               .max_height(svg_icon_size),
                           );
 
-                          Label::new(ALL_DJINN_NAMES[j][i].get_name(self.djinn_preview_lang))
+                          Label::new(ALL_DJINN_NAMES[j][i].name(self.djinn_preview_lang))
                             .selectable(false)
                             .ui(ui);
                         });
@@ -533,7 +533,7 @@ impl App {
                           ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
 
                           Label::new(
-                            RichText::new(ALL_DJINN_NAMES[j][i].get_name(self.djinn_preview_lang))
+                            RichText::new(ALL_DJINN_NAMES[j][i].name(self.djinn_preview_lang))
                               .weak()
                               .strikethrough(),
                           )
@@ -605,7 +605,7 @@ impl App {
               is_first_element = false;
             }
 
-            let pwd_info = info_from_raw_save(raw_save.get_data());
+            let pwd_info = view_from_raw_save(&raw_save.data);
             self.preview_data[index] = Some(PreviewData::new(PasswordGrade::Gold, pwd_info));
           }
         }
@@ -618,10 +618,10 @@ impl App {
       }
       SubCommandEnum::Second => {
         self.preview_data = [None, None, None];
-        let mut password_bits = BitArray::from(&self.txt_bits.as_ref().unwrap().get_bits());
+        let mut password_bits = BitVec::from(self.txt_bits.as_ref().unwrap().as_slice());
         let src_grade = self.txt_src_grade_version.unwrap().0;
         let save_data = read_from_bits(&mut password_bits, src_grade);
-        let pwd_info = info_from_data(&save_data);
+        let pwd_info = view_from_data(&save_data);
         self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
         self.preview_slot = SaveSlotEnum::First;
         self.preview_current = self.preview_data[0].clone();
@@ -645,10 +645,10 @@ impl App {
       }
       SubCommandEnum::Third => {
         self.preview_data = [None, None, None];
-        let mut password_bits = BitArray::from(&self.dmp_bits.as_ref().unwrap().get_bits());
+        let mut password_bits = BitVec::from(self.dmp_bits.as_ref().unwrap().as_slice());
         let src_grade = self.dmp_src_grade.unwrap();
         let save_data = read_from_bits(&mut password_bits, src_grade);
-        let pwd_info = info_from_data(&save_data);
+        let pwd_info = view_from_data(&save_data);
         self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
         self.preview_slot = SaveSlotEnum::First;
         self.preview_current = self.preview_data[0].clone();
