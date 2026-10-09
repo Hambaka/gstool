@@ -167,40 +167,4 @@ impl GameTitle {
       checksum_byte_count,
     }
   }
-
-  pub fn slot_size(self) -> usize {
-    SAVE_SLOT_SIZE[self.index()]
-  }
-
-  pub fn max_loop_count(self) -> usize {
-    MAX_LOOP_COUNT[self.index()]
-  }
-
-  pub fn build_date_offset(self) -> [usize; 3] {
-    BUILD_DATE_OFFSET[self.index()]
-  }
-
-  pub fn build_dates(self) -> [u16; 6] {
-    GS_BUILD_DATE[self.index()]
-  }
-
-  pub fn pc_name_offset(self) -> usize {
-    PC_NAME_OFFSET[self.index()]
-  }
-
-  pub fn main_leader_pc_index(self) -> usize {
-    MAIN_LEADER_PC_INDEX[self.index()]
-  }
-
-  pub fn pc_default_name_byte(self, name_type: NameType, pc_index: usize, byte_index: usize) -> u8 {
-    PC_DEFAULT_NAMES[name_type.index()][pc_index][byte_index]
-  }
-
-  pub fn pc_name_record_count(self) -> usize {
-    PC_NAME_RECORD_COUNT[self.index()]
-  }
-
-  pub fn checksum_byte_count(self) -> usize {
-    CHECKSUM_BYTE_COUNT[self.index()]
-  }
 }
