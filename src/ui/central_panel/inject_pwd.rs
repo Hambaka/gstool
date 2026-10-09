@@ -163,7 +163,7 @@ impl App {
         // 第4行 -> 铜密码来源
 
         for i in 0..3 {
-          let data_is_available = self.save_is_available.is_some() || self.txt_bits.is_some() || self.dmp_bits.is_some();
+          let data_is_available = self.save_is_available || self.txt_bits.is_some() || self.dmp_bits.is_some();
 
           if !data_is_available {
             Label::new(RichText::new(PWD_SRC_LABEL[i]).weak())
@@ -192,12 +192,12 @@ impl App {
                     self.pwd_src_slot[i] = None;
                   };
 
-                  ui.add_enabled_ui(self.save_is_available.is_some(), |ui| {
+                  ui.add_enabled_ui(self.save_is_available, |ui| {
                     if ui
                       .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::First), SubCommandEnum::First.get_atoms(svg_icon_size,is_dark))
                       .changed()
                     {
-                      self.pwd_src_slot[i] = Some(SaveSlotEnum::from(self.save_is_available.unwrap()));
+                      self.pwd_src_slot[i] = self.first_available_slot;
                     };
                   });
 

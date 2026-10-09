@@ -21,6 +21,7 @@ use crate::{
     sheet_from_password_bytes, sheet_from_save_slot, write_cheat_code, write_memory_dump,
     write_password_data_text, write_password_text,
   },
+  ui::window::pwd_info::SaveSlotEnum,
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
@@ -67,7 +68,8 @@ impl App {
                 Ok((raw_save_data, min_slot)) => {
                   self.input_file_path_c1s1 = new_file_path;
                   self.raw_save_data = raw_save_data;
-                  self.save_is_available = Some(min_slot);
+                  self.save_is_available = true;
+                  self.first_available_slot = min_slot;
 
                   self.pwd_grade_c1s1 = PasswordGrade::Gold;
                   self.pwd_text_ver_c1s1 = Some(PasswordVersion::English);
@@ -89,7 +91,8 @@ impl App {
 
             self.input_file_path_c1s1.clear();
             self.raw_save_data = [None, None, None];
-            self.save_is_available = None;
+            self.save_is_available = false;
+            self.first_available_slot = None;
 
             self.pwd_grade_c1s1 = PasswordGrade::Gold;
             self.pwd_text_ver_c1s1 = Some(PasswordVersion::English);
@@ -113,7 +116,7 @@ impl App {
         });
         ui.end_row();
         // 第3行
-        if self.save_is_available.is_some() {
+        if self.save_is_available {
           Label::new("密码级别")
             .selectable(false)
             .ui(ui)
@@ -140,7 +143,7 @@ impl App {
         }
         ui.end_row();
         // 第4行
-        if self.save_is_available.is_some() {
+        if self.save_is_available {
           Label::new("密码文本版本")
             .selectable(false)
             .ui(ui)
@@ -171,7 +174,7 @@ impl App {
         }
         ui.end_row();
         // 第5行
-        if self.save_is_available.is_some() {
+        if self.save_is_available {
           Label::new("生成内存转储文件")
             .selectable(false)
             .ui(ui)
@@ -186,7 +189,7 @@ impl App {
         }
         ui.end_row();
         // 第6行
-        if self.save_is_available.is_some() {
+        if self.save_is_available {
           Label::new("生成密码金手指")
             .selectable(false)
             .ui(ui)
@@ -217,7 +220,7 @@ impl App {
         }
         ui.end_row();
         // 第7行
-        if self.save_is_available.is_some() {
+        if self.save_is_available {
           Label::new("导出密码数据至文本文件")
             .selectable(false)
             .ui(ui)
@@ -418,7 +421,7 @@ impl App {
 fn validate_input_file(
   path_str: &str,
   to_export_all_save: bool,
-) -> Result<([Option<SaveSlot>; 3], usize), &'static str> {
+) -> Result<([Option<SaveSlot>; 3], Option<SaveSlotEnum>), &'static str> {
   // Read save file.
   let input_file_result = File::open(path_str);
   let mut sav_file;
@@ -460,7 +463,7 @@ fn validate_input_file(
   }
 
   let mut raw_save_data = [None, None, None];
-  let mut min_slot = 0;
+  let mut min_slot = *save_data_map.keys().min().unwrap();
 
   for (key, val) in save_data_map {
     if key < min_slot {
@@ -469,5 +472,5 @@ fn validate_input_file(
     raw_save_data[key as usize] = Some(val);
   }
 
-  Ok((raw_save_data, min_slot as usize))
+  Ok((raw_save_data, Some(SaveSlotEnum::from(min_slot as usize))))
 }

@@ -44,6 +44,16 @@ pub enum SaveSlotEnum {
   Third = 2,
 }
 
+impl From<usize> for SaveSlotEnum {
+  fn from(value: usize) -> Self {
+    match value {
+      0 => Self::First,
+      1 => Self::Second,
+      _ => Self::Third,
+    }
+  }
+}
+
 impl SaveSlotEnum {
   pub const SAVE_SLOTS: [SaveSlotEnum; 3] = [
     SaveSlotEnum::First,
@@ -80,14 +90,6 @@ impl SaveSlotEnum {
       .max_height(svg_icon_size),
       self.get_name(is_password_preview_window),
     )
-  }
-
-  pub fn from(value: usize) -> Self {
-    match value {
-      0 => Self::First,
-      1 => Self::Second,
-      _ => Self::Third,
-    }
   }
 }
 

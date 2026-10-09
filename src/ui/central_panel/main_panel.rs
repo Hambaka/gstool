@@ -48,7 +48,7 @@ impl App {
           CommandEnum::First => match self.subcommand {
             // 1.1 使用存档文件
             SubCommandEnum::First => {
-              let bool1 = self.save_is_available.is_some();
+              let bool1 = self.save_is_available;
               let bool2 = self.pwd_text_ver_c1s1.is_some()
                 || self.to_export_pwd_bin_c1s1
                 || self.pwd_cheat_ver_c1s1.is_some()

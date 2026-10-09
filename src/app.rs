@@ -154,7 +154,8 @@ pub struct App {
   // 1.1 使用存档文件
   pub to_export_all_save: bool,
   pub input_file_path_c1s1: String,
-  pub save_is_available: Option<usize>,
+  pub save_is_available: bool,
+  pub first_available_slot: Option<SaveSlotEnum>,
   pub raw_save_data: [Option<SaveSlot>; 3],
   pub pwd_grade_c1s1: PasswordGrade,
   pub pwd_text_ver_c1s1: Option<PasswordVersion>,
@@ -286,7 +287,8 @@ impl App {
       // 1.1 使用存档文件
       to_export_all_save: false,
       input_file_path_c1s1: String::new(),
-      save_is_available: None,
+      save_is_available: false,
+      first_available_slot: None,
       raw_save_data: [None, None, None],
       pwd_grade_c1s1: PasswordGrade::Gold,
       pwd_text_ver_c1s1: Some(PasswordVersion::English),
