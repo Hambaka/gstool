@@ -72,7 +72,7 @@ pub fn convert_save(
         for j in 0..LEADER_NAME_FIELD_SIZE {
           if j < name_byte_len {
             raw_save_file[leader_name_offset + j] =
-              name_byte(&pc_default_names, save_layout.main_leader_pc_index, j);
+              pc_default_names[save_layout.main_leader_pc_index][j];
           } else {
             raw_save_file[leader_name_offset + j] = 0;
           }
@@ -83,7 +83,7 @@ pub fn convert_save(
         for j in 0..LEADER_NAME_FIELD_SIZE {
           if j < name_byte_len {
             raw_save_file[leader_name_offset + j] =
-              name_byte(&pc_default_names, save_layout.main_leader_pc_index + 1, j);
+              pc_default_names[save_layout.main_leader_pc_index + 1][j];
           } else {
             raw_save_file[leader_name_offset + j] = 0;
           }
@@ -95,7 +95,7 @@ pub fn convert_save(
         for k in 0..PC_NAME_FIELD_SIZE {
           if k < name_byte_len {
             raw_save_file[start_offset + save_layout.pc_name_offset + j * PC_RECORD_SIZE + k] =
-              name_byte(&pc_default_names, j, j);
+              pc_default_names[j][k];
           } else {
             raw_save_file[start_offset + save_layout.pc_name_offset + j * PC_RECORD_SIZE + k] = 0;
           }
@@ -132,8 +132,4 @@ pub fn convert_save(
       raw_save_file[start_offset + CHECKSUM_OFFSET + byte_index] = checksum_bytes[byte_index];
     }
   }
-}
-
-fn name_byte(bytes: &[[u8; 7]; 8], pc_index: usize, byte_index: usize) -> u8 {
-  bytes[pc_index][byte_index]
 }
