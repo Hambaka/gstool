@@ -1,7 +1,12 @@
 mod dyrati;
-pub mod path;
+mod path;
+mod read;
 pub mod render;
 mod write;
+
+pub use path::{derived_output_dir, slot_dir_name};
+
+pub use read::{read_bytes, read_text};
 
 pub use write::{
   write_cheat_code, write_converted_password_text, write_memory_dump, write_password_data_text,

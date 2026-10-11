@@ -1,7 +1,5 @@
 use std::{
   fmt::Write as _,
-  fs::File,
-  io::Read,
   path::{Path, PathBuf},
 };
 
@@ -12,16 +10,14 @@ use crate::{
   App,
   app::SubCommandEnum,
   core::{
-    bits::BitVec,
     enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::{
-      decode::{bits_from_bytes, read_from_bits},
+      decode::{ParsedPasswordBytes, parse_password_bytes, read_from_bits},
       encode,
-      text::contains_invalid_byte,
     },
   },
   io::{
-    path::derived_output_dir, sheet_from_password_bytes, sheet_from_password_data,
+    derived_output_dir, read_bytes, sheet_from_password_bytes, sheet_from_password_data,
     write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
   },
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
@@ -46,15 +42,15 @@ impl App {
         ui.horizontal(|ui| {
           if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file(){
-              let new_file_path = file.to_string_lossy().into_owned();
+              let new_file_path = file;
               // 验证内存转储文件
               let result = validate_input_file(&new_file_path);
               match result {
-                  Ok(o) => {
-                    self.input_file_path_c1s3 = new_file_path;
-                    self.dmp_bytes = o.0;
-                    self.dmp_bits = Some(o.1);
-                    self.dmp_src_grade = Some(o.2);
+                  Ok(parsed_password_bytes) => {
+                    self.input_file_path_c1s3 = new_file_path.to_string_lossy().to_string();
+                    self.dmp_bytes = parsed_password_bytes.bytes;
+                    self.dmp_bits = Some(parsed_password_bytes.bits);
+                    self.dmp_src_grade = Some(parsed_password_bytes.grade);
 
                     self.pwd_grade_c1s3 = None;
                     self.pwd_text_ver_c1s3 = None;
@@ -354,38 +350,7 @@ impl App {
   }
 }
 
-fn validate_input_file(path_str: &str) -> Result<(Vec<u8>, BitVec, PasswordGrade), &'static str> {
-  // Read password memory dump file.
-  let input_file_result = File::open(path_str);
-  let mut input_file;
-  if input_file_result.is_err() {
-    return Err("打开密码的内存转储二进制文件时发生错误！");
-  }
-  input_file = input_file_result.unwrap();
-
-  // Check its file size, and get its grade.
-  let file_size = input_file.metadata().unwrap().len();
-
-  let source_password_grade = match PasswordGrade::from_size(file_size as usize) {
-    Some(grade) => grade,
-    None => return Err("文件大小应为 16 字节，61 字节或 260 字节！"),
-  };
-
-  let mut password_bytes = Vec::new();
-  input_file.read_to_end(&mut password_bytes).unwrap();
-  // Check if it has contains invalid byte
-  let has_invalid_byte = contains_invalid_byte(password_bytes.as_slice());
-  if has_invalid_byte {
-    return Err("密码包含无效字节！");
-  }
-
-  // Check if the password is valid;
-  let password_bits;
-  if let Some(bits) = bits_from_bytes(password_bytes.as_slice(), source_password_grade, true) {
-    password_bits = bits;
-  } else {
-    return Err("密码无效！");
-  }
-
-  Ok((password_bytes, password_bits, source_password_grade))
+fn validate_input_file(path: &Path) -> Result<ParsedPasswordBytes, String> {
+  let bytes = read_bytes(path, Some(0x10_0000)).map_err(|e| e.to_string())?;
+  parse_password_bytes(bytes).map_err(|e| e.to_string())
 }

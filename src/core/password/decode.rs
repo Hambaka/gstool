@@ -1,9 +1,12 @@
+use std::fmt;
+
 use crate::core::{
   bits::BitVec,
   enums::PasswordGrade,
   password::{
     PasswordData,
     items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
+    text::contains_invalid_byte,
   },
 };
 
@@ -22,6 +25,42 @@ const PASSWORD_CHECKSUM_POSITIONS: [usize; 26] = [
   9, 18, 27, 36, 45, 54, 63, 72, 81, 90, 99, 108, 117, 126, 135, 144, 153, 162, 171, 180, 189, 198,
   207, 216, 225, 234,
 ];
+
+#[derive(Debug)]
+pub enum PasswordBytesError {
+  /// 长度不是16/61/260
+  BadSize(usize),
+  /// 密码中包含非法字节
+  InvalidByte,
+  InvalidPassword,
+}
+
+impl fmt::Display for PasswordBytesError {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      Self::BadSize(len) => write!(f, "密码的长度应为16/61/260字节！（实际{len}字节）"),
+      Self::InvalidByte => write!(f, "密码包含无效字节！"),
+      Self::InvalidPassword => write!(f, "密码无效！"),
+    }
+  }
+}
+
+pub struct ParsedPasswordBytes {
+  pub bytes: Vec<u8>,
+  pub bits: BitVec,
+  pub grade: PasswordGrade,
+}
+
+pub fn parse_password_bytes(bytes: Vec<u8>) -> Result<ParsedPasswordBytes, PasswordBytesError> {
+  let len = bytes.len();
+  let grade = PasswordGrade::from_size(len).ok_or(PasswordBytesError::BadSize(len))?;
+  if contains_invalid_byte(&bytes) {
+    return Err(PasswordBytesError::InvalidByte);
+  }
+
+  let bits = bits_from_bytes(&bytes, grade, true).ok_or(PasswordBytesError::InvalidPassword)?;
+  Ok(ParsedPasswordBytes { bytes, bits, grade })
+}
 
 pub fn bits_from_bytes(
   password_bytes: &[u8],

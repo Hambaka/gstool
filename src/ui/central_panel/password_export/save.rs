@@ -1,7 +1,5 @@
 use std::{
   fmt::Write as _,
-  fs::File,
-  io::Read,
   path::{Path, PathBuf},
 };
 
@@ -14,12 +12,11 @@ use crate::{
   core::{
     enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::encode::from_raw_save,
-    save::{SaveSlot, collect_slots, find_first_slot_index},
+    save::raw::{SaveSlots, parse_save_slots},
   },
   io::{
-    path::{derived_output_dir, slot_dir_name},
-    sheet_from_password_bytes, sheet_from_save_slot, write_cheat_code, write_memory_dump,
-    write_password_data_text, write_password_text,
+    derived_output_dir, read_bytes, sheet_from_password_bytes, sheet_from_save_slot, slot_dir_name,
+    write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
   },
   ui::window::pwd_info::SaveSlotEnum,
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
@@ -61,15 +58,15 @@ impl App {
         ui.horizontal(|ui| {
           if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file() {
-              let new_file_path = file.to_string_lossy();
               // 验证存档文件
-              let result = validate_input_file(&new_file_path, self.to_export_all_save);
+              let result = validate_input_file(&file, self.to_export_all_save);
               match result {
-                Ok((raw_save_data, min_slot)) => {
-                  self.input_file_path_c1s1 = new_file_path.into_owned();
-                  self.raw_save_data = raw_save_data;
+                Ok(save_slots) => {
+                  self.input_file_path_c1s1 = file.to_string_lossy().to_string();
+                  self.raw_save_data = save_slots.slots;
                   self.save_is_available = true;
-                  self.first_available_slot = min_slot;
+                  self.first_available_slot =
+                   Some(SaveSlotEnum::from(save_slots.first_available_slot.unwrap() as usize));
 
                   self.pwd_grade_c1s1 = PasswordGrade::Gold;
                   self.pwd_text_ver_c1s1 = Some(PasswordVersion::English);
@@ -425,59 +422,7 @@ impl App {
   }
 }
 
-fn validate_input_file(
-  path_str: &str,
-  to_export_all_save: bool,
-) -> Result<([Option<SaveSlot>; 3], Option<SaveSlotEnum>), &'static str> {
-  // Read save file.
-  let input_file_result = File::open(path_str);
-  let mut sav_file;
-  if input_file_result.is_err() {
-    return Err("打开存档文件时发生错误！");
-  }
-  sav_file = input_file_result.unwrap();
-
-  /* Check the size of save file.
-  The size of save file should be 64KB,
-  though the .SaveRAM file created by Bizhawk is 128KB.
-  The size of the .srm file created by the libretro fork of VBA-M, VBA-Next and
-  the .4gs file created by 44VBA is 136KB.
-  Although the size of those files is over 64KB, seems it only use first 64KB space to store save data? */
-  let file_size = sav_file.metadata().unwrap().len();
-  if file_size != 0x10000 && file_size != 0x20000 && file_size != 0x22000 {
-    return Err("存档文件的大小应为 64/128/136 KB！");
-  }
-
-  // Get raw save.
-  let mut raw_save_file = Vec::new();
-  sav_file.read_to_end(&mut raw_save_file).unwrap();
-
-  let loop_start_index;
-  if let Some(index) = find_first_slot_index(&raw_save_file) {
-    loop_start_index = index;
-  } else {
-    return Err("输入的不是《黄金太阳 开启的封印》的存档文件！或者存档文件中没有数据！");
-  }
-
-  /* Get save data from save file with slot number.
-  Also check if the save data is clear data. */
-  let save_data_map = collect_slots(&raw_save_file, loop_start_index, to_export_all_save);
-  if save_data_map.is_empty() {
-    if to_export_all_save {
-      return Err("存档文件中没有数据！");
-    }
-    return Err("存档文件中没有通关数据！");
-  }
-
-  let mut raw_save_data = [None, None, None];
-  let mut min_slot = *save_data_map.keys().min().unwrap();
-
-  for (key, val) in save_data_map {
-    if key < min_slot {
-      min_slot = key;
-    }
-    raw_save_data[key as usize] = Some(val);
-  }
-
-  Ok((raw_save_data, Some(SaveSlotEnum::from(min_slot as usize))))
+fn validate_input_file(path: &Path, include_non_clear: bool) -> Result<SaveSlots, String> {
+  let bytes = read_bytes(path, None).map_err(|e| e.to_string())?;
+  parse_save_slots(&bytes, include_non_clear).map_err(|e| e.to_string())
 }

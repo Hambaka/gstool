@@ -1,13 +1,36 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use crate::core::{
   enums::{GameRegion, GameTitle},
   save::format::{
     BUILD_DATE_OFFSET, CLEAR_DATA_IDENTIFIER_VALUE, CLEAR_DATA_OFFSET, FIRST_BUILD_DATE_OFFSET,
     GS_BUILD_DATE, HEADER_CAMELOT_ASCII_STRING, MAX_LOOP_COUNT, MAX_VALID_SLOT_INDEX,
-    PRIORITY_OFFSET, SAVE_SLOT_SIZE, SLOT_HEADER_SIZE, SLOT_NUMBER_OFFSET,
+    PRIORITY_OFFSET, SAVE_SLOT_SIZE, SLOT_HEADER_SIZE, SLOT_NUMBER_OFFSET, VALID_SAVE_SIZES,
   },
 };
+
+pub enum SaveFileError {
+  BadFileSize(u64),
+  NoSaveData,
+  NoClearData,
+}
+
+impl fmt::Display for SaveFileError {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      Self::BadFileSize(len) => write!(
+        f,
+        "存档文件的大小应为64/128/136KB！（实际{}KB）",
+        len / 1024
+      ),
+      Self::NoSaveData => write!(
+        f,
+        "输入的不是GBA《黄金太阳》系列游戏的存档文件！或者存档文件中没有数据！"
+      ),
+      Self::NoClearData => write!(f, "存档文件中没有通关数据！"),
+    }
+  }
+}
 
 struct HeaderInfo {
   /// Range: 0 <= x < 16
@@ -44,11 +67,18 @@ impl GameInfo {
   }
 }
 
+#[derive(Debug, Clone)]
 pub struct SaveSlot {
   // Please note, the priority is in save header, this is only for checking valid header/save
   pub priority: u16,
   pub is_clear_data: bool,
   pub data: Vec<u8>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SaveSlots {
+  pub slots: [Option<SaveSlot>; 3],
+  pub first_available_slot: Option<u8>,
 }
 
 pub fn find_first_slot_index(raw_save_file: &[u8]) -> Option<usize> {
@@ -183,5 +213,45 @@ fn has_camelot_header(raw: &[u8], slot_index: usize) -> bool {
     true
   } else {
     false
+  }
+}
+
+/// 主要用于解析《开启的封印》的存档
+pub fn parse_save_slots(raw: &[u8], include_non_clear: bool) -> Result<SaveSlots, SaveFileError> {
+  check_save_file_size(raw.len() as u64)?;
+
+  let first_slot_index = find_first_slot_index(raw).ok_or(SaveFileError::NoSaveData)?;
+  let map = collect_slots(raw, first_slot_index, include_non_clear);
+  if map.is_empty() {
+    return Err(if include_non_clear {
+      SaveFileError::NoSaveData
+    } else {
+      SaveFileError::NoClearData
+    });
+  }
+  let first_available_slot = map.keys().min().copied();
+
+  let mut slots = [None, None, None];
+  for (slot_number, slot) in map {
+    slots[slot_number as usize] = Some(slot);
+  }
+
+  Ok(SaveSlots {
+    slots,
+    first_available_slot,
+  })
+}
+
+/// 解析可供`存档转换`的存档（两代都支持）
+pub fn parse_convertible_save(raw: &[u8]) -> Result<GameInfo, SaveFileError> {
+  check_save_file_size(raw.len() as u64)?;
+  identify_game(raw).ok_or(SaveFileError::NoSaveData)
+}
+
+fn check_save_file_size(size: u64) -> Result<(), SaveFileError> {
+  if VALID_SAVE_SIZES.contains(&size) {
+    Ok(())
+  } else {
+    Err(SaveFileError::BadFileSize(size))
   }
 }

@@ -2,7 +2,7 @@ use std::{
   fmt,
   fs::{self, File},
   io::Write,
-  path::Path,
+  path::{Path, PathBuf},
 };
 
 use crate::{
@@ -13,21 +13,25 @@ use crate::{
   io::render::{cheat_code_text, password_text_beautify},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum OutputError {
-  NotADirectory(String),
-  CreateFileFailed(String),
-  CreateDirectoryFailed(String),
-  WriteFailed(String),
+  NotADirectory(PathBuf),
+  CreateFileFailed(PathBuf),
+  CreateDirectoryFailed(PathBuf),
+  WriteFailed(PathBuf),
 }
 
 impl fmt::Display for OutputError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
-      OutputError::NotADirectory(dir) => write!(f, "路径不是目录：{dir}"),
-      OutputError::CreateFileFailed(file) => write!(f, "文件创建失败：{file}"),
-      OutputError::CreateDirectoryFailed(dir) => write!(f, "目录创建失败：{dir}"),
-      OutputError::WriteFailed(file) => write!(f, "文件写入失败：{file}"),
+      Self::NotADirectory(path) => write!(f, "路径不是目录：{}", path.display()),
+      Self::CreateFileFailed(file_path) => {
+        write!(f, "文件创建失败：{}", file_path.display())
+      }
+      Self::CreateDirectoryFailed(dir_path) => {
+        write!(f, "目录创建失败：{}", dir_path.display())
+      }
+      Self::WriteFailed(file_path) => write!(f, "文件写入失败：{}", file_path.display()),
     }
   }
 }
@@ -38,47 +42,30 @@ fn ensure_dir(dir: &Path) -> Result<(), OutputError> {
   }
 
   if dir.exists() {
-    return Err(OutputError::NotADirectory(dir.to_string_lossy().into()));
+    return Err(OutputError::NotADirectory(dir.to_path_buf()));
   }
 
-  match fs::create_dir_all(dir) {
-    Ok(_) => Ok(()),
-    Err(_) => Err(OutputError::CreateDirectoryFailed(
-      dir.to_string_lossy().into(),
-    )),
-  }
-}
+  fs::create_dir_all(dir).map_err(|_| OutputError::CreateDirectoryFailed(dir.to_path_buf()))?;
 
-fn write_text(dir: &Path, file_name: &str, text: &str) -> Result<(), OutputError> {
-  ensure_dir(dir)?;
-  let file_path = dir.join(file_name);
-
-  let Ok(mut file) = File::create(&file_path) else {
-    return Err(OutputError::CreateFileFailed(
-      file_path.to_string_lossy().into(),
-    ));
-  };
-
-  match file.write_all(text.as_bytes()) {
-    Ok(_) => Ok(()),
-    Err(_) => Err(OutputError::WriteFailed(file_path.to_string_lossy().into())),
-  }
+  Ok(())
 }
 
 fn write_bytes(dir: &Path, file_name: &str, bytes: &[u8]) -> Result<(), OutputError> {
   ensure_dir(dir)?;
   let file_path = dir.join(file_name);
 
-  let Ok(mut file) = File::create(&file_path) else {
-    return Err(OutputError::CreateFileFailed(
-      file_path.to_string_lossy().into(),
-    ));
-  };
+  let mut file =
+    File::create(&file_path).map_err(|_| OutputError::CreateFileFailed(file_path.to_path_buf()))?;
 
-  match file.write_all(bytes) {
-    Ok(_) => Ok(()),
-    Err(_) => Err(OutputError::WriteFailed(file_path.to_string_lossy().into())),
-  }
+  file
+    .write_all(bytes)
+    .map_err(|_| OutputError::WriteFailed(file_path.to_path_buf()))?;
+
+  Ok(())
+}
+
+fn write_text(dir: &Path, file_name: &str, text: &str) -> Result<(), OutputError> {
+  write_bytes(dir, file_name, text.as_bytes())
 }
 
 pub fn write_password_text(

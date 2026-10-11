@@ -1,12 +1,10 @@
 use std::{
+  env,
   fmt::Write as _,
-  fs::File,
-  io::Read,
   path::{Path, PathBuf},
 };
 
 use arboard::Clipboard;
-use chardetng::{EncodingDetector, Iso2022JpDetection::Deny, Utf8Detection::Allow};
 use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
 
@@ -14,23 +12,18 @@ use crate::{
   App,
   app::SubCommandEnum,
   core::{
-    bits::BitVec,
-    enums::{GameRegion, PasswordGrade, PasswordVersion},
+    enums::{GameRegion, PasswordGrade},
     password::{
-      decode::{bits_from_bytes, read_from_bits},
+      decode::read_from_bits,
       encode,
-      text::{
-        contains_invalid_char_en, contains_invalid_char_jp, detect_password_version,
-        txt_to_another_version, txt_to_dmp,
-      },
+      text::{ParsedPassword, parse_password_text, txt_to_another_version},
     },
   },
   io::{
-    path::derived_output_dir, sheet_from_password_bytes, sheet_from_password_data,
+    derived_output_dir, read_text, sheet_from_password_bytes, sheet_from_password_data,
     write_cheat_code, write_converted_password_text, write_memory_dump, write_password_data_text,
     write_password_text,
   },
-  util,
   widgets::buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
@@ -52,14 +45,14 @@ impl App {
         Label::new("密码输入来源").selectable(false).ui(ui).on_hover_text("《黄金太阳》的密码文本的输入来源。");
         ui.horizontal(|ui| {
           if ui.add(clipboard_btn(svg_icon_size)).clicked() {
-            let result = validate_clipboard_text();
+            let result = read_password_text_clipboard();
             match result {
-                Ok(o) => {
+                Ok(parsed_password) => {
                     self.input_file_path_c1s2 = String::new();
-                    self.txt_file = o.0;
-                    self.txt_bytes = o.1;
-                    self.txt_bits = Some(o.2);
-                    self.txt_src_grade_version = Some((o.3, o.4));
+                    self.txt_file = parsed_password.text;
+                    self.txt_bytes = parsed_password.bytes;
+                    self.txt_bits = Some(parsed_password.bits);
+                    self.txt_src_grade_version = Some((parsed_password.grade, parsed_password.version));
 
                     self.pwd_grade_c1s2 = None;
                     self.to_convert_pwd_text_ver = false;
@@ -76,16 +69,16 @@ impl App {
 
           if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file(){
-              let new_file_path = file.to_string_lossy();
+              let new_file_path = file;
               // 验证密码文本文件
-              let result = validate_input_file(&new_file_path);
+              let result = read_password_text_file(&new_file_path);
               match result {
-                  Ok(o) => {
-                    self.input_file_path_c1s2 = new_file_path.into_owned();
-                    self.txt_file = o.0;
-                    self.txt_bytes = o.1;
-                    self.txt_bits = Some(o.2);
-                    self.txt_src_grade_version = Some((o.3, o.4));
+                  Ok(parsed_password) => {
+                    self.input_file_path_c1s2 = new_file_path.to_string_lossy().to_string();
+                    self.txt_file = parsed_password.text;
+                    self.txt_bytes = parsed_password.bytes;
+                    self.txt_bits = Some(parsed_password.bits);
+                    self.txt_src_grade_version = Some((parsed_password.grade, parsed_password.version));
 
                     self.pwd_grade_c1s2 = None;
                     self.to_convert_pwd_text_ver = false;
@@ -438,108 +431,16 @@ impl App {
   }
 }
 
-fn validate_input_file(
-  path_str: &str,
-) -> Result<(String, Vec<u8>, BitVec, PasswordGrade, PasswordVersion), &'static str> {
-  // Read password text file.
-  let input_file_result = File::open(path_str);
-  let mut input_file;
-  if input_file_result.is_err() {
-    return Err("打开密码文本文件时发生错误！");
-  }
-  input_file = input_file_result.unwrap();
-
-  let file_size = input_file.metadata().unwrap().len();
-  if file_size == 0 {
-    return Err("文本文件内没有任何内容！");
-  } else if file_size > 0x10_0000 {
-    return Err("文本文件的大小过大！");
-  }
-
-  let mut file_bytes = Vec::new();
-  input_file.read_to_end(&mut file_bytes).unwrap();
-
-  let mut detector = EncodingDetector::new(Deny);
-  detector.feed(&file_bytes, true);
-  let encoding = detector.guess(None, Allow);
-
-  let (cow_str, had_errors) = encoding.decode_with_bom_removal(&file_bytes);
-  if had_errors {
-    return Err("输入的不是有效的文本文件！");
-  }
-
-  let password = cow_str.into_owned();
-  validate_password_string(&password)
+fn read_password_text_file(path: &Path) -> Result<ParsedPassword, String> {
+  read_text(path, 0x10_0000)
+    .map_err(|e| e.to_string())
+    .and_then(|text| parse_password_text(&text).map_err(|e| e.to_string()))
 }
 
-fn validate_clipboard_text()
--> Result<(String, Vec<u8>, BitVec, PasswordGrade, PasswordVersion), &'static str> {
-  let clipboard_result = Clipboard::new();
-  if clipboard_result.is_err() {
-    return Err("访问剪贴板时出现错误！");
-  }
-  let mut clipboard = clipboard_result.unwrap();
-
-  let clipboard_text_result = clipboard.get_text();
-  if clipboard_text_result.is_err() {
-    return Err("获取剪贴板的文本时出现错误！");
-  }
-
-  let password = clipboard_text_result.unwrap();
-  validate_password_string(&password)
-}
-
-fn validate_password_string(
-  password: &str,
-) -> Result<(String, Vec<u8>, BitVec, PasswordGrade, PasswordVersion), &'static str> {
-  // If the text file is empty...
-  if password.is_empty() {
-    return Err("文本中没有任何内容！");
-  }
-
-  // Remove all line break and whitespace.
-  let password_without_whitespace = util::whitespace::remove_all(&password);
-  // Check password's length, and get its grade.
-  let chars_count = password_without_whitespace.chars().count();
-
-  let source_password_grade = match chars_count {
-    0 => return Err("文本中没有任何内容！"),
-    _ => match PasswordGrade::from_size(chars_count) {
-      Some(grade) => grade,
-      None => return Err("密码长度不正确！"),
-    },
-  };
-
-  // Check its password version.
-  let password_version = match detect_password_version(&password_without_whitespace) {
-    Some(version) => version,
-    None => {
-      unreachable!()
-    }
-  };
-  // Check if it contains invalid char
-  let has_invalid_char = match password_version {
-    PasswordVersion::Japanese => contains_invalid_char_jp(&password_without_whitespace),
-    PasswordVersion::English => contains_invalid_char_en(&password_without_whitespace),
-  };
-  if has_invalid_char {
-    return Err("密码文本包含无效字符！");
-  }
-
-  // Check if the password is valid.
-  let password_bytes = txt_to_dmp(&password_without_whitespace, password_version);
-  let password_bits;
-  if let Some(bits) = bits_from_bytes(&password_bytes, source_password_grade, true) {
-    password_bits = bits;
-  } else {
-    return Err("密码无效！");
-  }
-
-  Ok((
-    password_without_whitespace,
-    password_bytes,
-    password_bits,
-    source_password_grade,
-    password_version,
-  ))
+fn read_password_text_clipboard() -> Result<ParsedPassword, String> {
+  let mut clipboard = Clipboard::new().map_err(|_| "访问剪贴板时出现错误！".to_string())?;
+  let text = clipboard
+    .get_text()
+    .map_err(|_| "获取剪贴板的文本时出现错误！".to_string())?;
+  parse_password_text(&text).map_err(|e| e.to_string())
 }

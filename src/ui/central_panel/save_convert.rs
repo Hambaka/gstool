@@ -1,7 +1,7 @@
 use std::{
   fmt::Write as _,
   fs::{File, create_dir_all},
-  io::{Read, Write},
+  io::Write,
   path::{Path, PathBuf},
 };
 
@@ -12,8 +12,9 @@ use crate::{
   App,
   core::{
     enums::{GameRegion, GameTitle, NameType},
-    save::{GameInfo, convert_save, identify_game},
+    save::{GameInfo, convert_save, raw::parse_convertible_save},
   },
+  io::read_bytes,
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };
 
@@ -46,12 +47,11 @@ impl App {
         ui.horizontal(|ui| {
           if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file() {
-              let new_file_path = file.to_string_lossy().into_owned();
               // 验证存档文件
-              let result = validate_input_file(&new_file_path);
+              let result = validate_input_file(&file);
               match result {
                 Ok((save_vec, game_info)) => {
-                  self.input_file_path_c2 = new_file_path;
+                  self.input_file_path_c2 = file.to_string_lossy().to_string();
                   self.save_file = save_vec;
                   self.save_src_type_index = Some(game_info);
 
@@ -295,39 +295,8 @@ impl App {
   }
 }
 
-fn validate_input_file(path_str: &str) -> Result<(Vec<u8>, GameInfo), &'static str> {
-  // Read save file.
-  let input_file_result = File::open(path_str);
-  let mut sav_file;
-  if input_file_result.is_err() {
-    return Err("打开存档文件时发生错误！");
-  }
-  sav_file = input_file_result.unwrap();
-
-  /* Check the size of save file.
-  The size of save file should be 64KB,
-  though the .SaveRAM file created by Bizhawk is 128KB.
-  The size of the .srm file created by the libretro fork of VBA-M, VBA-Next and
-  the .4gs file created by 44VBA is 136KB.
-  Although the size of those files is over 64KB, seems it only use first 64KB space to store save data? */
-  let file_size = sav_file.metadata().unwrap().len();
-  if file_size != 0x10000 && file_size != 0x20000 && file_size != 0x22000 {
-    return Err("存档文件的大小应为 64/128/136 KB！");
-  }
-
-  // Get raw save.
-  let mut raw_save_file = Vec::new();
-  sav_file.read_to_end(&mut raw_save_file).unwrap();
-
-  // Detect game/save type, also get loop start index.
-  let game_info_option = identify_game(&raw_save_file);
-  if game_info_option.is_none() {
-    return Err(
-      "输入的不是《黄金太阳 开启的封印》或《黄金太阳 失落的时代》的存档文件！或者存档文件中没有数据！",
-    );
-  } else {
-    let game_info = game_info_option.unwrap();
-
-    Ok((raw_save_file, game_info))
-  }
+fn validate_input_file(path: &Path) -> Result<(Vec<u8>, GameInfo), String> {
+  let bytes = read_bytes(path, None).map_err(|e| e.to_string())?;
+  let info = parse_convertible_save(&bytes).map_err(|e| e.to_string())?;
+  Ok((bytes, info))
 }

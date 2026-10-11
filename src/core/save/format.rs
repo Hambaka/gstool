@@ -1,5 +1,11 @@
 use crate::core::enums::GameTitle;
 
+/// 存档文件的合法大小。
+///
+/// 64KB是`.sav`文件的标准大小\
+/// 128KB是Bizhawk的`.SaveRAM`（只用前 64KB）\
+/// 136KB是Libretro的VBA-M/VBA-Next fork的 `.srm`，以及44VBA的`.4gs`（只用前 64KB）
+pub const VALID_SAVE_SIZES: [u64; 3] = [0x10000, 0x20000, 0x22000];
 /// 每个槽位的存档数据头中记录的7字节长的ASCII字符串`CAMELOT`
 pub const HEADER_CAMELOT_ASCII_STRING: &str = "CAMELOT";
 /// 《开启的封印》和《失落的时代》的游戏构建日期\
