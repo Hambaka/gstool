@@ -39,9 +39,12 @@ impl DerefMut for BitVec {
 
 impl BitVec {
   pub fn new() -> Self {
-    // 金密码对应的bit长度是1400
+    BitVec { bits: Vec::new() }
+  }
+
+  pub fn with_capacity(capacity: usize) -> Self {
     BitVec {
-      bits: Vec::with_capacity(1400),
+      bits: Vec::with_capacity(capacity),
     }
   }
 

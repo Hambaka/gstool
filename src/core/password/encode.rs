@@ -95,11 +95,16 @@ pub fn password_data_from_save_slot(raw_save: &[u8]) -> PasswordData {
 /* Port from Dyrati's "Golden-Sun-Password-Transfer" lua script for "vba-rr" and "Bizhawk" emulators.
 Link: https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/5ec2d52553ec8f4e0fe77854bc2b31956ac09a11/password.lua#L79 */
 pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
-  let mut bits = BitVec::new();
+  let mut bits = BitVec::with_capacity(match grade {
+    // Known capacity after checking .len()
+    PasswordGrade::Gold => 1400,
+    PasswordGrade::Silver => 328,
+    PasswordGrade::Bronze => 88,
+  });
 
   // Insert 7 bits per level, 7 bits per jinn element
-  let mut level_bits = BitVec::new();
-  let mut djinn_bits = BitVec::new();
+  let mut level_bits = BitVec::with_capacity(7 * 4);
+  let mut djinn_bits = BitVec::with_capacity(7 * 4);
   for i in (0..=3).rev() {
     level_bits.push_bits(u32::from(data.levels[i]), 7);
   }

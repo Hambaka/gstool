@@ -118,7 +118,16 @@ pub fn bits_from_bytes(
     // Bronze: 16 - 1 = 15 => 9
     PasswordGrade::Bronze => 9,
   };
-  let mut bits = BitVec::new();
+
+  let mut bits = BitVec::with_capacity(match password_grade {
+    // Known capacity after checking .len()
+    // Before removing bits: 1400; After: 1326
+    PasswordGrade::Gold => 1400,
+    // Before removing bits: 328;  After: 310
+    PasswordGrade::Silver => 328,
+    // Before removing bits: 88;   After: 70
+    PasswordGrade::Bronze => 88,
+  });
   let max_size = (size_without_checksum_bytes + 2) * 8;
 
   for (j, i) in (0..max_size).step_by(6).enumerate() {
@@ -297,7 +306,7 @@ pub fn read_from_bits(bits: &BitVec, grade: PasswordGrade) -> PasswordData {
   /* Get level bits, rearrange it to normal order.
   Each level value has 7 bits.
   Order is: Mia, Ivan, Garet, Isaac */
-  let mut level_bits = BitVec::new();
+  let mut level_bits = BitVec::with_capacity(7 * 4);
   level_bits.push_bits(u32::from(bits.sub_bits_u8(24, 27)), 4);
   for i in (7..=23).rev().step_by(8) {
     level_bits.push_bits(u32::from(bits.sub_bits_u8(i - 7, i)), 8);
@@ -309,7 +318,7 @@ pub fn read_from_bits(bits: &BitVec, grade: PasswordGrade) -> PasswordData {
   /* Get djinn bits, rearrange it to normal order.
   Each element has 7 bits.
   Order is: Jupiter, Mars, Mercury, Venus */
-  let mut djinn_bits = BitVec::new();
+  let mut djinn_bits = BitVec::with_capacity(7 * 4);
   for i in (39..=55).rev().step_by(8) {
     djinn_bits.push_bits(u32::from(bits.sub_bits_u8(i - 7, i)), 8);
   }

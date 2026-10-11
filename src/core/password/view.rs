@@ -33,7 +33,7 @@ pub fn view_from_data(data: &PasswordData) -> PasswordView {
   // Levels
   let levels = data.levels;
   // Djinn
-  let mut djinn_bits = vec![BitVec::new(); 4];
+  let mut djinn_bits = vec![BitVec::with_capacity(7); 4];
 
   for ele in Element::ALL {
     djinn_bits[ele.index()].push_bits(data.djinn[ele.index()], 7);
@@ -80,7 +80,7 @@ pub fn view_from_data(data: &PasswordData) -> PasswordView {
         } else {
           1
         };
-        items[j][i] = (item_id, count as u8);
+        items[j][i] = (item_id, (count & 0b1_1111) as u8);
 
         if PSYNERGY_ITEMS.contains(&item_id) {
           psy_items[(item_id - PSYNERGY_ITEMS[0]) as usize] = true;
