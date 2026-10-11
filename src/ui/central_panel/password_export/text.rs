@@ -244,7 +244,13 @@ impl App {
 
     // Create output directory.
     let output_dir_str = if self.out_dir_c1s2.is_empty() {
-      derived_output_dir(Path::new(&self.input_file_path_c1s2))
+      if self.input_file_path_c1s2.is_empty() {
+        let current_exe_path = env::current_exe().unwrap();
+        let parent = current_exe_path.parent().unwrap();
+        parent.join("剪贴板_输出")
+      } else {
+        derived_output_dir(Path::new(&self.input_file_path_c1s2))
+      }
     } else {
       PathBuf::from(&self.out_dir_c1s2)
     };
