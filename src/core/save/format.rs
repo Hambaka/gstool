@@ -1,46 +1,46 @@
-use crate::core::enums::{GameTitle, NameType};
+use crate::core::enums::GameTitle;
 
-/// 7 bytes for the ASCII string "CAMELOT" in each save's header.
+/// 每个槽位的存档数据头中记录的7字节长的ASCII字符串`CAMELOT`
 pub const HEADER_CAMELOT_ASCII_STRING: &str = "CAMELOT";
-
-/// Golden Sun/Golden Sun: The Lost Age build date
-/// Source: Golden Sun Hacking Community Discord Server
+/// 《开启的封印》和《失落的时代》的游戏构建日期\
+/// 来源：Golden Sun Hacking Community Discord服务器
 ///
-/// Value: 0x1000 | 1024 * year + 64 * month + day
-/// Note: Year is "1", "2", not "2001", "2002"
+/// 值的计算方式：`0x1000 | 1024 * 年份 + 64 * 月份 + 日`\
+/// 注：年份是`1`和`2`这样的值，而不是`2001`和`2002`这样的完整年份
 ///
-/// GS1 (J) = 0x159C -> 2001/06/28
-/// GS1 (U) = 0x1652 -> 2001/09/18
-/// GS1 (G) = 0x1849 -> 2002/01/09
-/// GS1 (S) = 0x1885 -> 2002/02/05
-/// GS1 (F) = 0x1713 -> 2001/12/19
-/// GS1 (I) = 0x1886 -> 2002/02/06
+/// 《开启的封印》
+/// - GS1 (J) = 0x159C -> 2001/06/28
+/// - GS1 (U) = 0x1652 -> 2001/09/18
+/// - GS1 (G) = 0x1849 -> 2002/01/09
+/// - GS1 (S) = 0x1885 -> 2002/02/05
+/// - GS1 (F) = 0x1713 -> 2001/12/19
+/// - GS1 (I) = 0x1886 -> 2002/02/06
 ///
-/// GS2 (J) = 0x198A -> 2002/06/10
-/// GS2 (U) = 0x1C85 -> 2003/02/05
-/// GS2 (G) = 0x1D97 -> 2003/06/23
-/// GS2 (S) = 0x1DC7 -> 2003/07/07
-/// GS2 (F) = 0x1D98 -> 2003/06/24
-/// GS2 (I) = 0x1DC8 -> 2003/07/08
+/// 《失落的时代》
+/// - GS2 (J) = 0x198A -> 2002/06/10
+/// - GS2 (U) = 0x1C85 -> 2003/02/05
+/// - GS2 (G) = 0x1D97 -> 2003/06/23
+/// - GS2 (S) = 0x1DC7 -> 2003/07/07
+/// - GS2 (F) = 0x1D98 -> 2003/06/24
+/// - GS2 (I) = 0x1DC8 -> 2003/07/08
 #[rustfmt::skip]
 pub const GS_BUILD_DATE: [[u16; 6]; 2] = [
   [0x159C, 0x1652, 0x1849, 0x1885, 0x1713, 0x1886],
   [0x198A, 0x1C85, 0x1D97, 0x1DC7, 0x1D98, 0x1DC8],
 ];
-
-/// Main characters' default names in different languages.
+/// 主角团成员在不同语言版本中的默认名，以字节数组记录
 ///
-/// Japanese:                                   "ロビン", "ジェラルド", "イワン", "メアリィ", "ガルシア", "ジャスミン", "シバ",  "ピカード"
-/// English:                                    "Isaac",  "Garet",      "Ivan",   "Mia",      "Felix",    "Jenna",      "Sheba", "Piers"
-/// German:                                     "Isaac",  "Garet",      "Ivan",   "Mia",      "Felix",    "Jenna",      "Cosma", "Aaron"
-/// Spanish:                                    "Hans",   "Garet",      "Iván",   "Mia",      "Félix",    "Nadia",      "Sole",  "Piers"
-/// French:                                     "Vlad",   "Garet",      "Ivan",   "Sofia",    "Pavel",    "Lina",       "Cylia", "Piers"
-/// Italian:                                    "Isaac",  "Garet",      "Ivan",   "Mia",      "Felix",    "Jenna",      "Sara",  "Piers"
-/// Chinese fan translation by Mobile/Soma Team for GS2 (SC and TC share same encoding)
-/// ├── Simplified Chinese:                     "罗宾",   "杰拉德",     "伊万",   "米雅莉",   "加西亚",   "加斯敏",     "西芭",  "皮卡德"
-/// └── Traditional Chinese:                    "羅賓",   "傑拉德",     "伊萬",   "米雅莉",   "加西亞",   "加斯敏",     "西芭",  "皮卡德"
-/// Chinese fan translation by 2023 Team for GS1
-/// └── Simplified Chinese:                     "罗宾",   "杰拉德",     "伊万",   "梅雅莉",   "加西亚",   "加斯敏",     "西芭",  "皮卡德"
+/// - 日文：          `ロビン`, `ジェラルド`, `イワン`, `メアリィ`, `ガルシア`, `ジャスミン`, `シバ`,  `ピカード`
+/// - 英文：          `Isaac`,  `Garet`,      `Ivan`,   `Mia`,      `Felix`,    `Jenna`,      `Sheba`, `Piers`
+/// - 德文：          `Isaac`,  `Garet`,      `Ivan`,   `Mia`,      `Felix`,    `Jenna`,      `Cosma`, `Aaron`
+/// - 西班牙文：      `Hans`,   `Garet`,      `Iván`,   `Mia`,      `Félix`,    `Nadia`,      `Sole`,  `Piers`
+/// - 法文：          `Vlad`,   `Garet`,      `Ivan`,   `Sofia`,    `Pavel`,    `Lina`,       `Cylia`, `Piers`
+/// - 意大利文：      `Isaac`,  `Garet`,      `Ivan`,   `Mia`,      `Felix`,    `Jenna`,      `Sara`,  `Piers`
+/// - Mobile/Soma汉化组的《黄金太阳 失落的时代》汉化版（简体中文和繁体中文的编码一致）
+///   - 简体中文：    `罗宾`,   `杰拉德`,     `伊万`,   `米雅莉`,   `加西亚`,   `加斯敏`,     `西芭`,  `皮卡德`
+///   - 繁体中文：    `羅賓`,   `傑拉德`,     `伊萬`,   `米雅莉`,   `加西亞`,   `加斯敏`,     `西芭`,  `皮卡德`
+/// - 《黄金太阳 开启的封印》新汉化版
+///   - 简体中文：    `罗宾`,   `杰拉德`,     `伊万`,   `梅雅莉`,   `加西亚`,   `加斯敏`,     `西芭`,  `皮卡德`
 #[rustfmt::skip]
 pub const PC_DEFAULT_NAMES: [[[u8; 7]; 8]; 8] = [
   [[0xDB, 0xCB, 0xDE, 0xDD, 0x00, 0x00, 0x00], [0xBC, 0xDE, 0xAA, 0xD7, 0xD9, 0xC4, 0xDE], [0xB2, 0xDC, 0xDD, 0x00, 0x00, 0x00, 0x00], [0xD2, 0xB1, 0xD8, 0xA8, 0x00, 0x00, 0x00], [0xB6, 0xDE, 0xD9, 0xBC, 0xB1, 0x00, 0x00], [0xBC, 0xDE, 0xAC, 0xBD, 0xD0, 0xDD, 0x00], [0xBC, 0xCA, 0xDE, 0x00, 0x00, 0x00, 0x00], [0xCB, 0xDF, 0xB6, 0xB0, 0xC4, 0xDE, 0x00]],
@@ -52,78 +52,77 @@ pub const PC_DEFAULT_NAMES: [[[u8; 7]; 8]; 8] = [
   [[0x3F, 0x05, 0x81, 0x01, 0x00, 0x00, 0x00], [0x39, 0x04, 0xC1, 0x04, 0x4E, 0x02, 0x00], [0xDC, 0x08, 0xCF, 0x07, 0x00, 0x00, 0x00], [0x7A, 0x05, 0xA4, 0x08, 0xE7, 0x04, 0x00], [0xFC, 0x03, 0x14, 0x08, 0xA6, 0x08, 0x00], [0xFC, 0x03, 0x37, 0x07, 0x8B, 0x05, 0x00], [0x14, 0x08, 0x24, 0x01, 0x00, 0x00, 0x00], [0x07, 0x06, 0x8A, 0x04, 0x4E, 0x02, 0x00]],
   [[0x25, 0x23, 0x26, 0x23, 0x00, 0x00, 0x00], [0x27, 0x23, 0x28, 0x23, 0x29, 0x23, 0x00], [0x2A, 0x23, 0x2B, 0x23, 0x00, 0x00, 0x00], [0x2C, 0x23, 0x2D, 0x23, 0x2E, 0x23, 0x00], [0x2F, 0x23, 0x30, 0x23, 0x31, 0x23, 0x00], [0x2F, 0x23, 0x32, 0x23, 0x33, 0x23, 0x00], [0x30, 0x23, 0x34, 0x23, 0x00, 0x00, 0x00], [0x76, 0x40, 0x62, 0x24, 0x29, 0x23, 0x00]]
 ];
-
-/// Or "File Select Character Name"
+/// 存档选择界面显示的队伍队长名字的字节长度
 pub const LEADER_NAME_FIELD_SIZE: usize = 12;
-
+/// 主角团成员的名字的字节长度
 pub const PC_NAME_FIELD_SIZE: usize = 15;
-
+/// 不同角色的数据之间间隔的大小，用于获取名字的偏移
 pub const PC_RECORD_SIZE: usize = 0x14C;
-
-/// For TBS, the size of each save slot is 4KB.
-/// For TLA, the size of each save slot is 12KB.
+/// 存档文件内的每个存档槽位所使用的数据大小
+/// - 《开启的封印》：4KB
+/// - 《失落的时代》：12KB
 pub const SAVE_SLOT_SIZE: [usize; 2] = [0x1000, 0x3000];
-
-/// TBS: 64KB / 4KB = 16
-/// TLA: 64KB / 12KB = 5
+/// 从存档文件中循环获取存档数据时的最大循环次数
+/// - 《开启的封印》： 64KB / 4KB = 16，即最多循环16次
+/// - 《失落的时代》： 64KB / 12KB = 5，即最多循环5次
 pub const MAX_LOOP_COUNT: [usize; 2] = [16, 5];
-
-/// All build date locations: 0x36 to 0x37, 0x250 to 0x251, 0x508 to 0x509
-/// All stored values are same.
+/// 所有存档中记录的游戏构建日期的偏移：`0x36到0x37`、`0x250到0x251`、`0x508到0x509`\
+/// 三处记录的数值都是一样的
 pub const FIRST_BUILD_DATE_OFFSET: usize = 0x36;
+/*
+由于发现了更简单易用的检测存档是否通关的方法，所以以下内容不再使用，仅作为留档保存
 
-/* Unused, since now we have a much better way to check if the save data is clear data.
+存档中所有记录存档所在的地图地点的偏移：`0x410到0x413`，`0x418到0x41B`\
+存档中的存档地点地图数据 -> 主要地点:次要地点\
+各处记录的数值都是一样的
 
-All save map(location) locations  :0x410 to 0x413, 0x418 to 0x41B
-Save map data -> Main:Minor
-All stored values are same.
+例：第一组
+```
 pub const FIRST_SAVE_MAP_MAIN_LOCATION_OFFSET: [usize; 2] = [0x410, 0x411];
-pub const FIRST_SAVE_MAP_MINOR_LOCATION_OFFSET: [usize; 2] = [0x412, 0x413];  */
-
-/* Unused, since now we have a much better way to check if the save data is clear data.
-
-Clear data's save location value is -> 1:2
-pub const CLEAR_DATA_SAVE_MAP_VALUE: [u16; 2] = [0x01, 0x02]; */
-
-/// For clear data, its value is 1.
-/// If the save data is not a clear data, its value is 0.
+pub const FIRST_SAVE_MAP_MINOR_LOCATION_OFFSET: [usize; 2] = [0x412, 0x413];
+```
+通关数据的存档地点的值为 -> 1:2
+```
+pub const CLEAR_DATA_SAVE_MAP_VALUE: [u16; 2] = [0x01, 0x02];
+```
+*/
+/// 存档是否通关的标识符值
+/// - 已通关的存档：值为`1`
+/// - 未通关的存档：值为`0`
 pub const CLEAR_DATA_IDENTIFIER_VALUE: u8 = 0x01;
-
-/// Location of `CLEAR_DATA_IDENTIFIER_VALUE` in save file.
+/// `CLEAR_DATA_IDENTIFIER_VALUE`在存档文件中的偏移
 pub const CLEAR_DATA_OFFSET: usize = 0x31;
-
-/// The 8th byte in save header is the slot number, it only show 3 active save data in game.
+/// 存档头的第8个字节是槽位数字（或索引）
 pub const SLOT_NUMBER_OFFSET: usize = 0x07;
-
-/// The values for 3 'active' save data are: 0x00, 0x01 and 0x02.
-/// For more information, please check the docs.
+/// 要获取的3个有效活跃存档的槽位数值的最大值（0x00，0x01和0x02，所以就是0x02）\
+/// 更多信息见文档（docs）
 pub const MAX_VALID_SLOT_INDEX: u8 = 0x02;
-
-/// Location of save data's priority: 0x0A - 0x0B
-/// For more information, please check the docs.
+/// 存档数据的优先级值偏移：0x0A到0x0B\
+/// 更多信息见文档（docs）
 pub const PRIORITY_OFFSET: usize = 0x0A;
-
-/// In TBS, it should be 0 -> Robin (Isaac)
-/// In TLA, it should be 4 -> Garcia (Felix)
+/// 队长角色在主角团中的索引/下标
+/// - 《开启的封印》：应当为`0`，也就是`罗宾`
+/// - 《失落的时代》：应当为`4`，也就是`加西亚`
 pub const MAIN_LEADER_PC_INDEX: [usize; 2] = [0, 4];
-
-/// In TBS, we only have four available members: Robin (Isaac), Gerald (Garet), Ivan and Mary/Mearī (Mia).
-/// We should also include Garcia (Felix), Jasmine (Jenna) and Shiba (Sheba).
-/// In TLA, well, We have Picard (Piers) in party now.
+/// 可以修改的主角名的总计数量
+/// - 《开启的封印》：除了`罗宾`、`杰拉德`、`伊万`、`梅雅莉`，还有`加西亚`、`加斯敏`和`西芭`
+/// - 《失落的时代》：在前者的基础上，多了一位`皮卡德`
 pub const PC_NAME_RECORD_COUNT: [usize; 2] = [7, 8];
+/// 主角团角色名字的起始偏移
+/// - 《开启的封印》：0x510
+/// - 《失落的时代》：0x530
 pub const PC_NAME_OFFSET: [usize; 2] = [0x510, 0x530];
-
-/// TBS: 0x36 - 0x37, 0x250 - 0x251, 0x508 - 0x509
-/// TLA: 0x36 - 0x37, 0x250 - 0x251, 0x528 - 0x529
+/// 存档中游戏构建日期的三处记录位置
+/// - 《开启的封印》：`0x36到0x37`、`0x250到0x251`、`0x508到0x509`
+/// - 《失落的时代》：`0x36到0x37`、`0x250到0x251`、`0x528到0x529`
 pub const BUILD_DATE_OFFSET: [[usize; 3]; 2] = [[0x36, 0x250, 0x508], [0x36, 0x250, 0x528]];
-
-/// Save slot size - header size
-/// Header size is 0x10.
-/// TBS: 0x1000 - 0x10
-/// TLA: 0x3000 - 0x10
+/// 每个槽位存档的头大小：0x10
 pub const SLOT_HEADER_SIZE: usize = 0x10;
+/// 校验和要计算的数据长度：存档槽位大小减去存档头大小
+/// - 《开启的封印》：0x1000 - 0x10 = 0xFF0
+/// - 《失落的时代》：0x3000 - 0x10 = 0x2FF0
 pub const CHECKSUM_BYTE_COUNT: [usize; 2] = [0xFF0, 0x2FF0];
-/// 0x08 - 0x09
+/// 存档中记录的校验和值的偏移：0x08到0x09
 pub const CHECKSUM_OFFSET: usize = 0x08;
 
 pub struct SaveLayout {
@@ -133,13 +132,12 @@ pub struct SaveLayout {
   pub build_dates: [u16; 6],
   pub pc_name_offset: usize,
   pub main_leader_pc_index: usize,
-  pub pc_default_names: Option<[[u8; 7]; 8]>,
   pub pc_name_record_count: usize,
   pub checksum_byte_count: usize,
 }
 
 impl GameTitle {
-  pub fn save_layout(self, name_type: Option<NameType>) -> SaveLayout {
+  pub fn save_layout(self) -> SaveLayout {
     let index = self.index();
 
     let slot_size = SAVE_SLOT_SIZE[index];
@@ -148,10 +146,6 @@ impl GameTitle {
     let build_dates = GS_BUILD_DATE[index];
     let pc_name_offset = PC_NAME_OFFSET[index];
     let main_leader_pc_index = MAIN_LEADER_PC_INDEX[index];
-    let pc_default_names = match name_type {
-      Some(name_type) => Some(PC_DEFAULT_NAMES[name_type.index()]),
-      None => None,
-    };
     let pc_name_record_count = PC_NAME_RECORD_COUNT[index];
     let checksum_byte_count = CHECKSUM_BYTE_COUNT[index];
 
@@ -162,7 +156,6 @@ impl GameTitle {
       build_dates,
       pc_name_offset,
       main_leader_pc_index,
-      pc_default_names,
       pc_name_record_count,
       checksum_byte_count,
     }

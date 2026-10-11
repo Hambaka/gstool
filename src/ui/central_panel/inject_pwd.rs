@@ -12,7 +12,6 @@ use crate::{
   App,
   app::{AtomsEnum, SubCommandEnum},
   core::{
-    bits::BitVec,
     enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::{
       decode::read_from_bits,
@@ -366,12 +365,11 @@ impl App {
             if src_grade == PasswordGrade::Silver {
               Some(self.txt_bytes.clone())
             } else {
-              let mut password_bits = BitVec::from(self.txt_bits.as_ref().unwrap().as_slice());
+              let password_bits = self.txt_bits.as_ref().unwrap();
+              let password_data =
+                read_from_bits(&password_bits, self.txt_src_grade_version.unwrap().0);
+              let target_password_bytes = encode(&password_data, PasswordGrade::Silver);
 
-              let save_data =
-                read_from_bits(&mut password_bits, self.txt_src_grade_version.unwrap().0);
-
-              let target_password_bytes = encode(&save_data, PasswordGrade::Silver);
               Some(target_password_bytes)
             }
           }
@@ -382,10 +380,10 @@ impl App {
             if src_grade == PasswordGrade::Silver {
               Some(self.dmp_bytes.clone())
             } else {
-              let mut password_bits = BitVec::from(self.dmp_bits.as_ref().unwrap().as_slice());
-              let save_data = read_from_bits(&mut password_bits, self.dmp_src_grade.unwrap());
+              let password_bits = self.dmp_bits.as_ref().unwrap();
+              let password_data = read_from_bits(&password_bits, self.dmp_src_grade.unwrap());
+              let target_password_bytes = encode(&password_data, PasswordGrade::Silver);
 
-              let target_password_bytes = encode(&save_data, PasswordGrade::Silver);
               Some(target_password_bytes)
             }
           }
@@ -412,12 +410,11 @@ impl App {
             if src_grade == PasswordGrade::Bronze {
               Some(self.txt_bytes.clone())
             } else {
-              let mut password_bits = BitVec::from(self.txt_bits.as_ref().unwrap().as_slice());
+              let password_bits = self.txt_bits.as_ref().unwrap();
+              let password_data =
+                read_from_bits(&password_bits, self.txt_src_grade_version.unwrap().0);
+              let target_password_bytes = encode(&password_data, PasswordGrade::Bronze);
 
-              let save_data =
-                read_from_bits(&mut password_bits, self.txt_src_grade_version.unwrap().0);
-
-              let target_password_bytes = encode(&save_data, PasswordGrade::Bronze);
               Some(target_password_bytes)
             }
           }
@@ -428,10 +425,10 @@ impl App {
             if src_grade == PasswordGrade::Bronze {
               Some(self.dmp_bytes.clone())
             } else {
-              let mut password_bits = BitVec::from(self.dmp_bits.as_ref().unwrap().as_slice());
-              let save_data = read_from_bits(&mut password_bits, self.dmp_src_grade.unwrap());
+              let password_bits = self.dmp_bits.as_ref().unwrap();
+              let password_data = read_from_bits(&password_bits, self.dmp_src_grade.unwrap());
+              let target_password_bytes = encode(&password_data, PasswordGrade::Bronze);
 
-              let target_password_bytes = encode(&save_data, PasswordGrade::Bronze);
               Some(target_password_bytes)
             }
           }
@@ -832,19 +829,19 @@ fn inject(
       }
 
       let pwd_buffer_address_value =
-        u32::to_le_bytes(file_info.base_game_version.get_tla_pwd_buffer_address());
+        u32::to_le_bytes(file_info.base_game_version.tla_pwd_buffer_address());
       for i in 0..4 {
         injected_rom[start_index + bin_info.pwd_buffer_start_pos + i] = pwd_buffer_address_value[i];
       }
 
       let pwd_buffer_address_end_value =
-        u32::to_le_bytes(file_info.base_game_version.get_tla_pwd_address_end());
+        u32::to_le_bytes(file_info.base_game_version.tla_pwd_address_end());
       for i in 0..4 {
         injected_rom[start_index + bin_info.pwd_buffer_end_pos + i] =
           pwd_buffer_address_end_value[i];
       }
 
-      let exit_address_value = u32::to_le_bytes(file_info.base_game_version.get_tla_exit_address());
+      let exit_address_value = u32::to_le_bytes(file_info.base_game_version.tla_exit_address());
       for i in 0..4 {
         injected_rom[start_index + bin_info.exit_pos + i] = exit_address_value[i];
       }

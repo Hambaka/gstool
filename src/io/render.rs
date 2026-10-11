@@ -23,13 +23,16 @@ pub fn password_text_beautify(converted: &str, version: PasswordVersion) -> Stri
   text
 }
 
-pub fn cheat_code_text(password_bytes: &[u8], region: GameRegion) -> String {
+pub fn cheat_code_text(
+  password_bytes: &[u8],
+  password_grade: PasswordGrade,
+  region: GameRegion,
+) -> String {
   // The address for password input screen in Golden Sun: The Lost Age
-  let mut address = region.get_tla_pwd_buffer_address();
+  let mut address = region.tla_pwd_buffer_address();
   let mut text = String::with_capacity(2048);
 
   let size = password_bytes.len();
-  let password_grade = PasswordGrade::from_size(size).unwrap();
 
   let version_tip = match region {
     GameRegion::Germany => format!(

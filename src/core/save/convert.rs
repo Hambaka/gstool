@@ -1,8 +1,8 @@
 use crate::core::{
   enums::{GameRegion, GameTitle, NameType},
   save::format::{
-    CHECKSUM_OFFSET, LEADER_NAME_FIELD_SIZE, MAX_VALID_SLOT_INDEX, PC_NAME_FIELD_SIZE,
-    PC_RECORD_SIZE, SLOT_HEADER_SIZE, SLOT_NUMBER_OFFSET,
+    CHECKSUM_OFFSET, LEADER_NAME_FIELD_SIZE, MAX_VALID_SLOT_INDEX, PC_DEFAULT_NAMES,
+    PC_NAME_FIELD_SIZE, PC_RECORD_SIZE, SLOT_HEADER_SIZE, SLOT_NUMBER_OFFSET,
   },
 };
 
@@ -13,7 +13,15 @@ pub fn convert_save(
   rename_pcs: Option<NameType>,
   target_region: Option<GameRegion>,
 ) {
-  let save_layout = game_title.save_layout(rename_pcs);
+  let save_layout = game_title.save_layout();
+  let names_and_len_option = match rename_pcs {
+    Some(name_type) => {
+      let names = PC_DEFAULT_NAMES[name_type.index()];
+      let len = names[0].len();
+      Some((names, len))
+    }
+    None => None,
+  };
 
   for i in loop_start_index..save_layout.max_loop {
     let start_offset = i * save_layout.slot_size;
@@ -35,11 +43,7 @@ pub fn convert_save(
       continue;
     }
 
-    if rename_pcs.is_some() {
-      let pc_default_names = save_layout.pc_default_names.unwrap();
-      // 7
-      let name_byte_len = pc_default_names[0].len();
-
+    if let Some((pc_default_names, name_byte_len)) = names_and_len_option {
       let mut is_main_leader = true;
       /*
       队长角色的名字，但这里指的是仅仅只在存档选择界面出现的名字。

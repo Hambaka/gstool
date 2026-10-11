@@ -201,7 +201,7 @@ impl App {
     convert_save(
       &mut new_save_file,
       self.save_src_type_index.unwrap().title,
-      self.save_src_type_index.unwrap().slot_index,
+      self.save_src_type_index.unwrap().first_slot_index,
       self.default_name_ver,
       self.build_date_ver,
     );

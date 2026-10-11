@@ -227,9 +227,9 @@ pub fn sheet_from_password_data(data: &PasswordData) -> String {
   render(&info)
 }
 
-pub fn sheet_from_password_bytes(password_bytes: &[u8], target_grade: PasswordGrade) -> String {
-  let mut bits = bits_from_bytes(password_bytes, false).unwrap();
-  let data = read_from_bits(&mut bits, target_grade);
+pub fn sheet_from_password_bytes(password_bytes: &[u8], grade: PasswordGrade) -> String {
+  let bits = bits_from_bytes(password_bytes, grade, false).unwrap();
+  let data = read_from_bits(&bits, grade);
   let info = view_from_data(&data);
   render(&info)
 }

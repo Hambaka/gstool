@@ -21,17 +21,25 @@ struct HeaderInfo {
 
 #[derive(Debug, Clone, Copy)]
 pub struct GameInfo {
+  /// 游戏类型：
+  /// 《开启的封印》和《失落的时代》
   pub title: GameTitle,
+  /// 游戏的语言版本：
+  /// 日、英、德、西、法、意
   pub region: GameRegion,
-  pub slot_index: usize,
+  /// 第一个存档数据出现在存档文件的位置对应的索引。
+  /// 存档文件是64KB，而初代每个槽位是4KB，2代每个槽位是12KB。
+  /// 最初的检测时，每次遍历都是以4KB为单位/步长，这样初代和2代都通用。
+  /// 而之后的实际转换存档时每次遍历就使用各自的大小了，所以第一次记录时，对于2代的下标要进行特殊处理（即除以3）。
+  pub first_slot_index: usize,
 }
 
 impl GameInfo {
-  pub fn new(title: GameTitle, region: GameRegion, slot_index: usize) -> Self {
+  pub fn new(title: GameTitle, region: GameRegion, first_slot_index: usize) -> Self {
     Self {
       title,
       region,
-      slot_index,
+      first_slot_index,
     }
   }
 }
@@ -43,15 +51,9 @@ pub struct SaveSlot {
   pub data: Vec<u8>,
 }
 
-// password
 pub fn find_first_slot_index(raw_save_file: &[u8]) -> Option<usize> {
   for i in 0..MAX_LOOP_COUNT[0] {
-    let Ok(header_string) = std::str::from_utf8(
-      &raw_save_file[(i * SAVE_SLOT_SIZE[0])..(i * SAVE_SLOT_SIZE[0] + SLOT_NUMBER_OFFSET)],
-    ) else {
-      continue;
-    };
-    if !header_string.eq(HEADER_CAMELOT_ASCII_STRING) {
+    if !has_camelot_header(raw_save_file, i) {
       continue;
     }
 
@@ -59,6 +61,7 @@ pub fn find_first_slot_index(raw_save_file: &[u8]) -> Option<usize> {
       raw_save_file[i * SAVE_SLOT_SIZE[0] + FIRST_BUILD_DATE_OFFSET],
       raw_save_file[i * SAVE_SLOT_SIZE[0] + FIRST_BUILD_DATE_OFFSET + 1],
     ]);
+
     if GS_BUILD_DATE[0].contains(&build_date_from_raw_save) {
       return Some(i);
     }
@@ -67,16 +70,9 @@ pub fn find_first_slot_index(raw_save_file: &[u8]) -> Option<usize> {
   None
 }
 
-// convert save
 pub fn identify_game(raw_save_file: &[u8]) -> Option<GameInfo> {
   for i in 0..MAX_LOOP_COUNT[0] {
-    let Ok(header_string) = std::str::from_utf8(
-      &raw_save_file[(i * SAVE_SLOT_SIZE[0])..(i * SAVE_SLOT_SIZE[0] + SLOT_NUMBER_OFFSET)],
-    ) else {
-      continue;
-    };
-
-    if !header_string.eq(HEADER_CAMELOT_ASCII_STRING) {
+    if !has_camelot_header(raw_save_file, i) {
       continue;
     }
 
@@ -94,6 +90,9 @@ pub fn identify_game(raw_save_file: &[u8]) -> Option<GameInfo> {
       if GS_BUILD_DATE[0].contains(&build_date) {
         return Some(GameInfo::new(GameTitle::TheBrokenSeal, game_version, i));
       } else {
+        // 存档文件是64KB，而初代每个槽位是4KB，2代每个槽位是12KB。
+        // 最初的检测时，每次遍历都是以4KB为单位/步长，这样初代和2代都通用。
+        // 之后的实际转换存档时每次遍历使用各自的步长大小了，所以对于2代的下标要进行特殊处理（即除以3）。
         return Some(GameInfo::new(GameTitle::TheLostAge, game_version, i / 3));
       }
     }
@@ -142,27 +141,47 @@ pub fn collect_slots(
         }
       }
     }
-    /* Does not include first 16 bytes header.
+    /*
+    Does not include first 16 bytes header.
     The data from 0xA40 (Felix, Jenna, Sheba, PC07) is useless for password generating.
-    0xA40 - 0x10 = 0xA30 */
-    let mut save_data = SaveSlot {
+    0xA40 - 0x10 = 0xA30
+
+    Default:
+    SaveSlot {
       priority: 0,
       is_clear_data: false,
       data: vec![0; 0xA30],
+    }
+    */
+    let save_data = SaveSlot {
+      priority: header.priority,
+      is_clear_data: header.is_clear_data,
+      data: raw
+        .get(
+          header.index * SAVE_SLOT_SIZE[0] + SLOT_HEADER_SIZE
+            ..header.index * SAVE_SLOT_SIZE[0] + 0xA40,
+        )
+        .unwrap()
+        .to_vec(),
     };
-    save_data.data = raw
-      .get(
-        header.index * SAVE_SLOT_SIZE[0] + SLOT_HEADER_SIZE
-          ..header.index * SAVE_SLOT_SIZE[0] + 0xA40,
-      )
-      .unwrap()
-      .to_vec();
 
-    save_data.is_clear_data = header.is_clear_data;
-    save_data.priority = header.priority;
     // Key is save slot number: 0, 1, 2
     save_data_map.insert(header.slot_number, save_data);
   }
 
   save_data_map
+}
+
+fn has_camelot_header(raw: &[u8], slot_index: usize) -> bool {
+  let Ok(header_string) = std::str::from_utf8(
+    &raw[(slot_index * SAVE_SLOT_SIZE[0])..(slot_index * SAVE_SLOT_SIZE[0] + SLOT_NUMBER_OFFSET)],
+  ) else {
+    return false;
+  };
+
+  if header_string.eq(HEADER_CAMELOT_ASCII_STRING) {
+    true
+  } else {
+    false
+  }
 }

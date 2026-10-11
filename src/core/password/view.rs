@@ -8,6 +8,9 @@ use crate::core::{
   },
 };
 
+/// 帮忙搭救乌鲁木齐事件的索引/下标，准备对值进行反转
+const INVERTED_EVENT_INDEX: usize = 2;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Element {
   Venus = 0,
@@ -18,7 +21,6 @@ pub enum Element {
 
 impl Element {
   pub const ALL: [Element; 4] = [Self::Venus, Self::Mercury, Self::Mars, Self::Jupiter];
-
   /// 游戏内展示顺序（地/火/风/水），用于 PasswordView（密码预览窗口）与Dyrati数据文本。
   pub const GAMEPLAY_ORDER: [Element; 4] = [Self::Venus, Self::Mars, Self::Jupiter, Self::Mercury];
 
@@ -31,7 +33,6 @@ pub fn view_from_data(data: &PasswordData) -> PasswordView {
   // Levels
   let levels = data.levels;
   // Djinn
-
   let mut djinn_bits = vec![BitVec::new(); 4];
 
   for ele in Element::ALL {
@@ -42,9 +43,10 @@ pub fn view_from_data(data: &PasswordData) -> PasswordView {
 
   // Reversed bit order & Adjust djinn to gameplay order for easier viewing.
   for i in 0..7 {
-    for (original_ele, new_order_ele) in Element::ALL.iter().zip(Element::GAMEPLAY_ORDER.iter()) {
-      if djinn_bits[new_order_ele.index()].bit_at(6 - i) == 1 {
-        djinn[original_ele.index()][i] = true;
+    // 将密码数据记录的默认顺序的精灵数据，按照游戏排列顺序存储
+    for (slot, ele) in Element::GAMEPLAY_ORDER.iter().enumerate() {
+      if djinn_bits[ele.index()].bit_at(6 - i) == 1 {
+        djinn[slot][i] = true;
       }
     }
   }
@@ -52,9 +54,9 @@ pub fn view_from_data(data: &PasswordData) -> PasswordView {
   // Events
   let mut events = [false; 6];
   for (i, event) in data.events.iter().enumerate() {
-    events[i] = if i == 2 {
-      let inverted_event = (event ^ 1) & 1;
-      inverted_event == 1
+    events[i] = if i == INVERTED_EVENT_INDEX {
+      // 简化自：`(event ^ 1) & 1 == 1`
+      *event == 0
     } else {
       *event == 1
     }

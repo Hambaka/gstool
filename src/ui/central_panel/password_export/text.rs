@@ -76,12 +76,12 @@ impl App {
 
           if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file(){
-              let new_file_path = file.to_string_lossy().into_owned();
+              let new_file_path = file.to_string_lossy();
               // 验证密码文本文件
               let result = validate_input_file(&new_file_path);
               match result {
                   Ok(o) => {
-                    self.input_file_path_c1s2 = new_file_path;
+                    self.input_file_path_c1s2 = new_file_path.into_owned();
                     self.txt_file = o.0;
                     self.txt_bytes = o.1;
                     self.txt_bits = Some(o.2);
@@ -239,13 +239,13 @@ impl App {
   }
 
   pub fn run_c1s2(&mut self) {
-    let mut password_bits = BitVec::from(self.txt_bits.as_ref().unwrap().as_slice());
+    let password_bits = self.txt_bits.as_ref().unwrap();
     let password_version = self.txt_src_grade_version.unwrap().1;
 
     // Generate save data, and set target password bytes
-    let save_data = read_from_bits(&mut password_bits, self.txt_src_grade_version.unwrap().0);
+    let password_data = read_from_bits(&password_bits, self.txt_src_grade_version.unwrap().0);
     let target_password_bytes = match self.pwd_grade_c1s2 {
-      Some(password_grade) => encode(&save_data, password_grade),
+      Some(password_grade) => encode(&password_data, password_grade),
       None => self.txt_bytes.clone(),
     };
 
@@ -295,7 +295,18 @@ impl App {
     }
 
     if let Some(cheat_version) = self.pwd_cheat_ver_c1s2 {
-      if let Err(e) = write_cheat_code(&target_password_bytes, cheat_version, &output_dir_str) {
+      let target_grade = if self.pwd_grade_c1s2.is_some() {
+        self.pwd_grade_c1s2.unwrap()
+      } else {
+        self.txt_src_grade_version.unwrap().0
+      };
+
+      if let Err(e) = write_cheat_code(
+        &target_password_bytes,
+        target_grade,
+        cheat_version,
+        &output_dir_str,
+      ) {
         self.err_msg = e.to_string();
         self.err_modal_open = true;
         return;
@@ -305,7 +316,7 @@ impl App {
     if self.to_export_pwd_data_text_c1s2 {
       if self.pwd_grade_c1s2.is_none() {
         if let Err(e) =
-          write_password_data_text(&sheet_from_password_data(&save_data), &output_dir_str)
+          write_password_data_text(&sheet_from_password_data(&password_data), &output_dir_str)
         {
           self.err_msg = e.to_string();
           self.err_modal_open = true;
@@ -487,7 +498,7 @@ fn validate_password_string(
   }
 
   // Remove all line break and whitespace.
-  let password_without_whitespace = util::whitespace::remove(&password);
+  let password_without_whitespace = util::whitespace::remove_all(&password);
   // Check password's length, and get its grade.
   let chars_count = password_without_whitespace.chars().count();
 
@@ -518,7 +529,7 @@ fn validate_password_string(
   // Check if the password is valid.
   let password_bytes = txt_to_dmp(&password_without_whitespace, password_version);
   let password_bits;
-  if let Some(bits) = bits_from_bytes(&password_bytes, true) {
+  if let Some(bits) = bits_from_bytes(&password_bytes, source_password_grade, true) {
     password_bits = bits;
   } else {
     return Err("密码无效！");

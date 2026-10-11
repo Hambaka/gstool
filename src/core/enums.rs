@@ -27,6 +27,7 @@ impl From<usize> for PasswordGrade {
 impl PasswordGrade {
   pub const ALL: [PasswordGrade; 3] = [Self::Gold, Self::Silver, Self::Bronze];
 
+  /// From password char/byte count
   pub fn from_size(size: usize) -> Option<Self> {
     match size {
       260 => Some(Self::Gold),
@@ -36,16 +37,22 @@ impl PasswordGrade {
     }
   }
 
-  pub fn is_gold(self) -> bool {
-    matches!(self, Self::Gold)
+  pub fn include_psy_items(self) -> bool {
+    match self {
+      Self::Silver | Self::Bronze => true,
+      _ => false,
+    }
   }
 
-  pub fn is_silver(self) -> bool {
-    matches!(self, Self::Silver)
+  pub fn include_stats(self) -> bool {
+    match self {
+      Self::Gold | Self::Silver => true,
+      _ => false,
+    }
   }
 
-  pub fn is_bronze(self) -> bool {
-    matches!(self, Self::Bronze)
+  pub fn include_items_and_coins(self) -> bool {
+    self == Self::Gold
   }
 
   pub fn short_name(self) -> &'static str {
@@ -152,7 +159,7 @@ impl GameRegion {
     }
   }
 
-  pub fn get_tla_pwd_buffer_address(self) -> u32 {
+  pub fn tla_pwd_buffer_address(self) -> u32 {
     match self {
       Self::Japan => 0x0200_A78A,
       Self::USA => 0x0200_A74A,
@@ -162,9 +169,9 @@ impl GameRegion {
   }
 
   // GSPI
-  pub fn get_tla_pwd_address_end(self) -> u32 {
-    // 密码的buffer有260字节，故加260-1=259
-    self.get_tla_pwd_buffer_address() + 259
+  /// 密码的buffer有260字节，故加获取密码buff结束的地址只需要加上`260 - 1 = 259`
+  pub fn tla_pwd_address_end(self) -> u32 {
+    self.tla_pwd_buffer_address() + 259
   }
 
   // Raw Save
@@ -202,12 +209,8 @@ impl GameRegion {
   }
 
   // GSPI
-  pub fn get_tla_exit_address(self) -> u32 {
-    TARGET_ADDRESS
-      .iter()
-      .find(|(_, y)| self == *y)
-      .map(|(x, _)| *x)
-      .unwrap()
+  pub fn tla_exit_address(self) -> u32 {
+    TARGET_ADDRESS[self.index()].0
   }
 }
 

@@ -4,7 +4,6 @@ use crate::{
   App,
   app::SubCommandEnum,
   core::{
-    bits::BitVec,
     data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, icon_id},
     enums::PasswordGrade,
     password::{
@@ -620,10 +619,10 @@ impl App {
       }
       SubCommandEnum::Second => {
         self.preview_data = [None, None, None];
-        let mut password_bits = BitVec::from(self.txt_bits.as_ref().unwrap().as_slice());
+        let password_bits = self.txt_bits.as_ref().unwrap();
         let src_grade = self.txt_src_grade_version.unwrap().0;
-        let save_data = read_from_bits(&mut password_bits, src_grade);
-        let pwd_info = view_from_data(&save_data);
+        let password_data = read_from_bits(&password_bits, src_grade);
+        let pwd_info = view_from_data(&password_data);
         self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
         self.preview_slot = SaveSlotEnum::First;
         self.preview_current = self.preview_data[0].clone();
@@ -647,10 +646,10 @@ impl App {
       }
       SubCommandEnum::Third => {
         self.preview_data = [None, None, None];
-        let mut password_bits = BitVec::from(self.dmp_bits.as_ref().unwrap().as_slice());
+        let password_bits = self.dmp_bits.as_ref().unwrap();
         let src_grade = self.dmp_src_grade.unwrap();
-        let save_data = read_from_bits(&mut password_bits, src_grade);
-        let pwd_info = view_from_data(&save_data);
+        let password_data = read_from_bits(&password_bits, src_grade);
+        let pwd_info = view_from_data(&password_data);
         self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
         self.preview_slot = SaveSlotEnum::First;
         self.preview_current = self.preview_data[0].clone();

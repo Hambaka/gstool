@@ -8,7 +8,7 @@ pub const DEFAULT_CLASS_MULTIPLIERS: [[f64; 6]; 4] = [
   [0.9, 1.3, 0.9, 1.0, 0.8, 1.3],
 ];
 
-/// Details on the assword-making procedure - by Paulygon (Golden Sun Password Generator, Version 0.85, March 22, 2004)
+/// Details on the password-making procedure - by Paulygon (Golden Sun Password Generator, Version 0.85, March 22, 2004)
 /// 
 /// "Information validation: The first thing done is to make sure that certain data, like stats, are capped to certain limits.
 /// 1999 for HP and PP; 999 for Attack, Defense, and Agility; 99 for Luck.

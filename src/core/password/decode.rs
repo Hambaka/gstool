@@ -23,9 +23,12 @@ const PASSWORD_CHECKSUM_POSITIONS: [usize; 26] = [
   207, 216, 225, 234,
 ];
 
-pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<BitVec> {
+pub fn bits_from_bytes(
+  password_bytes: &[u8],
+  password_grade: PasswordGrade,
+  check_validity: bool,
+) -> Option<BitVec> {
   let size = password_bytes.len();
-  let password_grade = PasswordGrade::from_size(size).unwrap();
 
   let mut bytes_data = vec![0; size];
   /* Remove each byte's position data by minus its index.
@@ -68,7 +71,7 @@ pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<Bi
   }
 
   // Convert bytes to bit array
-  let size = match password_grade {
+  let size_without_checksum_bytes = match password_grade {
     // Gold: 260 - 26 = 234 => 173
     PasswordGrade::Gold => 173,
     // Silver: 61 - 6 = 55 => 39
@@ -77,7 +80,7 @@ pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<Bi
     PasswordGrade::Bronze => 9,
   };
   let mut bits = BitVec::new();
-  let max_size = (size + 2) * 8;
+  let max_size = (size_without_checksum_bytes + 2) * 8;
 
   for (j, i) in (0..max_size).step_by(6).enumerate() {
     let max = i + 5;
@@ -95,7 +98,7 @@ pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<Bi
   let key_second_half_from_source_bytes = bits.sub_bits_u8(max_size - 8, max_size - 1);
 
   // Decrypt bits
-  for i in 0..=size {
+  for i in 0..=size_without_checksum_bytes {
     let byte = u32::from(bits.sub_bits_u8(8 * i, 8 * i + 7));
     bits.replace_bits(
       byte ^ u32::from(key_second_half_from_source_bytes),
@@ -111,7 +114,7 @@ pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<Bi
     // Recalculate the key from decrypted bits to check the validity of the password.
     let mut x_sum = 0xFFFF;
 
-    for i in 0..size {
+    for i in 0..size_without_checksum_bytes {
       let byte = u32::from(bits.sub_bits_u8(8 * i, 8 * i + 7));
       x_sum ^= byte << 8;
       for _j in 0..8 {
@@ -142,7 +145,8 @@ pub fn bits_from_bytes(password_bytes: &[u8], check_validity: bool) -> Option<Bi
   }
 }
 
-pub fn read_from_bits(bits: &mut BitVec, grade: PasswordGrade) -> PasswordData {
+pub fn read_from_bits(bits: &BitVec, grade: PasswordGrade) -> PasswordData {
+  let mut bits = bits.clone();
   /* [u8; 4]
   TEMP Default Values
   Order: Isaac, Garet, Ivan, Mia */
@@ -283,7 +287,7 @@ pub fn read_from_bits(bits: &mut BitVec, grade: PasswordGrade) -> PasswordData {
 
   /* If password grade is silver or bronze, check 8 psynergy items.
   if it does has one, insert it back to Isaac's inventory */
-  if grade.is_silver() || grade.is_bronze() {
+  if grade.include_psy_items() {
     /* Isaac's inventory: Great Sword, Steel Armor, Knight's Shield, Knight's Helm
     So the start index is 4 */
     let mut isaac_inventory_start_index = 4;
@@ -297,8 +301,8 @@ pub fn read_from_bits(bits: &mut BitVec, grade: PasswordGrade) -> PasswordData {
   }
 
   // If password grade is gold or silver, get stats.
-  if grade.is_gold() || grade.is_silver() {
-    let start_index = if grade.is_gold() {
+  if grade.include_stats() {
+    let start_index = if grade == PasswordGrade::Gold {
       /* (4 * 7) + (4 * 7) + 6
       -> 28 + 28 + 6
       -> 62 */
@@ -325,7 +329,7 @@ pub fn read_from_bits(bits: &mut BitVec, grade: PasswordGrade) -> PasswordData {
     }
   }
 
-  if grade.is_gold() {
+  if grade == PasswordGrade::Gold {
     /* (4 * 7) + (4 * 7) + 6 + (4 * (11 + 11 + 10 + 10 + 10 + 8))
     -> 28 + 28 + 6 + 240
     -> 302 */

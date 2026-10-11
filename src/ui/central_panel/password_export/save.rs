@@ -61,12 +61,12 @@ impl App {
         ui.horizontal(|ui| {
           if ui.add(select_file_btn(svg_icon_size)).clicked() {
             if let Some(file) = FileDialog::new().pick_file() {
-              let new_file_path = file.to_string_lossy().into_owned();
+              let new_file_path = file.to_string_lossy();
               // 验证存档文件
               let result = validate_input_file(&new_file_path, self.to_export_all_save);
               match result {
                 Ok((raw_save_data, min_slot)) => {
-                  self.input_file_path_c1s1 = new_file_path;
+                  self.input_file_path_c1s1 = new_file_path.into_owned();
                   self.raw_save_data = raw_save_data;
                   self.save_is_available = true;
                   self.first_available_slot = min_slot;
@@ -280,13 +280,15 @@ impl App {
 
     for (key, val_option) in self.raw_save_data.iter().enumerate() {
       if let Some(val) = val_option {
-        let password_bytes = from_raw_save(&val.data, self.pwd_grade_c1s1);
+        let target_password_bytes = from_raw_save(&val.data, self.pwd_grade_c1s1);
         // Key is save slot number: 0, 1, 2 -> 1, 2, 3
         let sub_dir_name = slot_dir_name(key, val.is_clear_data);
         let sub_dir_str = output_dir_str.join(sub_dir_name);
 
         if let Some(password_version) = self.pwd_text_ver_c1s1 {
-          if let Err(e) = write_password_text(&password_bytes, password_version, &sub_dir_str) {
+          if let Err(e) =
+            write_password_text(&target_password_bytes, password_version, &sub_dir_str)
+          {
             self.err_msg = e.to_string();
             self.err_modal_open = true;
             return;
@@ -294,7 +296,7 @@ impl App {
         }
 
         if self.to_export_pwd_bin_c1s1 {
-          if let Err(e) = write_memory_dump(&password_bytes, &sub_dir_str) {
+          if let Err(e) = write_memory_dump(&target_password_bytes, &sub_dir_str) {
             self.err_msg = e.to_string();
             self.err_modal_open = true;
             return;
@@ -302,7 +304,12 @@ impl App {
         }
 
         if let Some(cheat_version) = self.pwd_cheat_ver_c1s1 {
-          if let Err(e) = write_cheat_code(&password_bytes, cheat_version, &sub_dir_str) {
+          if let Err(e) = write_cheat_code(
+            &target_password_bytes,
+            self.pwd_grade_c1s1,
+            cheat_version,
+            &sub_dir_str,
+          ) {
             self.err_msg = e.to_string();
             self.err_modal_open = true;
             return;
@@ -310,7 +317,7 @@ impl App {
         }
 
         if self.to_export_pwd_data_text_c1s1 {
-          if self.pwd_grade_c1s1.is_gold() {
+          if self.pwd_grade_c1s1 == PasswordGrade::Gold {
             if let Err(e) = write_password_data_text(&sheet_from_save_slot(&val.data), &sub_dir_str)
             {
               self.err_msg = e.to_string();
@@ -318,7 +325,7 @@ impl App {
               return;
             }
           } else if let Err(e) = write_password_data_text(
-            &sheet_from_password_bytes(&password_bytes, self.pwd_grade_c1s1),
+            &sheet_from_password_bytes(&target_password_bytes, self.pwd_grade_c1s1),
             &sub_dir_str,
           ) {
             self.err_msg = e.to_string();

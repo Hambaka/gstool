@@ -206,12 +206,12 @@ impl App {
   }
 
   pub fn run_c1s3(&mut self) {
-    let mut password_bits = BitVec::from(self.dmp_bits.as_ref().unwrap().as_slice());
+    let password_bits = self.dmp_bits.as_ref().unwrap();
 
     // Generate save data, and set target password bytes
-    let save_data = read_from_bits(&mut password_bits, self.dmp_src_grade.unwrap());
+    let password_data = read_from_bits(&password_bits, self.dmp_src_grade.unwrap());
     let target_password_bytes = match self.pwd_grade_c1s3 {
-      Some(password_grade) => encode(&save_data, password_grade),
+      Some(password_grade) => encode(&password_data, password_grade),
       None => self.dmp_bytes.clone(),
     };
 
@@ -240,7 +240,18 @@ impl App {
     }
 
     if let Some(cheat_version) = self.pwd_cheat_ver_c1s3 {
-      if let Err(e) = write_cheat_code(&target_password_bytes, cheat_version, &output_dir_str) {
+      let target_grade = if self.pwd_grade_c1s3.is_some() {
+        self.pwd_grade_c1s3.unwrap()
+      } else {
+        self.dmp_src_grade.unwrap()
+      };
+
+      if let Err(e) = write_cheat_code(
+        &target_password_bytes,
+        target_grade,
+        cheat_version,
+        &output_dir_str,
+      ) {
         self.err_msg = e.to_string();
         self.err_modal_open = true;
         return;
@@ -250,7 +261,7 @@ impl App {
     if self.to_export_pwd_data_text_c1s3 {
       if self.pwd_grade_c1s3.is_none() {
         if let Err(e) =
-          write_password_data_text(&sheet_from_password_data(&save_data), &output_dir_str)
+          write_password_data_text(&sheet_from_password_data(&password_data), &output_dir_str)
         {
           self.err_msg = e.to_string();
           self.err_modal_open = true;
@@ -370,7 +381,7 @@ fn validate_input_file(path_str: &str) -> Result<(Vec<u8>, BitVec, PasswordGrade
 
   // Check if the password is valid;
   let password_bits;
-  if let Some(bits) = bits_from_bytes(password_bytes.as_slice(), true) {
+  if let Some(bits) = bits_from_bytes(password_bytes.as_slice(), source_password_grade, true) {
     password_bits = bits;
   } else {
     return Err("密码无效！");

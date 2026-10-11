@@ -135,7 +135,7 @@ pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
 
   // If password grade is silver or bronze,
   // insert 8 bits representing which of these items your party has.
-  if grade.is_silver() || grade.is_bronze() {
+  if grade.include_psy_items() {
     let mut flags = 0;
     for items_per_person in &data.items {
       for item in items_per_person {
@@ -151,7 +151,7 @@ pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
   }
 
   // If password grade is gold or silver, insert stats.
-  if grade.is_gold() || grade.is_silver() {
+  if grade.include_stats() {
     for stats_per_person in &data.stats {
       // HP
       bits.push_bits(u32::from(stats_per_person[0]), 11);
@@ -169,7 +169,7 @@ pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
   }
 
   // If password grade is gold, insert items and coins.
-  if grade.is_gold() {
+  if grade.include_items_and_coins() {
     bits.push_bits(0, 8);
     let mut counter = 0;
     for items_per_person in &data.items {

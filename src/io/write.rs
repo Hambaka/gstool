@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
   core::{
-    enums::{GameRegion, PasswordVersion},
+    enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::text::dmp_to_txt,
   },
   io::render::{cheat_code_text, password_text_beautify},
@@ -109,8 +109,13 @@ pub fn write_memory_dump(bytes: &[u8], dir: &Path) -> Result<(), OutputError> {
 /// After you go to password input screen in GS2, you can copy and paste cheat codes in emulators.
 /// But you have to remove the cheat codes you just entered immediately after applying it, otherwise it may cause problems.
 /// Though I'm not sure, maybe you can use this kind of raw cheat code on your phone as well?
-pub fn write_cheat_code(bytes: &[u8], version: GameRegion, dir: &Path) -> Result<(), OutputError> {
-  let output_text = cheat_code_text(bytes, version);
+pub fn write_cheat_code(
+  bytes: &[u8],
+  grade: PasswordGrade,
+  version: GameRegion,
+  dir: &Path,
+) -> Result<(), OutputError> {
+  let output_text = cheat_code_text(bytes, grade, version);
   write_text(dir, "密码金手指.txt", &output_text)
 }
 
