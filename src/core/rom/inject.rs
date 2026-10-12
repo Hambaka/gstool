@@ -71,8 +71,8 @@ impl PasswordCombination {
       [true, true, true] => Some(PasswordCombination::GoldSilverBronze),
       [true, true, false] => Some(PasswordCombination::GoldSilver),
       [true, false, true] => Some(PasswordCombination::GoldBronze),
-      [true, false, false] => Some(PasswordCombination::SilverBronze),
-      [false, true, true] => Some(PasswordCombination::Gold),
+      [true, false, false] => Some(PasswordCombination::Gold),
+      [false, true, true] => Some(PasswordCombination::SilverBronze),
       [false, true, false] => Some(PasswordCombination::Silver),
       [false, false, true] => Some(PasswordCombination::Bronze),
       [false, false, false] => None,
@@ -151,7 +151,7 @@ pub fn analyze(rom: &[u8]) -> Result<TlaRomAnalysis, RomInjectError> {
     if region != base_region {
       return Err(RomInjectError::RegionUnmatched);
     }
-    // 能匹配 = 未被注入过 → 需要找插入点
+    // 能匹配 = 未被注入过 -> 需要找插入点
     find_injection_offset(rom, base_region, file_size)
   } else {
     read_existing_injection(rom, base_region, target_address, file_size)

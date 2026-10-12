@@ -110,10 +110,7 @@ pub fn apply_chinese_patch(rom: Vec<u8>) -> Result<PatchedRom, PatchRomError> {
   Err(PatchRomError::BpsFailed)
 }
 
-/// 内嵌的全部 BPS 补丁（2.5MB zstd → 4.7MB 原始数据）。
-///
-/// 惰性解压一次并缓存：原先这段在 `App::new()` 里执行，
-/// 每次启动都要在 UI 线程上解压 4.7MB，并把结果常驻内存。
+/// 内嵌的全部BPS补丁，惰性解压一次并缓存。
 fn all_patches() -> &'static [u8] {
   static PATCHES: OnceLock<Vec<u8>> = OnceLock::new();
 
@@ -125,12 +122,10 @@ fn all_patches() -> &'static [u8] {
     decompressed
     /*
     zstd库其一：
-
     zstd::decode_all(include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice())
       .unwrap()
 
     zstd库其二：
-
     let mut compressed_data =
       include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice();
     let mut decoder =
