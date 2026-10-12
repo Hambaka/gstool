@@ -100,14 +100,14 @@ pub fn run(level: i32) {
   .unwrap();
   writeln!(
     &mut file,
-    "const LATEST_CHS_CHECKSUM:u32 = 0x{:X};\n",
+    "pub const LATEST_CHS_CHECKSUM:u32 = 0x{:X};\n",
     all_target_crc32[latest_chinese_patch_index]
   )
   .unwrap();
 
   writeln!(
     &mut file,
-    "const VALID_INPUT_ROM_CHECKSUM:[u32;{file_count}] = [",
+    "pub const VALID_INPUT_ROM_CHECKSUM:[u32;{file_count}] = [",
   )
   .unwrap();
   for i in 0..file_count {

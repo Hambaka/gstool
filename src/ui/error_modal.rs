@@ -27,4 +27,9 @@ impl App {
       self.err_modal_open = false;
     }
   }
+
+  pub fn fail(&mut self, err_msg: String) {
+    self.err_msg = err_msg;
+    self.err_modal_open = true;
+  }
 }

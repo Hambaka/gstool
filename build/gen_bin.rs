@@ -170,9 +170,9 @@ pub fn run() {
     pwd_value_pos_option_vec.push([gold_pwd_option, silver_pwd_option, bronze_pwd_option]);
   }
 
-  writeln!(file, "const BIN_INFO: [BinInfo; 7] = [").unwrap();
+  writeln!(file, "const INJECT_TEMPLATES: [InjectTemplate; 7] = [").unwrap();
   for i in 0..7 {
-    writeln!(file, "  BinInfo {{ diff_u8_gsb: {}, diff_u8_other: {}, diff_u32: {}, pwd_buffer_start_pos: {}, pwd_buffer_end_pos: {}, exit_pos: {}, pwd_pos: {} }},",
+    writeln!(file, "  InjectTemplate {{ grade_placeholder_positions: {}, misc_placeholder_positions: {}, address_patch_positions: {}, pwd_buffer_start_pos: {}, pwd_buffer_end_pos: {}, exit_address_pos: {}, password_slot_positions: {} }},",
      get_diff_u8_gsb_str(i, &pwd_u8_option_vec),
      get_diff_u8_other_str(i, &u8_other_option_vec),
      get_diff_u32_str(i, &all_u32_vec),
@@ -184,7 +184,7 @@ pub fn run() {
   }
   writeln!(file, "];\n").unwrap();
 
-  writeln!(file, "const BIN_BYTES: [&'static [u8]; 7] = [").unwrap();
+  writeln!(file, "const INJECT_PAYLOADS: [&'static [u8]; 7] = [").unwrap();
 
   for i in 0..7 {
     let bin_path = Path::new(MAIN_DIR)

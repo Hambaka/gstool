@@ -1,12 +1,3 @@
-const TARGET_ADDRESS: [(u32, GameRegion); 6] = [
-  (0x0804_4621, GameRegion::Japan),
-  (0x0804_4479, GameRegion::USA),
-  (0x0804_44CD, GameRegion::Germany),
-  (0x0804_44E5, GameRegion::Spain),
-  (0x0804_44E1, GameRegion::France),
-  (0x0804_44DD, GameRegion::Italy),
-];
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PasswordGrade {
   Gold = 0,
@@ -102,26 +93,6 @@ impl PasswordVersion {
       Self::English => "英文",
     }
   }
-
-  // GSPI
-  pub fn diff_pos_password(self, grade: PasswordGrade) -> u8 {
-    match (grade, self) {
-      (PasswordGrade::Gold, Self::Japanese) => 0xEF,
-      (PasswordGrade::Gold, Self::English) => 0xF3,
-      (PasswordGrade::Silver, Self::Japanese) => 0x28,
-      (PasswordGrade::Silver, Self::English) => 0x2C,
-      (PasswordGrade::Bronze, Self::Japanese) => 0x05,
-      (PasswordGrade::Bronze, Self::English) => 0x01,
-    }
-  }
-
-  // GSPI
-  pub fn diff_pos_other(self) -> u8 {
-    match self {
-      Self::Japanese => 0x11,
-      Self::English => 0x0D,
-    }
-  }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -168,12 +139,6 @@ impl GameRegion {
     }
   }
 
-  // GSPI
-  /// 密码的buffer有260字节，故加获取密码buff结束的地址只需要加上`260 - 1 = 259`
-  pub fn tla_pwd_address_end(self) -> u32 {
-    self.tla_pwd_buffer_address() + 259
-  }
-
   // Raw Save
   pub fn from_save_build_date(build_date: u16) -> Option<Self> {
     match build_date {
@@ -185,32 +150,6 @@ impl GameRegion {
       0x1886 | 0x1DC8 => Some(Self::Italy),
       _ => None,
     }
-  }
-
-  // GSPI
-  pub fn from_rom_build_date(build_date: &str) -> Option<Self> {
-    match build_date {
-      "020610172024" => Some(Self::Japan),
-      "030205144838" => Some(Self::USA),
-      "030623214832" => Some(Self::Germany),
-      "030707212715" => Some(Self::Spain),
-      "030624204924" => Some(Self::France),
-      "030708203047" => Some(Self::Italy),
-      _ => None,
-    }
-  }
-
-  // GSPI
-  pub fn from_target_address(target_address: u32) -> Option<Self> {
-    TARGET_ADDRESS
-      .iter()
-      .find(|(x, _)| *x == target_address)
-      .map(|(_, y)| *y)
-  }
-
-  // GSPI
-  pub fn tla_exit_address(self) -> u32 {
-    TARGET_ADDRESS[self.index()].0
   }
 }
 

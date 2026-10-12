@@ -1,12 +1,26 @@
 // Converted to Rust from byuu/near's reference implementation.
 
-struct BPS {
+use std::fmt;
+
+pub enum BpsError {
+  NotABps,
+}
+
+impl fmt::Display for BpsError {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self {
+      Self::NotABps => write!(f, "提供的不是BPS补丁文件！"),
+    }
+  }
+}
+
+struct Bps {
   beat: Vec<u8>,
   beat_offset: usize,
   target: Vec<u8>,
 }
 
-impl BPS {
+impl Bps {
   fn new(patch: &[u8]) -> Self {
     Self {
       beat: Vec::from(patch),
@@ -55,12 +69,13 @@ impl BPS {
 // BPS1
 const BPS_HEADER: [u8; 4] = [0x42, 0x50, 0x53, 0x31];
 
-pub fn apply_bps_patch(source: &[u8], beat: &[u8]) -> (Vec<u8>, u32) {
-  let mut bps = BPS::new(&beat);
+pub fn apply_bps_patch(source: &[u8], beat: &[u8]) -> Result<(Vec<u8>, u32), BpsError> {
+  let mut bps = Bps::new(&beat);
 
   for ele in BPS_HEADER {
     if bps.read() != ele {
-      unreachable!();
+      // 理论上是unreachable!()
+      return Err(BpsError::NotABps);
     }
   }
 
@@ -119,5 +134,5 @@ pub fn apply_bps_patch(source: &[u8], beat: &[u8]) -> (Vec<u8>, u32) {
   let target_hash = bps.read_footer_checksum();
   let _beat_hash = bps.read_footer_checksum();
 
-  (bps.target, target_hash)
+  Ok((bps.target, target_hash))
 }

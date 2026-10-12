@@ -50,7 +50,8 @@ fn ensure_dir(dir: &Path) -> Result<(), OutputError> {
   Ok(())
 }
 
-fn write_bytes(dir: &Path, file_name: &str, bytes: &[u8]) -> Result<(), OutputError> {
+/// 把字节写入 `dir/file_name`（目录不存在时创建）
+pub fn write_named_bytes(dir: &Path, file_name: &str, bytes: &[u8]) -> Result<(), OutputError> {
   ensure_dir(dir)?;
   let file_path = dir.join(file_name);
 
@@ -64,8 +65,9 @@ fn write_bytes(dir: &Path, file_name: &str, bytes: &[u8]) -> Result<(), OutputEr
   Ok(())
 }
 
-fn write_text(dir: &Path, file_name: &str, text: &str) -> Result<(), OutputError> {
-  write_bytes(dir, file_name, text.as_bytes())
+/// 把文本写入 `dir/file_name`（目录不存在时创建）
+fn write_named_text(dir: &Path, file_name: &str, text: &str) -> Result<(), OutputError> {
+  write_named_bytes(dir, file_name, text.as_bytes())
 }
 
 pub fn write_password_text(
@@ -82,14 +84,14 @@ pub fn write_converted_password_text(
   dir: &Path,
 ) -> Result<(), OutputError> {
   let output_text = password_text_beautify(text, version);
-  write_text(dir, "密码文本.txt", &output_text)
+  write_named_text(dir, "密码文本.txt", &output_text)
 }
 
 /// Write password bytes to a binary file.
 /// After you go to password input screen in GS2, you can import it via emulator's memory viewer, so that means you don't have to input password manually.
 /// Though you have to choose the correct address and import it, you can check the address in `get_cheat_address` function of "enums.rs".
 pub fn write_memory_dump(bytes: &[u8], dir: &Path) -> Result<(), OutputError> {
-  write_bytes(dir, "密码内存转储.dmp", bytes)
+  write_named_bytes(dir, "密码内存转储.dmp", bytes)
 }
 
 /// Well, cheat file is much easier to use,
@@ -103,9 +105,9 @@ pub fn write_cheat_code(
   dir: &Path,
 ) -> Result<(), OutputError> {
   let output_text = cheat_code_text(bytes, grade, version);
-  write_text(dir, "密码金手指.txt", &output_text)
+  write_named_text(dir, "密码金手指.txt", &output_text)
 }
 
 pub fn write_password_data_text(text: &str, dir: &Path) -> Result<(), OutputError> {
-  write_text(dir, "密码数据.txt", text)
+  write_named_text(dir, "密码数据.txt", text)
 }

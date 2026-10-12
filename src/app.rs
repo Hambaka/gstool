@@ -1,5 +1,3 @@
-use std::io::Read;
-
 use egui::{Image, Shadow, TextStyle, TextureHandle, TextureOptions};
 use egui_notify::{Anchor, Toasts};
 use image::GenericImageView;
@@ -201,7 +199,6 @@ pub struct App {
   pub new_pc_names: Vec<String>,
   pub out_log_c3: String,
   // 4. 打汉化补丁功能部分
-  pub decompressed_bps: Vec<u8>,
   pub input_file_path_c4: String,
   pub input_file_crc32: Option<u32>,
   pub out_dir_c4: String,
@@ -333,27 +330,6 @@ impl App {
       new_pc_names: vec![String::new(); 7],
       out_log_c3: String::new(),
       // 4. 打汉化补丁功能部分
-      decompressed_bps: {
-        let mut compressed_data =
-          include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice();
-        let mut decoder = ruzstd::decoding::StreamingDecoder::new(&mut compressed_data).unwrap();
-        let mut decompreessed_data = Vec::new();
-        decoder.read_to_end(&mut decompreessed_data).unwrap();
-        decompreessed_data
-        /*
-        zstd::decode_all(include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice())
-          .unwrap()
-        */
-        /*
-        let mut compressed_data =
-          include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice();
-        let mut decoder =
-          structured_zstd::decoding::StreamingDecoder::new(&mut compressed_data).unwrap();
-        let mut decompreessed_data = Vec::new();
-        decoder.read_to_end(&mut decompreessed_data).unwrap();
-        decompreessed_data
-        */
-      },
       input_file_path_c4: String::new(),
       input_file_crc32: None,
       out_dir_c4: String::new(),

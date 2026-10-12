@@ -1,9 +1,4 @@
-use std::{
-  fmt::Write as _,
-  fs::{File, create_dir_all},
-  io::Write,
-  path::{Path, PathBuf},
-};
+use std::{fmt::Write as _, path::Path};
 
 use egui::{ComboBox, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
@@ -14,7 +9,7 @@ use crate::{
     enums::{GameRegion, GameTitle, NameType},
     save::{GameInfo, convert_save, raw::parse_convertible_save},
   },
-  io::read_bytes,
+  io::{read_bytes, resolve_output_dir, suffixed_file_name, write_named_bytes},
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };
 
@@ -59,8 +54,7 @@ impl App {
                   self.default_name_ver = None;
                 }
                 Err(e) => {
-                  e.clone_into(&mut self.err_msg);
-                  self.err_modal_open = true;
+                  self.fail(e);
                 }
               }
             }
@@ -207,48 +201,16 @@ impl App {
     );
 
     // Start to create and write output save file.
-    let output_path;
-
     let input_path = Path::new(&self.input_file_path_c2);
-    let file_stem = input_path.file_stem().unwrap().to_str().unwrap();
-    let file_extension = if input_path.extension().is_none() {
-      ""
-    } else {
-      input_path.extension().unwrap().to_str().unwrap()
-    };
-    let mut file_name_str = String::new();
-    file_name_str.push_str(file_stem);
-    file_name_str.push_str("_转换");
-
-    if !file_extension.is_empty() {
-      file_name_str.push('.');
-      file_name_str.push_str(file_extension);
+    let file_name = suffixed_file_name(input_path, "转换");
+    let output_dir = resolve_output_dir(
+      input_path,
+      (!self.out_dir_c2.is_empty()).then(|| Path::new(&self.out_dir_c2)),
+    );
+    if let Err(e) = write_named_bytes(&output_dir, &file_name, &new_save_file) {
+      return self.fail(e.to_string());
     }
-
-    if self.out_dir_c2.is_empty() {
-      let parent = input_path.parent().unwrap().to_str().unwrap();
-      output_path = PathBuf::from(parent).join(file_name_str);
-    } else {
-      if create_dir_all(self.out_dir_c2.clone()).is_err() {
-        "创建目录失败！".clone_into(&mut self.err_msg);
-        self.err_modal_open = true;
-        return;
-      }
-      output_path = PathBuf::from(self.out_dir_c2.clone()).join(file_name_str);
-    }
-
-    let output_file = File::create(output_path.clone());
-    if let Ok(mut file) = output_file {
-      if file.write_all(&new_save_file).is_err() {
-        self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-        self.err_modal_open = true;
-        return;
-      }
-    } else {
-      self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-      self.err_modal_open = true;
-      return;
-    }
+    let output_path = output_dir.join(file_name);
 
     // More detailed output logs, to improve user experience.
     // Sh*t code, but at least it works.

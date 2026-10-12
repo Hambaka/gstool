@@ -1,20 +1,17 @@
-use std::{
-  fmt::Write as _,
-  fs::{File, create_dir_all},
-  io::{Read, Write},
-  path::{Path, PathBuf},
-};
+use std::{fmt::Write as _, fs::File, io::Read, path::Path};
 
 use egui::{Label, Ui, Widget};
 use rfd::FileDialog;
 
 use crate::{
   App,
-  util::bps::apply_bps_patch,
+  core::rom::{
+    format::MAX_ROM_SIZE,
+    patch::{LATEST_CHS_CHECKSUM, VALID_INPUT_ROM_CHECKSUM, apply_chinese_patch, rom_display_name},
+  },
+  io::{patched_rom_file_name, read_bytes, resolve_output_dir, write_named_bytes},
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };
-
-include!(concat!(env!("OUT_DIR"), "/codegen_bps.rs"));
 
 enum RomVersion {
   Others(u32),
@@ -119,53 +116,24 @@ impl App {
   }
 
   pub fn run_c4(&mut self) {
-    let result = patch_rom(&self.input_file_path_c4, &self.decompressed_bps);
-    if let Err(e) = result {
-      e.clone_into(&mut self.err_msg);
-      self.err_modal_open = true;
-      self.input_file_path_c4.clear();
-      self.input_file_crc32 = None;
-      return;
-    }
-    let (new_rom_file, crc32) = result.unwrap();
-
-    let mut previous_crc32 = None;
-    if self.input_file_crc32.unwrap() != crc32 {
-      previous_crc32 = Some(self.input_file_crc32.unwrap());
-    }
-    self.input_file_crc32 = Some(crc32);
-
-    // Start to create and write output ROM file.
-    let output_path;
-
     let input_path = Path::new(&self.input_file_path_c4);
-    let mut file_name_str = String::new();
-    file_name_str.push_str(LATEST_CHS_FILE_STEM);
-    file_name_str.push_str(".gba");
 
-    if self.out_dir_c4.is_empty() {
-      let parent = input_path.parent().unwrap().to_str().unwrap();
-      output_path = PathBuf::from(parent).join(file_name_str);
-    } else {
-      if create_dir_all(self.out_dir_c4.clone()).is_err() {
-        "创建目录失败！".clone_into(&mut self.err_msg);
-        self.err_modal_open = true;
-        return;
-      }
-      output_path = PathBuf::from(self.out_dir_c4.clone()).join(file_name_str);
-    }
+    let rom = match read_bytes(input_path, Some(MAX_ROM_SIZE)) {
+      Ok(bytes) => bytes,
+      Err(e) => return self.fail(e.to_string()),
+    };
 
-    let output_file = File::create(output_path.clone());
-    if let Ok(mut file) = output_file {
-      if file.write_all(&new_rom_file).is_err() {
-        self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-        self.err_modal_open = true;
-        return;
-      }
-    } else {
-      self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-      self.err_modal_open = true;
-      return;
+    let patched = match apply_chinese_patch(rom) {
+      Ok(patched) => patched,
+      Err(e) => return self.fail(e.to_string()),
+    };
+
+    let out_dir = resolve_output_dir(
+      input_path,
+      (!self.out_dir_c4.is_empty()).then(|| Path::new(&self.out_dir_c4)),
+    );
+    if let Err(e) = write_named_bytes(&out_dir, &patched_rom_file_name(), &patched.bytes) {
+      return self.fail(e.to_string());
     }
 
     // More detailed output logs, to improve user experience.
@@ -174,21 +142,19 @@ impl App {
     let _ = write!(
       self.out_log_c4,
       "输出文件：\n{}\n\n",
-      output_path.to_str().unwrap()
+      out_dir.join(patched_rom_file_name()).display()
     );
     self.out_log_c4.push_str("运行概况：\n");
 
     let mut result_index = 0;
 
-    if let Some(crc32) = previous_crc32 {
+    if self.input_file_crc32 != Some(patched.source_crc32) {
       result_index += 1;
       let _ = writeln!(
         self.out_log_c4,
         "{result_index}. 输入的源文件（“{}”）和运行前提供的源文件（“{}”）不一致！",
-        VALID_INPUT_ROM_INFO_MAP
-          .get(&self.input_file_crc32.unwrap())
-          .unwrap(),
-        VALID_INPUT_ROM_INFO_MAP.get(&crc32).unwrap()
+        rom_display_name(*&self.input_file_crc32.unwrap()).unwrap(),
+        rom_display_name(patched.source_crc32).unwrap()
       )
       .unwrap();
     }
@@ -197,9 +163,7 @@ impl App {
     let _ = writeln!(
       self.out_log_c4,
       "{result_index}. 输入的源文件版本信息：{}",
-      VALID_INPUT_ROM_INFO_MAP
-        .get(&self.input_file_crc32.unwrap())
-        .unwrap()
+      rom_display_name(*&self.input_file_crc32.unwrap()).unwrap()
     );
   }
 
@@ -242,40 +206,4 @@ fn validate_input_file(
   } else {
     Err("不支持输入的 ROM 文件！")
   };
-}
-
-fn get_bps_patch(input_rom_checksum: u32, decompressed_bps: &[u8]) -> Vec<u8> {
-  let patch_checksum = *BPS_CRC32_MAP.get(&input_rom_checksum).unwrap();
-  let (mut start_index, file_size) = *BPS_FILE_INDEX_MAP.get(&patch_checksum).unwrap();
-  let mut result = Vec::with_capacity(file_size);
-
-  for _ in 0..file_size {
-    result.push(decompressed_bps[start_index]);
-    start_index += 1;
-  }
-
-  result
-}
-
-fn patch_rom(path_str: &str, decompressed_bps: &[u8]) -> Result<(Vec<u8>, u32), &'static str> {
-  match validate_input_file(path_str, true) {
-    Ok((rom_version, rom_bytes)) => match rom_version {
-      RomVersion::Others(crc32) => {
-        let latest_chs_rom;
-        let mut patched_rom = rom_bytes.unwrap();
-        let mut target_crc32 = crc32;
-        loop {
-          (patched_rom, target_crc32) =
-            apply_bps_patch(&patched_rom, &get_bps_patch(target_crc32, decompressed_bps));
-          if target_crc32 == LATEST_CHS_CHECKSUM {
-            latest_chs_rom = patched_rom;
-            break;
-          }
-        }
-        Ok((latest_chs_rom, crc32))
-      }
-      RomVersion::LatestChinese => unreachable!(),
-    },
-    Err(e) => Err(e),
-  }
 }

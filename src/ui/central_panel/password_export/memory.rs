@@ -58,8 +58,7 @@ impl App {
                     self.to_export_pwd_data_text_c1s3 = false;
                   },
                   Err(e) => {
-                    e.clone_into(&mut self.err_msg);
-                    self.err_modal_open = true;
+                    self.fail(e);
                   },
               }
             }
@@ -220,9 +219,7 @@ impl App {
     // Write files.
     if self.pwd_grade_c1s3.is_some() {
       if let Err(e) = write_memory_dump(&target_password_bytes, &output_dir_str) {
-        self.err_msg = e.to_string();
-        self.err_modal_open = true;
-        return;
+        return self.fail(e.to_string());
       }
     }
 
