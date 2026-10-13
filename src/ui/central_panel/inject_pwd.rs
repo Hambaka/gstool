@@ -15,8 +15,8 @@ use crate::{
     rom::inject::{inject, PasswordCombination},
   },
   io::{analyze_rom_file, resolve_output_dir, suffixed_file_name, write_named_bytes},
-  ui::window::pwd_info::SaveSlotEnum,
-  widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
+  logic::save_slot::SaveSlotEnum,
+  widgets::buttons::{reset_btn, save_slot_atoms, select_dir_btn, select_file_btn},
 };
 
 const PWD_SRC_LABEL: [&str; 3] = ["金密码来源", "银密码来源", "铜密码来源"];
@@ -195,7 +195,7 @@ impl App {
                 ComboBox::from_id_salt(format!("ID_CB_C5_{}_2", PWD_SRC_LABEL[i]))
                   .width(100.0)
                   .selected_text(match &self.pwd_src_slot[i] {
-                    Some(save_slot) => AtomsEnum::ImageAndText(save_slot.get_atoms(svg_icon_size, is_dark, false)),
+                    Some(save_slot) => AtomsEnum::ImageAndText(save_slot_atoms(*save_slot, svg_icon_size, is_dark, false)),
                     None => AtomsEnum::Text("无"),
                   })
                   .show_ui(ui, |ui| {
@@ -204,7 +204,7 @@ impl App {
                         ui.selectable_value(
                           &mut self.pwd_src_slot[i],
                           Some(SaveSlotEnum::SAVE_SLOTS[j]),
-                          SaveSlotEnum::SAVE_SLOTS[j].get_atoms(svg_icon_size, is_dark, false),
+                          save_slot_atoms(SaveSlotEnum::SAVE_SLOTS[j], svg_icon_size, is_dark, false),
                         );
                       });
                     }

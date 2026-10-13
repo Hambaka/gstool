@@ -9,7 +9,7 @@ use crate::{
     enums::{PasswordGrade, PasswordVersion},
     save::SaveSlot,
   },
-  ui::window::pwd_info::SaveSlotEnum,
+  logic::save_slot::SaveSlotEnum,
 };
 
 /// 一个已载入的密码（文本 / 内存转储来源统一形态；不含文件路径——路径在各页状态里）

@@ -8,10 +8,11 @@ use crate::{
     enums::{GameRegion, NameType, PasswordGrade, PasswordVersion},
     save::GameInfo,
   },
+  logic::save_slot::SaveSlotEnum,
   logic::sources::PasswordSources,
   ui::{
     page::{PageOutcome, PageRequest},
-    window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
+    window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum},
   },
   widgets::{
     colors::get_default_svg_color,

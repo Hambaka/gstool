@@ -1,8 +1,14 @@
 use egui::{Button, Image, RichText};
 
-use crate::widgets::{
-  colors::{DANGER, DARK, LIGHT, PRIMARY, SECONDARY, SUCCESS, WARNING},
-  icons::{BAN, CLIPBOARD, COPY, FILE, FOLDER, GLASS, RESET, RUN},
+use crate::{
+  logic::save_slot::SaveSlotEnum,
+  widgets::{
+    colors::{DANGER, DARK, LIGHT, PRIMARY, SECONDARY, SUCCESS, WARNING, get_default_svg_color},
+    icons::{
+      BAN, CLIPBOARD, COPY, FILE, FOLDER, GLASS, NUMBER_1_CIRCLE_FILL, NUMBER_2_CIRCLE_FILL,
+      NUMBER_3_CIRCLE_FILL, RESET, RUN,
+    },
+  },
 };
 
 pub fn select_file_btn(svg_icon_size: f32) -> Button<'static> {
@@ -67,4 +73,26 @@ pub fn copy_btn(svg_icon_size: f32) -> Button<'static> {
     RichText::new("复制").color(LIGHT),
   ))
   .fill(SECONDARY)
+}
+
+/// 存档槽位可选项的渲染（编号图标 + 存档）。
+/// 枚举在`logic/save_slot.rs`
+pub fn save_slot_atoms(
+  slot: SaveSlotEnum,
+  svg_icon_size: f32,
+  is_dark: bool,
+  in_preview: bool,
+) -> (Image<'static>, &'static str) {
+  let svg_icon_color = get_default_svg_color(is_dark);
+
+  (
+    Image::new(match slot {
+      SaveSlotEnum::First => NUMBER_1_CIRCLE_FILL,
+      SaveSlotEnum::Second => NUMBER_2_CIRCLE_FILL,
+      SaveSlotEnum::Third => NUMBER_3_CIRCLE_FILL,
+    })
+    .tint(svg_icon_color)
+    .max_height(svg_icon_size),
+    slot.get_name(in_preview),
+  )
 }

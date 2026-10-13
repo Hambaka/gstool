@@ -14,12 +14,13 @@ use crate::{
       view_from_data, view_from_raw_save,
     },
   },
+  logic::save_slot::SaveSlotEnum,
   widgets::{
+    buttons::save_slot_atoms,
     colors::{DANGER, SUCCESS, get_default_svg_color},
     icons::{
-      CHECK_MARK, NUMBER_1_CIRCLE_FILL, NUMBER_1_SQUARE_FILL, NUMBER_2_CIRCLE_FILL,
-      NUMBER_2_SQUARE_FILL, NUMBER_3_CIRCLE_FILL, NUMBER_3_SQUARE_FILL, NUMBER_4_SQUARE_FILL,
-      X_MARK,
+      CHECK_MARK, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL, NUMBER_3_SQUARE_FILL,
+      NUMBER_4_SQUARE_FILL, X_MARK,
     },
   },
 };
@@ -35,62 +36,6 @@ const EVENT_STR: [&str; 6] = [
 ];
 const EVENT_GAMEPLAY_ORDER: [usize; 6] = [2, 5, 4, 1, 0, 3];
 const PSYNERGY_ITEM_GAMEPLAY_ORDER: [usize; 8] = [7, 0, 1, 2, 3, 4, 5, 6];
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum SaveSlotEnum {
-  First = 0,
-  Second = 1,
-  Third = 2,
-}
-
-impl From<usize> for SaveSlotEnum {
-  fn from(value: usize) -> Self {
-    match value {
-      0 => Self::First,
-      1 => Self::Second,
-      _ => Self::Third,
-    }
-  }
-}
-
-impl SaveSlotEnum {
-  pub const SAVE_SLOTS: [SaveSlotEnum; 3] = [
-    SaveSlotEnum::First,
-    SaveSlotEnum::Second,
-    SaveSlotEnum::Third,
-  ];
-
-  pub fn get_name(&self, is_password_preview_window: bool) -> &'static str {
-    if is_password_preview_window {
-      match self {
-        Self::First => "号存档/密码数据",
-        _ => "号存档",
-      }
-    } else {
-      "号存档"
-    }
-  }
-
-  pub fn get_atoms(
-    &self,
-    svg_icon_size: f32,
-    is_dark: bool,
-    is_password_preview_window: bool,
-  ) -> (Image<'static>, &'static str) {
-    let svg_icon_color = get_default_svg_color(is_dark);
-
-    (
-      Image::new(match self {
-        SaveSlotEnum::First => NUMBER_1_CIRCLE_FILL,
-        SaveSlotEnum::Second => NUMBER_2_CIRCLE_FILL,
-        SaveSlotEnum::Third => NUMBER_3_CIRCLE_FILL,
-      })
-      .tint(svg_icon_color)
-      .max_height(svg_icon_size),
-      self.get_name(is_password_preview_window),
-    )
-  }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PreviewPageEnum {
@@ -168,14 +113,14 @@ impl App {
             col_1.selectable_value(
               &mut self.preview_slot,
               SaveSlotEnum::First,
-              SaveSlotEnum::First.get_atoms(svg_icon_size, is_dark, true),
+              save_slot_atoms(SaveSlotEnum::First, svg_icon_size, is_dark, true),
             );
           } else {
             col_1.add_enabled(
               false,
               Button::selectable(
                 self.preview_slot == SaveSlotEnum::First,
-                SaveSlotEnum::First.get_atoms(svg_icon_size, is_dark, true),
+                save_slot_atoms(SaveSlotEnum::First, svg_icon_size, is_dark, true),
               ),
             );
           }
@@ -184,14 +129,14 @@ impl App {
             col_2.selectable_value(
               &mut self.preview_slot,
               SaveSlotEnum::Second,
-              SaveSlotEnum::Second.get_atoms(svg_icon_size, is_dark, true),
+              save_slot_atoms(SaveSlotEnum::Second, svg_icon_size, is_dark, true),
             );
           } else {
             col_2.add_enabled(
               false,
               Button::selectable(
                 self.preview_slot == SaveSlotEnum::Second,
-                SaveSlotEnum::Second.get_atoms(svg_icon_size, is_dark, true),
+                save_slot_atoms(SaveSlotEnum::Second, svg_icon_size, is_dark, true),
               ),
             );
           }
@@ -200,14 +145,14 @@ impl App {
             col_3.selectable_value(
               &mut self.preview_slot,
               SaveSlotEnum::Third,
-              SaveSlotEnum::Third.get_atoms(svg_icon_size, is_dark, true),
+              save_slot_atoms(SaveSlotEnum::Third, svg_icon_size, is_dark, true),
             );
           } else {
             col_3.add_enabled(
               false,
               Button::selectable(
                 self.preview_slot == SaveSlotEnum::Third,
-                SaveSlotEnum::Third.get_atoms(svg_icon_size, is_dark, true),
+                save_slot_atoms(SaveSlotEnum::Third, svg_icon_size, is_dark, true),
               ),
             );
           }
