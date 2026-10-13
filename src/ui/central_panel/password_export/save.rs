@@ -3,8 +3,7 @@ use std::{
   path::{Path, PathBuf},
 };
 
-use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
-use rfd::FileDialog;
+use egui::{Checkbox, Grid, Label, Ui, Widget};
 
 use crate::{
   App,
@@ -19,7 +18,10 @@ use crate::{
     write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
   },
   ui::window::pwd_info::SaveSlotEnum,
-  widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
+  widgets::{
+    buttons::pwd_info_btn,
+    rows::{PathAction, checkbox_row, combo_row, dir_row, file_row, row_label},
+  },
 };
 
 const DESC_C1S1: &str = r"“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
@@ -37,53 +39,49 @@ impl App {
       .striped(true)
       .show(ui, |ui| {
         // 第1行
-        if self.input_file_path_c1s1.is_empty() {
-          Label::new("存档导出选项").selectable(false).ui(ui).on_hover_text("根据需求进行勾选。");
-        } else {
-          Label::new(RichText::new("存档导出选项").weak())
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("根据需求进行勾选。");
-        }
+        row_label(
+          ui,
+          "存档导出选项",
+          "根据需求进行勾选。",
+          self.input_file_path_c1s1.is_empty(),
+        );
         ui.add_enabled_ui(self.input_file_path_c1s1.is_empty(), |ui| {
           ui.radio_value(&mut self.to_export_all_save, false, "仅导出通关存档");
           ui.radio_value(&mut self.to_export_all_save, true, "导出全部存档（无论是否通关）");
         });
         ui.end_row();
         // 第2行
-        Label::new("输入文件路径")
-          .selectable(false)
-          .ui(ui)
-          .on_hover_text("《黄金太阳 开启的封印》的存档文件。");
-        ui.horizontal(|ui| {
-          if ui.add(select_file_btn(svg_icon_size)).clicked() {
-            if let Some(file) = FileDialog::new().pick_file() {
-              // 验证存档文件
-              let result = validate_input_file(&file, self.to_export_all_save);
-              match result {
-                Ok(save_slots) => {
-                  self.input_file_path_c1s1 = file.to_string_lossy().to_string();
-                  self.raw_save_data = save_slots.slots;
-                  self.save_is_available = true;
-                  self.first_available_slot =
-                   Some(SaveSlotEnum::from(save_slots.first_available_slot.unwrap() as usize));
+        match file_row(
+          ui,
+          "输入文件路径",
+          "《黄金太阳 开启的封印》的存档文件。",
+          "存档文件路径",
+          &mut self.input_file_path_c1s1,
+          svg_icon_size,
+        ) {
+          PathAction::Picked(file) => {
+            // 验证存档文件
+            match validate_input_file(&file, self.to_export_all_save) {
+              Ok(save_slots) => {
+                self.input_file_path_c1s1 = file.to_string_lossy().to_string();
+                self.raw_save_data = save_slots.slots;
+                self.save_is_available = true;
+                self.first_available_slot =
+                 Some(SaveSlotEnum::from(save_slots.first_available_slot.unwrap() as usize));
 
-                  self.pwd_grade_c1s1 = PasswordGrade::Gold;
-                  self.pwd_text_ver_c1s1 = Some(PasswordVersion::English);
-                  self.to_export_pwd_bin_c1s1 = false;
-                  self.pwd_cheat_ver_c1s1 = None;
-                  self.to_export_pwd_data_text_c1s1 = false;
-                }
-                Err(e) => {
-                  e.clone_into(&mut self.err_msg);
-                  self.err_modal_open = true;
-                }
+                self.pwd_grade_c1s1 = PasswordGrade::Gold;
+                self.pwd_text_ver_c1s1 = Some(PasswordVersion::English);
+                self.to_export_pwd_bin_c1s1 = false;
+                self.pwd_cheat_ver_c1s1 = None;
+                self.to_export_pwd_data_text_c1s1 = false;
+              }
+              Err(e) => {
+                e.clone_into(&mut self.err_msg);
+                self.err_modal_open = true;
               }
             }
           }
-          if self.input_file_path_c1s1.is_empty() {
-            ui.add_enabled(false, reset_btn(svg_icon_size));
-          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
+          PathAction::Reset => {
             self.to_export_all_save = false;
 
             self.input_file_path_c1s1.clear();
@@ -104,166 +102,109 @@ impl App {
               }
             }
           }
-          ui.add(
-            egui::TextEdit::singleline(&mut self.input_file_path_c1s1)
-              .interactive(false)
-              .hint_text("存档文件路径")
-              .desired_width(f32::INFINITY),
+          PathAction::None => {}
+        }
+
+        // 第3行
+        combo_row(
+          ui,
+          "密码级别",
+          "目标密码级别，默认值为“金”",
+          self.save_is_available,
+          "ID_CB_C1S1_密码级别",
+          self.pwd_grade_c1s1.short_name(),
+          |ui| {
+            for ele in PasswordGrade::ALL {
+              ui.selectable_value(&mut self.pwd_grade_c1s1, ele, ele.short_name());
+            }
+          },
+        );
+
+        // 第4行
+        combo_row(
+          ui,
+          "密码文本版本",
+          "生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。",
+          self.save_is_available,
+          "ID_CB_C1S1_密码文本版本",
+          match &self.pwd_text_ver_c1s1 {
+            Some(password_version_enum) => password_version_enum.name(),
+            None => "无",
+          },
+          |ui| {
+            ui.selectable_value(&mut self.pwd_text_ver_c1s1, None, "无");
+            for ele in PasswordVersion::ALL {
+              ui.selectable_value(&mut self.pwd_text_ver_c1s1, Some(ele), ele.name());
+            }
+          },
+        );
+
+        // 第5行
+        checkbox_row(
+          ui,
+          "生成内存转储文件",
+          "若勾选，则生成密码的内存转储文件。",
+          self.save_is_available,
+          &mut self.to_export_pwd_bin_c1s1,
+        );
+
+        // 第6行
+        combo_row(
+          ui,
+          "生成密码金手指",
+          "若选择了值，则生成指定版本的金手指文本文件。",
+          self.save_is_available,
+          "ID_CB_C1S1_生成密码金手指",
+          match &self.pwd_cheat_ver_c1s1 {
+            Some(version_enum) => version_enum.short_name(),
+            None => "无",
+          },
+          |ui| {
+            ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, None, "无");
+            for ele in GameRegion::ALL {
+              ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, Some(ele), ele.short_name());
+            }
+          },
+        );
+
+        // 第7行（复选框与预览按钮同处一行，未用 checkbox_row）
+        row_label(
+          ui,
+          "导出密码数据至文本文件",
+          "若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。",
+          self.save_is_available,
+        );
+        ui.horizontal(|ui| {
+          ui.add_enabled(
+            self.save_is_available,
+            Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1),
           );
+          if ui
+            .add_enabled(self.save_is_available, pwd_info_btn(svg_icon_size))
+            .clicked()
+          {
+            self.read_from(SubCommandEnum::First);
+          }
         });
         ui.end_row();
-        // 第3行
-        if self.save_is_available {
-          Label::new("密码级别")
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("目标密码级别，默认值为“金”");
-          ComboBox::from_id_salt("ID_CB_C1S1_密码级别")
-            .width(100.0)
-            .selected_text(self.pwd_grade_c1s1.short_name())
-            .show_ui(ui, |ui| {
-              for ele in PasswordGrade::ALL {
-                ui.selectable_value(&mut self.pwd_grade_c1s1, ele, ele.short_name());
-              }
-            });
-        } else {
-          Label::new(RichText::new("密码级别").weak())
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("目标密码级别，默认值为“金”");
-          ui.add_enabled_ui(false, |ui| {
-            ComboBox::from_id_salt("ID_CB_C1S1_密码级别（不可用）")
-              .width(100.0)
-              .selected_text("无")
-              .show_ui(ui, |_ui| {});
-          });
-        }
-        ui.end_row();
-        // 第4行
-        if self.save_is_available {
-          Label::new("密码文本版本")
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。");
-          ComboBox::from_id_salt("ID_CB_C1S1_密码文本版本")
-            .width(100.0)
-            .selected_text(match &self.pwd_text_ver_c1s1 {
-              Some(password_version_enum) => password_version_enum.name(),
-              None => "无",
-            })
-            .show_ui(ui, |ui| {
-              ui.selectable_value(&mut self.pwd_text_ver_c1s1, None, "无");
-              for ele in PasswordVersion::ALL {
-                ui.selectable_value(&mut self.pwd_text_ver_c1s1, Some(ele), ele.name());
-              }
-            });
-        } else {
-          Label::new(RichText::new("密码文本版本").weak())
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。");
-          ui.add_enabled_ui(false, |ui| {
-            ComboBox::from_id_salt("ID_CB_C1S1_密码文本版本（不可用）")
-              .width(100.0)
-              .selected_text("无")
-              .show_ui(ui, |_ui| {});
-          });
-        }
-        ui.end_row();
-        // 第5行
-        if self.save_is_available {
-          Label::new("生成内存转储文件")
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("若勾选，则生成密码的内存转储文件。");
-          Checkbox::without_text(&mut self.to_export_pwd_bin_c1s1).ui(ui);
-        } else {
-          Label::new(RichText::new("生成内存转储文件").weak())
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("若勾选，则生成密码的内存转储文件。");
-          ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_bin_c1s1));
-        }
-        ui.end_row();
-        // 第6行
-        if self.save_is_available {
-          Label::new("生成密码金手指")
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
-          ComboBox::from_id_salt("ID_CB_C1S1_生成密码金手指")
-            .width(100.0)
-            .selected_text(match &self.pwd_cheat_ver_c1s1 {
-              Some(version_enum) => version_enum.short_name(),
-              None => "无",
-            })
-            .show_ui(ui, |ui| {
-              ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, None, "无");
-              for ele in GameRegion::ALL {
-                ui.selectable_value(&mut self.pwd_cheat_ver_c1s1, Some(ele), ele.short_name());
-              }
-            });
-        } else {
-          Label::new(RichText::new("生成密码金手指").weak())
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
-          ui.add_enabled_ui(false, |ui| {
-            ComboBox::from_id_salt("ID_CB_C1S1_生成密码金手指（不可用）")
-              .width(100.0)
-              .selected_text("无")
-              .show_ui(ui, |_ui| {});
-          });
-        }
-        ui.end_row();
-        // 第7行
-        if self.save_is_available {
-          Label::new("导出密码数据至文本文件")
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-          ui.horizontal(|ui| {
-            Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1).ui(ui);
-            if ui.add(pwd_info_btn(svg_icon_size)).clicked() {
-              self.read_from(SubCommandEnum::First);
-            }
-          });
-        } else {
-          Label::new(RichText::new("导出密码数据至文本文件").weak())
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-          ui.horizontal(|ui| {
-            ui.add_enabled(false, Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1));
-            ui.add_enabled(false, pwd_info_btn(svg_icon_size));
-          });
-        }
-        ui.end_row();
-        // 第8行
-        Label::new("指定输出文件保存目录")
-          .selectable(false)
-          .ui(ui)
-          .on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
-        ui.horizontal(|ui| {
-          if ui.add(select_dir_btn(svg_icon_size)).clicked() {
-            if let Some(dir) = FileDialog::new().pick_folder() {
-              self.out_dir_c1s1 = dir.to_string_lossy().into_owned();
-            }
-          }
 
-          if self.out_dir_c1s1.is_empty() {
-            ui.add_enabled(false, reset_btn(svg_icon_size));
-          } else if ui.add(reset_btn(svg_icon_size)).clicked() {
+        // 第8行
+        match dir_row(
+          ui,
+          "指定输出文件保存目录",
+          "自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。",
+          "若留空，则输出目录与输入的存档文件所在目录相同",
+          &mut self.out_dir_c1s1,
+          svg_icon_size,
+        ) {
+          PathAction::Picked(dir) => {
+            self.out_dir_c1s1 = dir.to_string_lossy().into_owned();
+          }
+          PathAction::Reset => {
             self.out_dir_c1s1.clear();
           }
-          ui.add(
-            egui::TextEdit::singleline(&mut self.out_dir_c1s1)
-              .interactive(false)
-              .hint_text("若留空，则输出目录与输入的存档文件所在目录相同")
-              .desired_width(f32::INFINITY),
-          );
-        });
-        ui.end_row();
+          PathAction::None => {}
+        }
       });
   }
 

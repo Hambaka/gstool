@@ -5,6 +5,7 @@ mod widgets {
   pub mod buttons;
   pub mod colors;
   pub mod icons;
+  pub mod rows;
 }
 mod core {
   pub mod bits;
