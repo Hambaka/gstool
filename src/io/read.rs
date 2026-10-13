@@ -7,6 +7,12 @@ use std::{
 
 use chardetng::{EncodingDetector, Iso2022JpDetection::Deny, Utf8Detection::Allow};
 
+use crate::core::rom::{
+  format::MAX_ROM_SIZE,
+  inject::{TlaRomAnalysis, analyze},
+  patch::{PatchSource, classify},
+};
+
 #[derive(Debug)]
 pub enum InputError {
   Open(PathBuf),
@@ -73,4 +79,17 @@ pub fn read_text(path: &Path, max_size: u64) -> Result<String, InputError> {
   }
 
   Ok(text.to_string())
+}
+
+/// 读取《开启的封印》ROM（上限 32MB）并分类
+pub fn classify_rom_file(path: &Path) -> Result<PatchSource, String> {
+  let bytes = read_bytes(path, Some(MAX_ROM_SIZE)).map_err(|e| e.to_string())?;
+  Ok(classify(&bytes))
+}
+
+/// 读取《失落的时代》ROM（上限 32MB）并分析（连同字节一起返回，供注入时直接使用）
+pub fn analyze_rom_file(path: &Path) -> Result<(Vec<u8>, TlaRomAnalysis), String> {
+  let bytes = read_bytes(path, Some(MAX_ROM_SIZE)).map_err(|e| e.to_string())?;
+  let analysis = analyze(&bytes).map_err(|e| e.to_string())?;
+  Ok((bytes, analysis))
 }

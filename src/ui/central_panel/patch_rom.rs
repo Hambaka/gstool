@@ -1,4 +1,4 @@
-use std::{fmt::Write as _, fs::File, io::Read, path::Path};
+use std::{fmt::Write as _, path::Path};
 
 use egui::{Label, Ui, Widget};
 use rfd::FileDialog;
@@ -7,16 +7,13 @@ use crate::{
   App,
   core::rom::{
     format::MAX_ROM_SIZE,
-    patch::{LATEST_CHS_CHECKSUM, VALID_INPUT_ROM_CHECKSUM, apply_chinese_patch, rom_display_name},
+    patch::{PatchSource, apply_chinese_patch, rom_display_name},
   },
-  io::{patched_rom_file_name, read_bytes, resolve_output_dir, write_named_bytes},
+  io::{
+    classify_rom_file, patched_rom_file_name, read_bytes, resolve_output_dir, write_named_bytes,
+  },
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };
-
-enum RomVersion {
-  Others(u32),
-  LatestChinese,
-}
 
 const DESC_C4: &str = r"使用该功能可为日版的《黄金太阳 开启的封印》应用最新版的汉化补丁。
 除了使用日版，该功能也对其他的部分版本做了支持：
@@ -49,27 +46,19 @@ impl App {
             if let Some(file) = FileDialog::new().pick_file() {
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证ROM文件
-              let result = validate_input_file(&new_file_path, false);
+              let result = classify_rom_file(Path::new(&new_file_path));
               match result {
-                Ok((rom_version, _)) => {
-                  let can_patch = match rom_version {
-                    RomVersion::Others(crc32) => {
-                      self.input_file_crc32 = Some(crc32);
-                      true
-                    }
-                    RomVersion::LatestChinese => false,
-                  };
-                  if can_patch {
-                    self.input_file_path_c4 = new_file_path;
-                  } else {
-                    "输入的是已经应用了最新版汉化补丁的ROM文件！".clone_into(&mut self.err_msg);
-                    self.err_modal_open = true;
-                  }
+                Ok(PatchSource::Patchable { crc32 }) => {
+                  self.input_file_crc32 = Some(crc32);
+                  self.input_file_path_c4 = new_file_path;
                 }
-                Err(e) => {
-                  e.clone_into(&mut self.err_msg);
-                  self.err_modal_open = true;
+                Ok(PatchSource::AlreadyLatestChinese) => {
+                  self.fail("输入的是已经应用了最新版汉化补丁的ROM文件！".to_owned());
                 }
+                Ok(PatchSource::Unsupported) => {
+                  self.fail("不支持输入的 ROM 文件！".to_owned());
+                }
+                Err(e) => self.fail(e),
               }
             }
           }
@@ -148,12 +137,18 @@ impl App {
 
     let mut result_index = 0;
 
-    if self.input_file_crc32 != Some(patched.source_crc32) {
+    // input_file_crc32 与 input_file_path_c4 总是成对地设置与清除，
+    // 运行按钮只在路径非空时可用，所以此处 CRC32 必然存在
+    let stored_crc32 = self
+      .input_file_crc32
+      .expect("input_file_crc32 与 input_file_path_c4 总是成对设置与清除");
+
+    if stored_crc32 != patched.source_crc32 {
       result_index += 1;
       let _ = writeln!(
         self.out_log_c4,
         "{result_index}. 输入的源文件（“{}”）和运行前提供的源文件（“{}”）不一致！",
-        rom_display_name(*&self.input_file_crc32.unwrap()).unwrap(),
+        rom_display_name(stored_crc32).unwrap(),
         rom_display_name(patched.source_crc32).unwrap()
       )
       .unwrap();
@@ -163,47 +158,11 @@ impl App {
     let _ = writeln!(
       self.out_log_c4,
       "{result_index}. 输入的源文件版本信息：{}",
-      rom_display_name(*&self.input_file_crc32.unwrap()).unwrap()
+      rom_display_name(stored_crc32).unwrap()
     );
   }
 
   pub fn show_log_c4(&mut self, ui: &mut Ui) {
     Label::new(&self.out_log_c4).selectable(false).ui(ui);
   }
-}
-
-fn validate_input_file(
-  path_str: &str,
-  get_bytes: bool,
-) -> Result<(RomVersion, Option<Vec<u8>>), &'static str> {
-  // Read rom file.
-  let input_file_result = File::open(path_str);
-  let mut rom_file;
-  if input_file_result.is_err() {
-    return Err("打开 ROM 文件时发生错误！");
-  }
-  rom_file = input_file_result.unwrap();
-
-  let file_size = rom_file.metadata().unwrap().len();
-  if file_size > 0x200_0000 {
-    return Err("ROM 大小不应超过 32 MB！");
-  }
-
-  let mut rom_bytes = Vec::new();
-  rom_file.read_to_end(&mut rom_bytes).unwrap();
-
-  let bytes_option = if get_bytes {
-    Some(rom_bytes.clone())
-  } else {
-    None
-  };
-
-  let crc32 = crc32fast::hash(&rom_bytes);
-  return if crc32 == LATEST_CHS_CHECKSUM {
-    Ok((RomVersion::LatestChinese, bytes_option))
-  } else if VALID_INPUT_ROM_CHECKSUM.contains(&crc32) {
-    Ok((RomVersion::Others(crc32), bytes_option))
-  } else {
-    Err("不支持输入的 ROM 文件！")
-  };
 }

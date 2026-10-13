@@ -1,9 +1,4 @@
-use std::{
-  fmt::Write as _,
-  fs::{File, create_dir_all},
-  io::{Read, Write},
-  path::{Path, PathBuf},
-};
+use std::{fmt::Write as _, path::Path};
 
 use egui::{ComboBox, Label, RichText, Ui, Widget};
 use rfd::FileDialog;
@@ -17,9 +12,9 @@ use crate::{
       decode::read_from_bits,
       encode::{encode, from_raw_save},
     },
-    rom::inject::{PasswordCombination, TlaRomAnalysis, analyze, inject},
+    rom::inject::{inject, PasswordCombination},
   },
-  io::suffixed_file_name,
+  io::{analyze_rom_file, resolve_output_dir, suffixed_file_name, write_named_bytes},
   ui::window::pwd_info::SaveSlotEnum,
   widgets::buttons::{reset_btn, select_dir_btn, select_file_btn},
 };
@@ -61,7 +56,7 @@ impl App {
             if let Some(file) = FileDialog::new().pick_file() {
               let new_file_path = file.to_string_lossy().into_owned();
               // 验证ROM文件
-              let result = validate_input_file(&new_file_path, false);
+              let result = analyze_rom_file(Path::new(&new_file_path));
               match result {
                 Ok(_) => {
                   self.input_file_path_c5 = new_file_path;
@@ -364,52 +359,39 @@ impl App {
       None
     };
 
-    let (analysis, bytes) = validate_input_file(&self.input_file_path_c5, true).unwrap();
+    let (rom_bytes, analysis) = match analyze_rom_file(Path::new(&self.input_file_path_c5)) {
+      Ok(result) => result,
+      Err(e) => {
+        self.fail(e);
+        self.input_file_path_c5.clear();
+        return;
+      }
+    };
 
-    let result = inject(
-      bytes.unwrap(),
+    let new_rom = match inject(
+      rom_bytes,
       &analysis,
       inject_type,
       [gold_pwd_bytes, silver_pwd_bytes, bronze_pwd_bytes],
-    );
-
-    if let Err(e) = result {
-      self.fail(e.to_string());
-      self.input_file_path_c5.clear();
-      return;
-    }
-
-    let new_rom = result.unwrap();
+    ) {
+      Ok(bytes) => bytes,
+      Err(e) => {
+        self.fail(e.to_string());
+        self.input_file_path_c5.clear();
+        return;
+      }
+    };
 
     // Start to create and write output ROM file.
-    let output_path;
-
     let input_path = Path::new(&self.input_file_path_c5);
     let file_name = suffixed_file_name(input_path, inject_type.get_name());
+    let out_dir = resolve_output_dir(
+      input_path,
+      (!self.out_dir_c5.is_empty()).then(|| Path::new(&self.out_dir_c5)),
+    );
 
-    if self.out_dir_c5.is_empty() {
-      let parent = input_path.parent().unwrap().to_str().unwrap();
-      output_path = PathBuf::from(parent).join(file_name);
-    } else {
-      if create_dir_all(self.out_dir_c5.clone()).is_err() {
-        "创建目录失败！".clone_into(&mut self.err_msg);
-        self.err_modal_open = true;
-        return;
-      }
-      output_path = PathBuf::from(self.out_dir_c5.clone()).join(file_name);
-    }
-
-    let output_file = File::create(output_path.clone());
-    if let Ok(mut file) = output_file {
-      if file.write_all(&new_rom).is_err() {
-        self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-        self.err_modal_open = true;
-        return;
-      }
-    } else {
-      self.err_msg = format!("创建 “{}” 失败！", output_path.to_str().unwrap());
-      self.err_modal_open = true;
-      return;
+    if let Err(e) = write_named_bytes(&out_dir, &file_name, &new_rom) {
+      return self.fail(e.to_string());
     }
 
     // Log
@@ -417,7 +399,7 @@ impl App {
     let _ = write!(
       self.out_log_c5,
       "输出文件：\n{}\n\n",
-      output_path.to_str().unwrap()
+      out_dir.join(file_name).display()
     );
 
     self.out_log_c5.push_str("运行概况：\n");
@@ -461,36 +443,4 @@ impl App {
   pub fn show_c5_log(&mut self, ui: &mut Ui) {
     Label::new(&self.out_log_c5).selectable(false).ui(ui);
   }
-}
-
-fn validate_input_file(
-  path_str: &str,
-  get_bytes: bool,
-) -> Result<(TlaRomAnalysis, Option<Vec<u8>>), String> {
-  // Read rom file.
-  let input_file_result = File::open(path_str);
-  let mut rom_file;
-  if input_file_result.is_err() {
-    return Err("打开 ROM 文件时发生错误！".to_owned());
-  }
-  rom_file = input_file_result.unwrap();
-
-  let file_size = rom_file.metadata().unwrap().len() as usize;
-  if file_size > 0x200_0000 {
-    return Err("ROM 大小不应超过 32 MB！".to_owned());
-  }
-
-  let mut rom_bytes = Vec::new();
-  rom_file.read_to_end(&mut rom_bytes).unwrap();
-
-  analyze(&rom_bytes).map_or_else(
-    |e| Err(e.to_string()),
-    |v| {
-      Ok(if get_bytes {
-        (v, Some(rom_bytes))
-      } else {
-        (v, None)
-      })
-    },
-  )
 }
