@@ -86,7 +86,7 @@ impl App {
         // 第4行 -> 铜密码来源
 
         for i in 0..3 {
-          let data_is_available = self.save_is_available || self.txt_bits.is_some() || self.dmp_bits.is_some();
+          let data_is_available = self.sources.has_save() || self.sources.has_text() || self.sources.has_dump();
 
           if !data_is_available {
             Label::new(RichText::new(PWD_SRC_LABEL[i]).weak())
@@ -115,18 +115,18 @@ impl App {
                     self.pwd_src_slot[i] = None;
                   };
 
-                  ui.add_enabled_ui(self.save_is_available, |ui| {
+                  ui.add_enabled_ui(self.sources.has_save(), |ui| {
                     if ui
                       .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::First), SubCommandEnum::First.get_atoms(svg_icon_size,is_dark))
                       .changed()
                     {
-                      self.pwd_src_slot[i] = self.first_available_slot;
+                      self.pwd_src_slot[i] = self.sources.first_available_slot();
                     };
                   });
 
                   let bool_txt = match i {
                     0 => {
-                      if let Some((src_pwd_grade, _)) = self.txt_src_grade_version {
+                      if let Some(src_pwd_grade) = self.sources.txt_grade() {
                         match src_pwd_grade {
                           PasswordGrade::Gold => true,
                           PasswordGrade::Silver | PasswordGrade::Bronze => false,
@@ -136,7 +136,7 @@ impl App {
                       }
                     }
                     1 => {
-                      if let Some((src_pwd_grade, _)) = self.txt_src_grade_version {
+                      if let Some(src_pwd_grade) = self.sources.txt_grade() {
                         match src_pwd_grade {
                           PasswordGrade::Gold | PasswordGrade::Silver => true,
                           PasswordGrade::Bronze => false,
@@ -148,7 +148,7 @@ impl App {
                     _ => true,
                   };
 
-                  ui.add_enabled_ui(self.txt_bits.is_some() && bool_txt, |ui| {
+                  ui.add_enabled_ui(self.sources.has_text() && bool_txt, |ui| {
                     if ui
                       .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Second), SubCommandEnum::Second.get_atoms(svg_icon_size,is_dark))
                       .changed()
@@ -159,7 +159,7 @@ impl App {
 
                   let bool_dmp = match i {
                     0 => {
-                      if let Some(src_pwd_grade) = self.dmp_src_grade {
+                      if let Some(src_pwd_grade) = self.sources.dmp_grade() {
                         match src_pwd_grade {
                           PasswordGrade::Gold => true,
                           PasswordGrade::Silver | PasswordGrade::Bronze => false,
@@ -169,7 +169,7 @@ impl App {
                       }
                     }
                     1 => {
-                      if let Some(src_pwd_grade) = self.dmp_src_grade {
+                      if let Some(src_pwd_grade) = self.sources.dmp_grade() {
                         match src_pwd_grade {
                           PasswordGrade::Gold | PasswordGrade::Silver => true,
                           PasswordGrade::Bronze => false,
@@ -181,7 +181,7 @@ impl App {
                     _ => true,
                   };
 
-                  ui.add_enabled_ui(self.dmp_bits.is_some() && bool_dmp, |ui| {
+                  ui.add_enabled_ui(self.sources.has_dump() && bool_dmp, |ui| {
                     if ui
                       .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Third), SubCommandEnum::Third.get_atoms(svg_icon_size,is_dark))
                       .changed()
@@ -200,7 +200,7 @@ impl App {
                   })
                   .show_ui(ui, |ui| {
                     for j in 0..3 {
-                      ui.add_enabled_ui(self.raw_save_data[j].is_some(), |ui| {
+                      ui.add_enabled_ui(self.sources.from_save[j].is_some(), |ui| {
                         ui.selectable_value(
                           &mut self.pwd_src_slot[i],
                           Some(SaveSlotEnum::SAVE_SLOTS[j]),
@@ -255,15 +255,15 @@ impl App {
       match sub_command {
         SubCommandEnum::First => {
           let save_slot = &self.pwd_src_slot[0].unwrap();
-          let raw_save_data = &self.raw_save_data[*save_slot as usize]
+          let raw_save_data = &self.sources.from_save[*save_slot as usize]
             .as_ref()
             .unwrap()
             .data;
           let password_bytes = from_raw_save(&raw_save_data, PasswordGrade::Gold);
           Some(password_bytes)
         }
-        SubCommandEnum::Second => Some(self.txt_bytes.clone()),
-        SubCommandEnum::Third => Some(self.dmp_bytes.clone()),
+        SubCommandEnum::Second => Some(self.sources.from_text.as_ref().unwrap().bytes.clone()),
+        SubCommandEnum::Third => Some(self.sources.from_dump.as_ref().unwrap().bytes.clone()),
       }
     } else {
       None
@@ -273,21 +273,20 @@ impl App {
       match sub_command {
         SubCommandEnum::First => {
           let save_slot = &self.pwd_src_slot[1].unwrap();
-          let raw_save_data = &self.raw_save_data[*save_slot as usize]
+          let raw_save_data = &self.sources.from_save[*save_slot as usize]
             .as_ref()
             .unwrap()
             .data;
           let password_bytes = from_raw_save(&raw_save_data, PasswordGrade::Silver);
           Some(password_bytes)
         }
-        SubCommandEnum::Second => match self.txt_src_grade_version {
-          Some((src_grade, _)) => {
+        SubCommandEnum::Second => match self.sources.txt_grade() {
+          Some(src_grade) => {
             if src_grade == PasswordGrade::Silver {
-              Some(self.txt_bytes.clone())
+              Some(self.sources.from_text.as_ref().unwrap().bytes.clone())
             } else {
-              let password_bits = self.txt_bits.as_ref().unwrap();
-              let password_data =
-                read_from_bits(&password_bits, self.txt_src_grade_version.unwrap().0);
+              let password_bits = &self.sources.from_text.as_ref().unwrap().bits;
+              let password_data = read_from_bits(password_bits, src_grade);
               let target_password_bytes = encode(&password_data, PasswordGrade::Silver);
 
               Some(target_password_bytes)
@@ -295,13 +294,13 @@ impl App {
           }
           None => unreachable!(),
         },
-        SubCommandEnum::Third => match self.dmp_src_grade {
+        SubCommandEnum::Third => match self.sources.dmp_grade() {
           Some(src_grade) => {
             if src_grade == PasswordGrade::Silver {
-              Some(self.dmp_bytes.clone())
+              Some(self.sources.from_dump.as_ref().unwrap().bytes.clone())
             } else {
-              let password_bits = self.dmp_bits.as_ref().unwrap();
-              let password_data = read_from_bits(&password_bits, self.dmp_src_grade.unwrap());
+              let password_bits = &self.sources.from_dump.as_ref().unwrap().bits;
+              let password_data = read_from_bits(password_bits, src_grade);
               let target_password_bytes = encode(&password_data, PasswordGrade::Silver);
 
               Some(target_password_bytes)
@@ -318,21 +317,20 @@ impl App {
       match sub_command {
         SubCommandEnum::First => {
           let save_slot = &self.pwd_src_slot[2].unwrap();
-          let raw_save_data = &self.raw_save_data[*save_slot as usize]
+          let raw_save_data = &self.sources.from_save[*save_slot as usize]
             .as_ref()
             .unwrap()
             .data;
           let password_bytes = from_raw_save(&raw_save_data, PasswordGrade::Bronze);
           Some(password_bytes)
         }
-        SubCommandEnum::Second => match self.txt_src_grade_version {
-          Some((src_grade, _)) => {
+        SubCommandEnum::Second => match self.sources.txt_grade() {
+          Some(src_grade) => {
             if src_grade == PasswordGrade::Bronze {
-              Some(self.txt_bytes.clone())
+              Some(self.sources.from_text.as_ref().unwrap().bytes.clone())
             } else {
-              let password_bits = self.txt_bits.as_ref().unwrap();
-              let password_data =
-                read_from_bits(&password_bits, self.txt_src_grade_version.unwrap().0);
+              let password_bits = &self.sources.from_text.as_ref().unwrap().bits;
+              let password_data = read_from_bits(password_bits, src_grade);
               let target_password_bytes = encode(&password_data, PasswordGrade::Bronze);
 
               Some(target_password_bytes)
@@ -340,13 +338,13 @@ impl App {
           }
           None => unreachable!(),
         },
-        SubCommandEnum::Third => match self.dmp_src_grade {
+        SubCommandEnum::Third => match self.sources.dmp_grade() {
           Some(src_grade) => {
             if src_grade == PasswordGrade::Bronze {
-              Some(self.dmp_bytes.clone())
+              Some(self.sources.from_dump.as_ref().unwrap().bytes.clone())
             } else {
-              let password_bits = self.dmp_bits.as_ref().unwrap();
-              let password_data = read_from_bits(&password_bits, self.dmp_src_grade.unwrap());
+              let password_bits = &self.sources.from_dump.as_ref().unwrap().bits;
+              let password_data = read_from_bits(password_bits, src_grade);
               let target_password_bytes = encode(&password_data, PasswordGrade::Bronze);
 
               Some(target_password_bytes)

@@ -16,6 +16,7 @@ mod core {
   pub mod save;
 }
 mod io;
+mod logic;
 mod util {
   pub mod bps;
   pub mod whitespace;

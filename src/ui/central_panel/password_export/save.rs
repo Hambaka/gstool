@@ -17,7 +17,6 @@ use crate::{
     derived_output_dir, read_bytes, sheet_from_password_bytes, sheet_from_save_slot, slot_dir_name,
     write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
   },
-  ui::window::pwd_info::SaveSlotEnum,
   widgets::{
     buttons::pwd_info_btn,
     rows::{PathAction, checkbox_row, combo_row, dir_row, file_row, row_label},
@@ -64,10 +63,7 @@ impl App {
             match validate_input_file(&file, self.to_export_all_save) {
               Ok(save_slots) => {
                 self.input_file_path_c1s1 = file.to_string_lossy().to_string();
-                self.raw_save_data = save_slots.slots;
-                self.save_is_available = true;
-                self.first_available_slot =
-                 Some(SaveSlotEnum::from(save_slots.first_available_slot.unwrap() as usize));
+                self.sources.from_save = save_slots.slots;
 
                 self.pwd_grade_c1s1 = PasswordGrade::Gold;
                 self.pwd_text_ver_c1s1 = Some(PasswordVersion::English);
@@ -85,9 +81,7 @@ impl App {
             self.to_export_all_save = false;
 
             self.input_file_path_c1s1.clear();
-            self.raw_save_data = [None, None, None];
-            self.save_is_available = false;
-            self.first_available_slot = None;
+            self.sources.reset_save();
 
             self.pwd_grade_c1s1 = PasswordGrade::Gold;
             self.pwd_text_ver_c1s1 = Some(PasswordVersion::English);
@@ -110,7 +104,7 @@ impl App {
           ui,
           "密码级别",
           "目标密码级别，默认值为“金”",
-          self.save_is_available,
+          self.sources.has_save(),
           "ID_CB_C1S1_密码级别",
           self.pwd_grade_c1s1.short_name(),
           |ui| {
@@ -125,7 +119,7 @@ impl App {
           ui,
           "密码文本版本",
           "生成指定版本的密码文本文件，若留空则自动指定默认值“英文”。",
-          self.save_is_available,
+          self.sources.has_save(),
           "ID_CB_C1S1_密码文本版本",
           match &self.pwd_text_ver_c1s1 {
             Some(password_version_enum) => password_version_enum.name(),
@@ -144,7 +138,7 @@ impl App {
           ui,
           "生成内存转储文件",
           "若勾选，则生成密码的内存转储文件。",
-          self.save_is_available,
+          self.sources.has_save(),
           &mut self.to_export_pwd_bin_c1s1,
         );
 
@@ -153,7 +147,7 @@ impl App {
           ui,
           "生成密码金手指",
           "若选择了值，则生成指定版本的金手指文本文件。",
-          self.save_is_available,
+          self.sources.has_save(),
           "ID_CB_C1S1_生成密码金手指",
           match &self.pwd_cheat_ver_c1s1 {
             Some(version_enum) => version_enum.short_name(),
@@ -172,15 +166,15 @@ impl App {
           ui,
           "导出密码数据至文本文件",
           "若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。",
-          self.save_is_available,
+          self.sources.has_save(),
         );
         ui.horizontal(|ui| {
           ui.add_enabled(
-            self.save_is_available,
+            self.sources.has_save(),
             Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s1),
           );
           if ui
-            .add_enabled(self.save_is_available, pwd_info_btn(svg_icon_size))
+            .add_enabled(self.sources.has_save(), pwd_info_btn(svg_icon_size))
             .clicked()
           {
             self.read_from(SubCommandEnum::First);
@@ -216,7 +210,7 @@ impl App {
       PathBuf::from(&self.out_dir_c1s1)
     };
 
-    for (key, val_option) in self.raw_save_data.iter().enumerate() {
+    for (key, val_option) in self.sources.from_save.iter().enumerate() {
       if let Some(val) = val_option {
         let target_password_bytes = from_raw_save(&val.data, self.pwd_grade_c1s1);
         // Key is save slot number: 0, 1, 2 -> 1, 2, 3

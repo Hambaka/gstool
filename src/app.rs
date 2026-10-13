@@ -4,11 +4,11 @@ use image::GenericImageView;
 
 use crate::{
   core::{
-    bits::BitVec,
     data::Language,
     enums::{GameRegion, NameType, PasswordGrade, PasswordVersion},
-    save::{GameInfo, SaveSlot},
+    save::GameInfo,
   },
+  logic::sources::PasswordSources,
   ui::{
     page::{PageOutcome, PageRequest},
     window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
@@ -152,12 +152,12 @@ pub struct App {
   pub err_modal_open: bool,
   pub err_msg: String,
   // 1. 密码导出功能部分
+  /// 三个子页共享的已载入密码来源：存档、文本，内存转储各写自己的槽位，
+  /// 注入密码功能与密码信息预览窗口是读方
+  pub sources: PasswordSources,
   // 1.1 使用存档文件
   pub to_export_all_save: bool,
   pub input_file_path_c1s1: String,
-  pub save_is_available: bool,
-  pub first_available_slot: Option<SaveSlotEnum>,
-  pub raw_save_data: [Option<SaveSlot>; 3],
   pub pwd_grade_c1s1: PasswordGrade,
   pub pwd_text_ver_c1s1: Option<PasswordVersion>,
   pub to_export_pwd_bin_c1s1: bool,
@@ -167,10 +167,6 @@ pub struct App {
   pub out_log_c1s1: String,
   // 1.2 使用密码文本文件
   pub input_file_path_c1s2: String,
-  pub txt_file: String,
-  pub txt_bytes: Vec<u8>,
-  pub txt_bits: Option<BitVec>,
-  pub txt_src_grade_version: Option<(PasswordGrade, PasswordVersion)>,
   pub pwd_grade_c1s2: Option<PasswordGrade>,
   pub to_convert_pwd_text_ver: bool,
   pub to_export_pwd_bin_c1s2: bool,
@@ -180,9 +176,6 @@ pub struct App {
   pub out_log_c1s2: String,
   // 1.3 使用内存转储文件
   pub input_file_path_c1s3: String,
-  pub dmp_bytes: Vec<u8>,
-  pub dmp_bits: Option<BitVec>,
-  pub dmp_src_grade: Option<PasswordGrade>,
   pub pwd_grade_c1s3: Option<PasswordGrade>,
   pub pwd_text_ver_c1s3: Option<PasswordVersion>,
   pub pwd_cheat_ver_c1s3: Option<GameRegion>,
@@ -284,12 +277,10 @@ impl App {
       err_modal_open: false,
       err_msg: String::new(),
       // 1. 密码导出功能部分
+      sources: PasswordSources::default(),
       // 1.1 使用存档文件
       to_export_all_save: false,
       input_file_path_c1s1: String::new(),
-      save_is_available: false,
-      first_available_slot: None,
-      raw_save_data: [None, None, None],
       pwd_grade_c1s1: PasswordGrade::Gold,
       pwd_text_ver_c1s1: Some(PasswordVersion::English),
       to_export_pwd_bin_c1s1: false,
@@ -299,10 +290,6 @@ impl App {
       out_log_c1s1: String::new(),
       // 1.2 使用密码文本文件
       input_file_path_c1s2: String::new(),
-      txt_file: String::new(),
-      txt_bytes: Vec::new(),
-      txt_bits: None,
-      txt_src_grade_version: None,
       pwd_grade_c1s2: None,
       to_convert_pwd_text_ver: false,
       to_export_pwd_bin_c1s2: false,
@@ -312,9 +299,6 @@ impl App {
       out_log_c1s2: String::new(),
       // 1.3 使用内存转储文件
       input_file_path_c1s3: String::new(),
-      dmp_bytes: Vec::new(),
-      dmp_bits: None,
-      dmp_src_grade: None,
       pwd_grade_c1s3: None,
       pwd_text_ver_c1s3: None,
       pwd_cheat_ver_c1s3: None,

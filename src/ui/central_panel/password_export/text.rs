@@ -24,6 +24,7 @@ use crate::{
     write_cheat_code, write_converted_password_text, write_memory_dump, write_password_data_text,
     write_password_text,
   },
+  logic::sources::LoadedPassword,
   widgets::buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
@@ -49,10 +50,13 @@ impl App {
             match result {
                 Ok(parsed_password) => {
                     self.input_file_path_c1s2 = String::new();
-                    self.txt_file = parsed_password.text;
-                    self.txt_bytes = parsed_password.bytes;
-                    self.txt_bits = Some(parsed_password.bits);
-                    self.txt_src_grade_version = Some((parsed_password.grade, parsed_password.version));
+                    self.sources.from_text = Some(LoadedPassword {
+                      bytes: parsed_password.bytes,
+                      bits: parsed_password.bits,
+                      grade: parsed_password.grade,
+                      version: Some(parsed_password.version),
+                      text: Some(parsed_password.text),
+                    });
 
                     self.pwd_grade_c1s2 = None;
                     self.to_convert_pwd_text_ver = false;
@@ -75,10 +79,13 @@ impl App {
               match result {
                   Ok(parsed_password) => {
                     self.input_file_path_c1s2 = new_file_path.to_string_lossy().to_string();
-                    self.txt_file = parsed_password.text;
-                    self.txt_bytes = parsed_password.bytes;
-                    self.txt_bits = Some(parsed_password.bits);
-                    self.txt_src_grade_version = Some((parsed_password.grade, parsed_password.version));
+                    self.sources.from_text = Some(LoadedPassword {
+                      bytes: parsed_password.bytes,
+                      bits: parsed_password.bits,
+                      grade: parsed_password.grade,
+                      version: Some(parsed_password.version),
+                      text: Some(parsed_password.text),
+                    });
 
                     self.pwd_grade_c1s2 = None;
                     self.to_convert_pwd_text_ver = false;
@@ -94,14 +101,11 @@ impl App {
             }
           }
 
-          if self.txt_src_grade_version.is_none() {
+          if self.sources.from_text.is_none() {
             ui.add_enabled(false, reset_btn(svg_icon_size));
           } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.input_file_path_c1s2.clear();
-            self.txt_file.clear();
-            self.txt_bytes.clear();
-            self.txt_bits = None;
-            self.txt_src_grade_version = None;
+            self.sources.reset_text();
 
             self.pwd_grade_c1s2 = None;
             self.to_convert_pwd_text_ver = false;
@@ -125,7 +129,7 @@ impl App {
         });
         ui.end_row();
         // 第2行
-        if self.txt_src_grade_version.is_some() {
+        if self.sources.has_text() {
           Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
           ComboBox::from_id_salt("ID_CB_C1S2_密码级别")
             .width(100.0)
@@ -135,9 +139,9 @@ impl App {
             })
             .show_ui(ui, |ui| {
               ui.selectable_value(&mut self.pwd_grade_c1s2, None, "无");
-              if let Some((source_grade, _)) = self.txt_src_grade_version {
+              if let Some(source) = &self.sources.from_text {
                 for ele in PasswordGrade::ALL {
-                  ui.add_enabled_ui(source_grade.priority() < ele.priority(), |ui|{
+                  ui.add_enabled_ui(source.grade.priority() < ele.priority(), |ui| {
                     ui.selectable_value(&mut self.pwd_grade_c1s2, Some(ele), ele.short_name());
                   });
                 }
@@ -151,7 +155,7 @@ impl App {
         }
         ui.end_row();
         // 第3行
-        if self.txt_src_grade_version.is_some(){
+        if self.sources.has_text(){
           Label::new("转换密码版本").selectable(false).ui(ui).on_hover_text("若勾选，则自动检测输入的密码文本的版本，并转换输出另外一个版本的密码文本文件，即日转英，英转日。");
           Checkbox::without_text(&mut self.to_convert_pwd_text_ver).ui(ui);
         } else {
@@ -160,7 +164,7 @@ impl App {
         }
         ui.end_row();
         // 第4行
-        if self.txt_src_grade_version.is_some(){
+        if self.sources.has_text(){
           Label::new("生成内存转储文件").selectable(false).ui(ui).on_hover_text("若勾选，则生成密码的内存转储文件");
           Checkbox::without_text(&mut self.to_export_pwd_bin_c1s2).ui(ui);
         } else {
@@ -169,7 +173,7 @@ impl App {
         }
         ui.end_row();
         // 第5行
-        if self.txt_src_grade_version.is_some(){
+        if self.sources.has_text(){
           Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件");
           ComboBox::from_id_salt("ID_CB_C1S2_生成密码金手指")
             .width(100.0)
@@ -191,7 +195,7 @@ impl App {
         }
         ui.end_row();
         // 第6行
-        if self.txt_src_grade_version.is_some() {
+        if self.sources.has_text() {
           Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件");
           ui.horizontal(|ui|{
             Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s2).ui(ui);
@@ -232,14 +236,15 @@ impl App {
   }
 
   pub fn run_c1s2(&mut self) {
-    let password_bits = self.txt_bits.as_ref().unwrap();
-    let password_version = self.txt_src_grade_version.unwrap().1;
+    let src = self.sources.from_text.as_ref().unwrap();
+    let password_bits = &src.bits;
+    let password_version = src.version.unwrap();
 
     // Generate save data, and set target password bytes
-    let password_data = read_from_bits(&password_bits, self.txt_src_grade_version.unwrap().0);
+    let password_data = read_from_bits(&password_bits, src.grade);
     let target_password_bytes = match self.pwd_grade_c1s2 {
       Some(password_grade) => encode(&password_data, password_grade),
-      None => self.txt_bytes.clone(),
+      None => src.bytes.clone(),
     };
 
     // Create output directory.
@@ -268,7 +273,7 @@ impl App {
           return;
         }
       } else if let Err(e) = write_converted_password_text(
-        &txt_to_another_version(&self.txt_file, password_version),
+        &txt_to_another_version(src.text.as_ref().unwrap(), password_version),
         password_version.opposite(),
         &output_dir_str,
       ) {
@@ -297,7 +302,7 @@ impl App {
       let target_grade = if self.pwd_grade_c1s2.is_some() {
         self.pwd_grade_c1s2.unwrap()
       } else {
-        self.txt_src_grade_version.unwrap().0
+        src.grade
       };
 
       if let Err(e) = write_cheat_code(
@@ -342,7 +347,7 @@ impl App {
     self.out_log_c1s2.push_str("运行概况：\n");
 
     let mut result_index = 1;
-    let source_password_grade_cn = self.txt_src_grade_version.unwrap().0.short_name();
+    let source_password_grade_cn = src.grade.short_name();
     let source_password_version_cn = password_version.name();
 
     let _ = writeln!(

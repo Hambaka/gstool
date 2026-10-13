@@ -48,7 +48,7 @@ impl App {
           CommandEnum::First => match self.subcommand {
             // 1.1 使用存档文件
             SubCommandEnum::First => {
-              let bool1 = self.save_is_available;
+              let bool1 = self.sources.has_save();
               let bool2 = self.pwd_text_ver_c1s1.is_some()
                 || self.to_export_pwd_bin_c1s1
                 || self.pwd_cheat_ver_c1s1.is_some()
@@ -58,7 +58,7 @@ impl App {
             }
             // 1.2 使用密码文本文件
             SubCommandEnum::Second => {
-              let bool1 = self.txt_bits.is_some();
+              let bool1 = self.sources.has_text();
               let bool2 = self.pwd_grade_c1s2.is_some()
                 || self.to_convert_pwd_text_ver
                 || self.to_export_pwd_bin_c1s2
@@ -69,7 +69,7 @@ impl App {
             }
             // 1.3 使用内存转储文件
             SubCommandEnum::Third => {
-              let bool1 = self.dmp_bits.is_some();
+              let bool1 = self.sources.has_dump();
               let bool2 = self.pwd_grade_c1s3.is_some()
                 || self.pwd_text_ver_c1s3.is_some()
                 || self.pwd_cheat_ver_c1s3.is_some()

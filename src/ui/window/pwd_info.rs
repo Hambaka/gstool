@@ -599,7 +599,7 @@ impl App {
         self.preview_data = [None, None, None];
         let mut is_first_element = true;
         let mut min_slot = 0;
-        for (index, ele) in self.raw_save_data.iter().enumerate() {
+        for (index, ele) in self.sources.from_save.iter().enumerate() {
           if let Some(raw_save) = ele {
             if is_first_element {
               min_slot = index;
@@ -619,9 +619,9 @@ impl App {
       }
       SubCommandEnum::Second => {
         self.preview_data = [None, None, None];
-        let password_bits = self.txt_bits.as_ref().unwrap();
-        let src_grade = self.txt_src_grade_version.unwrap().0;
-        let password_data = read_from_bits(&password_bits, src_grade);
+        let src = self.sources.from_text.as_ref().unwrap();
+        let src_grade = src.grade;
+        let password_data = read_from_bits(&src.bits, src_grade);
         let pwd_info = view_from_data(&password_data);
         self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
         self.preview_slot = SaveSlotEnum::First;
@@ -646,9 +646,9 @@ impl App {
       }
       SubCommandEnum::Third => {
         self.preview_data = [None, None, None];
-        let password_bits = self.dmp_bits.as_ref().unwrap();
-        let src_grade = self.dmp_src_grade.unwrap();
-        let password_data = read_from_bits(&password_bits, src_grade);
+        let src = self.sources.from_dump.as_ref().unwrap();
+        let src_grade = src.grade;
+        let password_data = read_from_bits(&src.bits, src_grade);
         let pwd_info = view_from_data(&password_data);
         self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
         self.preview_slot = SaveSlotEnum::First;

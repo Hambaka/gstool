@@ -20,6 +20,7 @@ use crate::{
     derived_output_dir, read_bytes, sheet_from_password_bytes, sheet_from_password_data,
     write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
   },
+  logic::sources::LoadedPassword,
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
@@ -48,9 +49,13 @@ impl App {
               match result {
                   Ok(parsed_password_bytes) => {
                     self.input_file_path_c1s3 = new_file_path.to_string_lossy().to_string();
-                    self.dmp_bytes = parsed_password_bytes.bytes;
-                    self.dmp_bits = Some(parsed_password_bytes.bits);
-                    self.dmp_src_grade = Some(parsed_password_bytes.grade);
+                    self.sources.from_dump = Some(LoadedPassword {
+                      bytes: parsed_password_bytes.bytes,
+                      bits: parsed_password_bytes.bits,
+                      grade: parsed_password_bytes.grade,
+                      version: None,
+                      text: None,
+                    });
 
                     self.pwd_grade_c1s3 = None;
                     self.pwd_text_ver_c1s3 = None;
@@ -67,9 +72,7 @@ impl App {
             ui.add_enabled(false, reset_btn(svg_icon_size));
           } else if ui.add(reset_btn(svg_icon_size)).clicked() {
             self.input_file_path_c1s3.clear();
-            self.dmp_bytes.clear();
-            self.dmp_bits = None;
-            self.dmp_src_grade = None;
+            self.sources.reset_dump();
 
             self.pwd_grade_c1s3 = None;
             self.pwd_text_ver_c1s3 = None;
@@ -92,7 +95,7 @@ impl App {
         });
         ui.end_row();
         // 第2行
-        if let Some(source_grade) = self.dmp_src_grade {
+        if let Some(source_grade) = self.sources.dmp_grade() {
           Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
           ComboBox::from_id_salt("ID_CB_C1S3_密码级别")
             .width(100.0)
@@ -116,7 +119,7 @@ impl App {
         }
         ui.end_row();
         // 第3行
-        if self.dmp_src_grade.is_some(){
+        if self.sources.has_dump(){
           Label::new("密码文本版本").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的密码文本文件。");
           ComboBox::from_id_salt("ID_CB_C1S3_密码文本版本")
             .width(100.0)
@@ -138,7 +141,7 @@ impl App {
         }
         ui.end_row();
         // 第4行
-        if self.dmp_src_grade.is_some(){
+        if self.sources.has_dump(){
           Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
           ComboBox::from_id_salt("ID_CB_C1S3_生成密码金手指")
             .width(100.0)
@@ -160,7 +163,7 @@ impl App {
         }
         ui.end_row();
         // 第5行
-        if self.dmp_src_grade.is_some() {
+        if self.sources.has_dump() {
           Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
           ui.horizontal(|ui|{
             Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s3).ui(ui);
@@ -201,13 +204,14 @@ impl App {
   }
 
   pub fn run_c1s3(&mut self) {
-    let password_bits = self.dmp_bits.as_ref().unwrap();
+    let src = self.sources.from_dump.as_ref().unwrap();
+    let password_bits = &src.bits;
 
     // Generate save data, and set target password bytes
-    let password_data = read_from_bits(&password_bits, self.dmp_src_grade.unwrap());
+    let password_data = read_from_bits(&password_bits, src.grade);
     let target_password_bytes = match self.pwd_grade_c1s3 {
       Some(password_grade) => encode(&password_data, password_grade),
-      None => self.dmp_bytes.clone(),
+      None => src.bytes.clone(),
     };
 
     let output_dir_str = if self.out_dir_c1s3.is_empty() {
@@ -236,7 +240,7 @@ impl App {
       let target_grade = if self.pwd_grade_c1s3.is_some() {
         self.pwd_grade_c1s3.unwrap()
       } else {
-        self.dmp_src_grade.unwrap()
+        src.grade
       };
 
       if let Err(e) = write_cheat_code(
@@ -281,7 +285,7 @@ impl App {
     self.out_log_c1s3.push_str("运行概况：\n");
 
     let mut result_index = 1;
-    let source_password_grade_cn = self.dmp_src_grade.unwrap().short_name();
+    let source_password_grade_cn = src.grade.short_name();
     let _ = writeln!(
       self.out_log_c1s3,
       "{result_index}. 输入的源文件为{source_password_grade_cn}级别的密码内存转储文件。"
