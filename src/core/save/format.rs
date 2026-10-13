@@ -124,6 +124,8 @@ pub const PC_NAME_OFFSET: [usize; 2] = [0x510, 0x530];
 pub const BUILD_DATE_OFFSET: [[usize; 3]; 2] = [[0x36, 0x250, 0x508], [0x36, 0x250, 0x528]];
 /// 每个槽位存档的头大小：0x10
 pub const SLOT_HEADER_SIZE: usize = 0x10;
+/// GBA 上存档数据的内存基址
+pub const SAVE_DATA_RAM_BASE: u32 = 0x0200_0000;
 /// 校验和要计算的数据长度：存档槽位大小减去存档头大小
 /// - 《开启的封印》：0x1000 - 0x10 = 0xFF0
 /// - 《失落的时代》：0x3000 - 0x10 = 0x2FF0
@@ -140,6 +142,17 @@ pub struct SaveLayout {
   pub main_leader_pc_index: usize,
   pub pc_name_record_count: usize,
   pub checksum_byte_count: usize,
+}
+
+impl SaveLayout {
+  /// 角色名字内存中的地址（金手指用）
+  ///
+  /// 由存档文件布局推导：文件偏移去掉槽位头、加上GBA内存基址，即
+  /// `SAVE_DATA_RAM_BASE + (pc_name_offset + pc_index * PC_RECORD_SIZE - SLOT_HEADER_SIZE)`。
+  pub fn pc_name_ram_address(&self, pc_index: usize) -> u32 {
+    SAVE_DATA_RAM_BASE
+      + (self.pc_name_offset + pc_index * PC_RECORD_SIZE - SLOT_HEADER_SIZE) as u32
+  }
 }
 
 impl GameTitle {

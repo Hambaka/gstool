@@ -1,4 +1,5 @@
 use crate::core::enums::{GameRegion, PasswordGrade, PasswordVersion};
+use crate::core::save::pc_name::{EncodedName, MAX_NAME_BYTES, NameError, NameNote};
 
 use std::fmt::Write as _;
 
@@ -114,5 +115,99 @@ pub fn cheat_code_text(
     }
   }
 
+  text
+}
+
+/// 把一批角色名的编码结果渲染成界面日志文本
+///
+/// `entries` 的元素为 `(角色中文名, 金手指基址, 编码结果)`；
+pub fn name_encode_log(entries: &[(&str, u32, &EncodedName)]) -> String {
+  let mut text = String::new();
+  let mut first_run = true;
+
+  for &(pc_name, base_address, encoded) in entries {
+    if !first_run {
+      text.push_str("\n\n");
+    }
+    first_run = false;
+
+    let _ = writeln!(text, "{pc_name}");
+    text.push_str("起名界面的输入方式：\n");
+    for note in &encoded.notes {
+      let _ = writeln!(text, "{}", name_note_line(note));
+    }
+
+    if encoded.is_valid() {
+      text.push_str("十六进制值：\n");
+      let _ = writeln!(text, "{}", name_hex_text(encoded.all_bytes()));
+
+      text.push_str("金手指：\n");
+      text.push_str(&name_cheat_code_text(encoded.all_bytes(), base_address));
+    } else {
+      let _ = writeln!(
+        text,
+        "由于存在不可用的字符，故不展示{pc_name}自定义名字所对应的十六进制值和金手指！"
+      );
+    }
+  }
+
+  text
+}
+
+/// 单个字符的说明行
+fn name_note_line(note: &NameNote) -> String {
+  match note {
+    NameNote::Direct { input, .. } => format!("{input}：{input}"),
+    NameNote::Composed { input, components } => format!("{input}：{components}"),
+    NameNote::NotTypable { input, code } => format!(
+      "{input}：汉化版字库中包含该字符，但无法在起名界面中正常输入，码值为0x{code:04X}"
+    ),
+    NameNote::Failed { input, reason } => {
+      let reason_text = match reason {
+        NameError::ControlChar => "汉化版的控制符，不能单独使用！",
+        NameError::NotInFont => "汉化版字库中不包含该字符！",
+        // 理论上不会出现
+        NameError::TooLong => "编码结果超出了名字字段的长度上限！",
+      };
+      format!("{input}：{reason_text}")
+    }
+  }
+}
+
+/// 十六进制 dump：固定输出全部 10 个字节（含补零）
+fn name_hex_text(bytes: &[u8; MAX_NAME_BYTES]) -> String {
+  let mut text = String::with_capacity(MAX_NAME_BYTES * 3);
+  for (i, name_byte) in bytes.iter().enumerate() {
+    if i + 1 == bytes.len() {
+      let _ = write!(text, "{name_byte:02X}");
+    } else {
+      let _ = write!(text, "{name_byte:02X} ");
+    }
+  }
+  text
+}
+
+/// 金手指 3 行：4+4+2 字节，地址 = 基址 + i*4
+fn name_cheat_code_text(bytes: &[u8; MAX_NAME_BYTES], base_address: u32) -> String {
+  let mut text = String::with_capacity(128);
+
+  let _ = writeln!(
+    text,
+    "{:08X}:{:08X}",
+    base_address,
+    u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+  );
+  let _ = writeln!(
+    text,
+    "{:08X}:{:08X}",
+    base_address + 4,
+    u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
+  );
+  let _ = writeln!(
+    text,
+    "{:08X}:{:04X}",
+    base_address + 8,
+    u16::from_le_bytes([bytes[8], bytes[9]])
+  );
   text
 }

@@ -25,8 +25,12 @@ pub fn run() {
     "../resources/json/char/dakuten_kana.json"
   ))
   .unwrap();
-  let path = Path::new(&env::var("OUT_DIR").unwrap()).join("codegen_name.rs");
-  let mut file = BufWriter::new(File::create(&path).unwrap());
+
+  // ============================================================
+  // codegen_name_chars.rs：4 张字符编码表
+  // ============================================================
+  let chars_path = Path::new(&env::var("OUT_DIR").unwrap()).join("codegen_name_chars.rs");
+  let mut file = BufWriter::new(File::create(&chars_path).unwrap());
 
   writeln!(&mut file, "use phf::phf_map;\n").unwrap();
 
@@ -92,7 +96,13 @@ pub fn run() {
   }
   writeln!(&mut file, "}};\n").unwrap();
 
-  // keyboard images
+  // ============================================================
+  // codegen_name_kbd.rs：键盘按键图
+  // ============================================================
+  let kbd_path = Path::new(&env::var("OUT_DIR").unwrap()).join("codegen_name_kbd.rs");
+  let mut file = BufWriter::new(File::create(&kbd_path).unwrap());
+
+  writeln!(&mut file, "use phf::phf_map;\n").unwrap();
   writeln!(
     &mut file,
     "static KEYBOARD_IMG_MAP: phf::Map<u8, &'static [u8]> = phf_map! {{"

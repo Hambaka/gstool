@@ -2,7 +2,7 @@ use std::{fmt, io::Read, sync::OnceLock};
 
 include!(concat!(env!("OUT_DIR"), "/codegen_bps.rs"));
 
-/// 输入 ROM 的分类
+/// 输入ROM的分类
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PatchSource {
   /// 最新汉化版，无需打补丁
@@ -61,13 +61,13 @@ pub fn rom_display_name(crc32: u32) -> Option<&'static str> {
 
 pub struct PatchedRom {
   pub bytes: Vec<u8>,
-  /// **输入** ROM 的 CRC32（原 `patch_rom` 的第二个返回值就是它）
+  /// 最源头的输入ROM的CRC32值
   pub source_crc32: u32,
 }
 
-/// 应用新汉化补丁：沿 CRC32 链反复应用 BPS 补丁，直到抵达新汉化版。
+/// 应用新汉化补丁：沿CRC32链反复应用BPS补丁，至多两次抵达新汉化版。
 ///
-/// 输入必须是未经修改的原版/旧汉化版 ROM 字节；输出是补丁后的完整 ROM。
+/// 输入必须是未经修改的原版、老汉化版或者其他语言的版本的ROM；输出是打了补丁后的完整ROM。
 pub fn apply_chinese_patch(rom: Vec<u8>) -> Result<PatchedRom, PatchRomError> {
   let source_crc32 = crc32fast::hash(&rom);
   match classify(&rom) {
