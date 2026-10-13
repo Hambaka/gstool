@@ -9,7 +9,10 @@ use crate::{
     enums::{GameRegion, NameType, PasswordGrade, PasswordVersion},
     save::{GameInfo, SaveSlot},
   },
-  ui::window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
+  ui::{
+    page::{PageOutcome, PageRequest},
+    window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum, SaveSlotEnum},
+  },
   widgets::{
     colors::get_default_svg_color,
     icons::{
@@ -340,6 +343,31 @@ impl App {
       pwd_src_slot: [None, None, None],
       out_dir_c5: String::new(),
       out_log_c5: String::new(),
+    }
+  }
+}
+
+impl App {
+  /// 统一处理所有页面的结果：错误弹窗 + 跨功能请求。
+  ///
+  /// 页面函数（`ui` 层）只把请求收进 `PageOutcome`，不直接改这些全局字段；
+  /// 这样页面只需要 `&mut <功能状态>` 就能完成绘制。
+  pub fn apply(&mut self, outcome: PageOutcome) {
+    if let Some(msg) = outcome.error {
+      self.fail(msg);
+    }
+    for request in outcome.requests {
+      match request {
+        PageRequest::OpenPasswordPreview(sub) => self.read_from(sub),
+        PageRequest::ResetPasswordSources(sub) => {
+          for i in 0..3 {
+            if self.pwd_src[i] == Some(sub) {
+              self.pwd_src[i] = None;
+              self.pwd_src_slot[i] = None;
+            }
+          }
+        }
+      }
     }
   }
 }

@@ -39,6 +39,7 @@ pub mod ui {
     pub mod pwd_info;
   }
   mod error_modal;
+  pub mod page;
   mod top_panel;
 }
 pub use app::App;
