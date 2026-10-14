@@ -7,7 +7,6 @@ use egui::{Checkbox, Grid, Label, Ui, Widget};
 
 use crate::{
   App,
-  app::SubCommandEnum,
   core::{
     enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::encode::from_raw_save,
@@ -17,6 +16,7 @@ use crate::{
     derived_output_dir, read_bytes, sheet_from_password_bytes, sheet_from_save_slot, slot_dir_name,
     write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
   },
+  logic::command::SubCommandEnum,
   widgets::{
     buttons::pwd_info_btn,
     rows::{PathAction, checkbox_row, combo_row, dir_row, file_row, row_label},

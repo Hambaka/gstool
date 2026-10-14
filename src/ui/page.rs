@@ -4,7 +4,7 @@
 //! 这样页面函数只需要 `&mut <功能状态>` 就能把「可能失败」和「可能产生请求」
 //! 两件事归一成一个返回值，不再直接改 `App` 的全局字段。
 
-use crate::app::SubCommandEnum;
+use crate::logic::command::SubCommandEnum;
 
 /// 一帧内不变的、来自 egui 的上下文
 /// 目前用于处理svg图片的尺寸和颜色以和主题颜色同步……

@@ -5,17 +5,19 @@ use rfd::FileDialog;
 
 use crate::{
   App,
-  app::{AtomsEnum, SubCommandEnum},
+  app::AtomsEnum,
   core::{
     enums::PasswordGrade,
     password::{
       decode::read_from_bits,
       encode::{encode, from_raw_save},
     },
-    rom::inject::{inject, PasswordCombination},
+    rom::inject::{PasswordCombination, inject},
   },
   io::{analyze_rom_file, resolve_output_dir, suffixed_file_name, write_named_bytes},
+  logic::command::SubCommandEnum,
   logic::save_slot::SaveSlotEnum,
+  widgets::atoms::sub_command_atoms,
   widgets::buttons::{reset_btn, save_slot_atoms, select_dir_btn, select_file_btn},
 };
 
@@ -106,7 +108,7 @@ impl App {
                 .width(100.0)
                 .selected_text({
                   match &self.pwd_src[i] {
-                    Some(sub_command) => AtomsEnum::ImageAndText(sub_command.get_atoms(svg_icon_size, is_dark)) ,
+                    Some(sub_command) => AtomsEnum::ImageAndText(sub_command_atoms(*sub_command, svg_icon_size, is_dark)) ,
                     None => AtomsEnum::Text("无"),
                   }
                 })
@@ -117,7 +119,7 @@ impl App {
 
                   ui.add_enabled_ui(self.sources.has_save(), |ui| {
                     if ui
-                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::First), SubCommandEnum::First.get_atoms(svg_icon_size,is_dark))
+                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::First), sub_command_atoms(SubCommandEnum::First, svg_icon_size, is_dark))
                       .changed()
                     {
                       self.pwd_src_slot[i] = self.sources.first_available_slot();
@@ -150,7 +152,7 @@ impl App {
 
                   ui.add_enabled_ui(self.sources.has_text() && bool_txt, |ui| {
                     if ui
-                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Second), SubCommandEnum::Second.get_atoms(svg_icon_size,is_dark))
+                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Second), sub_command_atoms(SubCommandEnum::Second, svg_icon_size, is_dark))
                       .changed()
                     {
                       self.pwd_src_slot[i] = Some(SaveSlotEnum::First);
@@ -183,7 +185,7 @@ impl App {
 
                   ui.add_enabled_ui(self.sources.has_dump() && bool_dmp, |ui| {
                     if ui
-                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Third), SubCommandEnum::Third.get_atoms(svg_icon_size,is_dark))
+                      .selectable_value(&mut self.pwd_src[i], Some(SubCommandEnum::Third), sub_command_atoms(SubCommandEnum::Third, svg_icon_size, is_dark))
                       .changed()
                     {
                       self.pwd_src_slot[i] = Some(SaveSlotEnum::First);

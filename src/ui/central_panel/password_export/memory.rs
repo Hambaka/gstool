@@ -8,7 +8,6 @@ use rfd::FileDialog;
 
 use crate::{
   App,
-  app::SubCommandEnum,
   core::{
     enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::{
@@ -20,6 +19,7 @@ use crate::{
     derived_output_dir, read_bytes, sheet_from_password_bytes, sheet_from_password_data,
     write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
   },
+  logic::command::SubCommandEnum,
   logic::sources::LoadedPassword,
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };

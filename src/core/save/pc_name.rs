@@ -64,7 +64,10 @@ pub struct EncodedName {
 impl EncodedName {
   /// 是否每个字符都编码成功。
   pub fn is_valid(&self) -> bool {
-    !self.notes.iter().any(|note| matches!(note, NameNote::Failed { .. }))
+    !self
+      .notes
+      .iter()
+      .any(|note| matches!(note, NameNote::Failed { .. }))
   }
   /// 完整的定长字节（十六进制 dump 与金手指都按 10 字节输出）
   pub fn all_bytes(&self) -> &[u8; MAX_NAME_BYTES] {
@@ -125,7 +128,10 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
           });
         }
       }
-      notes.push(NameNote::Composed { input: c, components });
+      notes.push(NameNote::Composed {
+        input: c,
+        components,
+      });
     }
     // 3. 在 COMMON_HANZI_MAP 里 -> 展开成 2 个基础字符 -> 2 字节，Composed
     else if COMMON_HANZI_MAP.contains_key(&c) {
@@ -150,7 +156,10 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
           });
         }
       }
-      notes.push(NameNote::Composed { input: c, components });
+      notes.push(NameNote::Composed {
+        input: c,
+        components,
+      });
     }
     // 4. 在 SPECIAL_HANZI_MAP 里 -> u16 大端 -> 2 字节，NotTypable
     else if SPECIAL_HANZI_MAP.contains_key(&c) {

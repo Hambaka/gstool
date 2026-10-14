@@ -2,6 +2,7 @@
 
 mod app;
 mod widgets {
+  pub mod atoms;
   pub mod buttons;
   pub mod colors;
   pub mod icons;

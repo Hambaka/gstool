@@ -1,6 +1,6 @@
 use egui::{Label, Ui, Widget};
 
-use crate::{App, app::SubCommandEnum};
+use crate::{App, logic::command::SubCommandEnum, widgets::atoms::sub_command_atoms};
 
 // 1.、2.、3.、4.
 const DESC_C1: &str = r"使用该功能可导出密码，可导出以下几类文件：
@@ -15,17 +15,15 @@ impl App {
   pub fn show_c1(&mut self, ui: &mut Ui, svg_icon_size: f32, is_dark: bool) {
     Label::new(DESC_C1).selectable(false).ui(ui);
     ui.separator();
-    ui.columns_const(
-      |columns: &mut [egui::Ui; SubCommandEnum::SUB_COMMANDS.len()]| {
-        for i in 0..SubCommandEnum::SUB_COMMANDS.len() {
-          columns[i].selectable_value(
-            &mut self.subcommand,
-            SubCommandEnum::SUB_COMMANDS[i],
-            SubCommandEnum::SUB_COMMANDS[i].get_atoms(svg_icon_size, is_dark),
-          );
-        }
-      },
-    );
+    ui.columns_const(|columns: &mut [egui::Ui; SubCommandEnum::ALL.len()]| {
+      for i in 0..SubCommandEnum::ALL.len() {
+        columns[i].selectable_value(
+          &mut self.subcommand,
+          SubCommandEnum::ALL[i],
+          sub_command_atoms(SubCommandEnum::ALL[i], svg_icon_size, is_dark),
+        );
+      }
+    });
 
     match self.subcommand {
       SubCommandEnum::First => self.show_c1s1(ui, svg_icon_size),

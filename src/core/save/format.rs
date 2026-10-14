@@ -150,8 +150,7 @@ impl SaveLayout {
   /// 由存档文件布局推导：文件偏移去掉槽位头、加上GBA内存基址，即
   /// `SAVE_DATA_RAM_BASE + (pc_name_offset + pc_index * PC_RECORD_SIZE - SLOT_HEADER_SIZE)`。
   pub fn pc_name_ram_address(&self, pc_index: usize) -> u32 {
-    SAVE_DATA_RAM_BASE
-      + (self.pc_name_offset + pc_index * PC_RECORD_SIZE - SLOT_HEADER_SIZE) as u32
+    SAVE_DATA_RAM_BASE + (self.pc_name_offset + pc_index * PC_RECORD_SIZE - SLOT_HEADER_SIZE) as u32
   }
 }
 

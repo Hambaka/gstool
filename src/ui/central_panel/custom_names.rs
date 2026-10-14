@@ -9,7 +9,7 @@ use std::io::Cursor;
 use crate::{
   App,
   core::enums::GameTitle,
-  core::save::pc_name::{base_character_code, encode_pc_name, EncodedName, MAX_NAME_CHARS},
+  core::save::pc_name::{EncodedName, MAX_NAME_CHARS, base_character_code, encode_pc_name},
   io::render::name_encode_log,
   widgets::colors::{DARK, INFO},
 };
@@ -79,8 +79,10 @@ impl App {
       owned_entries.push((PC_NAMES[index], base_address, encoded));
     }
 
-    let entries: Vec<(&str, u32, &EncodedName)> =
-      owned_entries.iter().map(|(name, addr, enc)| (*name, *addr, enc)).collect();
+    let entries: Vec<(&str, u32, &EncodedName)> = owned_entries
+      .iter()
+      .map(|(name, addr, enc)| (*name, *addr, enc))
+      .collect();
 
     self.out_log_c3 = name_encode_log(&entries);
   }

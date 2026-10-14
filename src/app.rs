@@ -8,18 +8,12 @@ use crate::{
     enums::{GameRegion, NameType, PasswordGrade, PasswordVersion},
     save::GameInfo,
   },
+  logic::command::{CommandEnum, SubCommandEnum},
   logic::save_slot::SaveSlotEnum,
   logic::sources::PasswordSources,
   ui::{
     page::{PageOutcome, PageRequest},
     window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum},
-  },
-  widgets::{
-    colors::get_default_svg_color,
-    icons::{
-      ARROW_DOWN, ARROW_LEFT_RIGHT, ARROW_UP, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL,
-      NUMBER_3_SQUARE_FILL, PENCIL, TOOLS,
-    },
   },
 };
 
@@ -35,98 +29,6 @@ impl<'a> egui::IntoAtoms<'a> for AtomsEnum {
       AtomsEnum::Text(text) => text.collect(atoms),
       AtomsEnum::ImageAndText(image_and_text) => image_and_text.collect(atoms),
     }
-  }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum CommandEnum {
-  First = 0,
-  Second = 1,
-  Third = 2,
-  Fourth = 3,
-  Fifth = 4,
-}
-
-impl CommandEnum {
-  pub const COMMANDS: [CommandEnum; 5] = [
-    CommandEnum::First,
-    CommandEnum::Second,
-    CommandEnum::Third,
-    CommandEnum::Fourth,
-    CommandEnum::Fifth,
-  ];
-
-  pub fn get_name(self) -> &'static str {
-    match self {
-      // ⏏、⮉、⤴、⬆
-      CommandEnum::First => "密码导出功能",
-      // ⇆
-      CommandEnum::Second => "存档转换功能",
-      // 📝、🖊
-      CommandEnum::Third => " 自定义角色名",
-      // 🌐、🔨、🛠
-      CommandEnum::Fourth => "应用汉化补丁",
-      // ⤵、⤓、⮋、⬇
-      CommandEnum::Fifth => "注入密码功能",
-    }
-  }
-
-  pub fn get_atoms(self, svg_icon_size: f32, is_dark: bool) -> (Image<'static>, &'static str) {
-    let color = get_default_svg_color(is_dark);
-
-    (
-      Image::new(match self {
-        CommandEnum::First => ARROW_UP,
-        CommandEnum::Second => ARROW_LEFT_RIGHT,
-        CommandEnum::Third => PENCIL,
-        CommandEnum::Fourth => TOOLS,
-        CommandEnum::Fifth => ARROW_DOWN,
-      })
-      .tint(color)
-      .max_height(svg_icon_size),
-      self.get_name(),
-    )
-  }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum SubCommandEnum {
-  /// ❶ 密码导出功能 -> 🅰 游戏存档
-  First = 0,
-  /// ❶ 密码导出功能 -> 🅱 密码文本
-  Second = 1,
-  /// ❶ 密码导出功能 -> 🅲 内存转储
-  Third = 2,
-}
-
-impl SubCommandEnum {
-  pub const SUB_COMMANDS: [SubCommandEnum; 3] = [
-    SubCommandEnum::First,
-    SubCommandEnum::Second,
-    SubCommandEnum::Third,
-  ];
-
-  pub fn get_name(&self) -> &'static str {
-    match self {
-      SubCommandEnum::First => "游戏存档",
-      SubCommandEnum::Second => "密码文本",
-      SubCommandEnum::Third => "内存转储",
-    }
-  }
-
-  pub fn get_atoms(&self, svg_icon_size: f32, is_dark: bool) -> (Image<'static>, &'static str) {
-    let color = get_default_svg_color(is_dark);
-
-    (
-      Image::new(match self {
-        SubCommandEnum::First => NUMBER_1_SQUARE_FILL,
-        SubCommandEnum::Second => NUMBER_2_SQUARE_FILL,
-        SubCommandEnum::Third => NUMBER_3_SQUARE_FILL,
-      })
-      .tint(color)
-      .max_height(svg_icon_size),
-      self.get_name(),
-    )
   }
 }
 

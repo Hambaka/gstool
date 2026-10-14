@@ -2,11 +2,12 @@ use std::time::Duration;
 
 use crate::{
   App,
-  app::{CommandEnum, SubCommandEnum},
+  logic::command::{CommandEnum, SubCommandEnum},
+  widgets::atoms::command_atoms,
   widgets::buttons::{copy_btn, run_btn_available, run_btn_unavailable},
 };
 
-const CUSTOM_ORDER_COMMANDS: [CommandEnum; CommandEnum::COMMANDS.len()] = [
+const CUSTOM_ORDER_COMMANDS: [CommandEnum; CommandEnum::ALL.len()] = [
   CommandEnum::First,
   CommandEnum::Fifth,
   CommandEnum::Third,
@@ -23,12 +24,12 @@ impl App {
 
       egui::ScrollArea::vertical().show(ui, |ui| {
         // 功能选择“标签”页
-        ui.columns_const(|columns: &mut [egui::Ui; CommandEnum::COMMANDS.len()]| {
+        ui.columns_const(|columns: &mut [egui::Ui; CommandEnum::ALL.len()]| {
           for i in 0..CUSTOM_ORDER_COMMANDS.len() {
             columns[i].selectable_value(
               &mut self.command,
               CUSTOM_ORDER_COMMANDS[i],
-              CUSTOM_ORDER_COMMANDS[i].get_atoms(svg_icon_size, is_dark),
+              command_atoms(CUSTOM_ORDER_COMMANDS[i], svg_icon_size, is_dark),
             );
           }
         });

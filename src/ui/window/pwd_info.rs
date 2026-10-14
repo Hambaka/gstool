@@ -2,7 +2,6 @@ use egui::{Button, ComboBox, Image, Label, RichText, Widget};
 
 use crate::{
   App,
-  app::SubCommandEnum,
   core::{
     data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, icon_id},
     enums::PasswordGrade,
@@ -14,6 +13,7 @@ use crate::{
       view_from_data, view_from_raw_save,
     },
   },
+  logic::command::SubCommandEnum,
   logic::save_slot::SaveSlotEnum,
   widgets::{
     buttons::save_slot_atoms,
