@@ -21,6 +21,7 @@ use crate::{
   },
   logic::command::SubCommandEnum,
   logic::sources::LoadedPassword,
+  ui::page::AppRequest,
   widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
@@ -79,12 +80,8 @@ impl App {
             self.pwd_cheat_ver_c1s3 = None;
             self.to_export_pwd_data_text_c1s3 = false;
 
-            for i in 0..3 {
-              if self.pwd_src[i] == Some(SubCommandEnum::Third) {
-                self.pwd_src[i] = None;
-                self.pwd_src_slot[i] = None;
-              }
-            }
+            // `内存转储`的【重置】要联动`注入密码`的密码源，因此发送重置`注入密码`中密码源选择为`内存转储`的请求，由下一帧的`App::logic()`消费
+            self.requests.push(AppRequest::ResetPasswordSources(SubCommandEnum::Third));
           }
           ui.add(
             egui::TextEdit::singleline(&mut self.input_file_path_c1s3)
@@ -168,7 +165,8 @@ impl App {
           ui.horizontal(|ui|{
             Checkbox::without_text(&mut self.to_export_pwd_data_text_c1s3).ui(ui);
             if ui.add(pwd_info_btn(svg_icon_size)).clicked() {
-              self.read_from(SubCommandEnum::Third);
+              // 发送打开密码信息预览窗口的请求（以`内存转储`为数据源）
+              self.requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Third));
             }
           });
         } else {

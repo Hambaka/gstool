@@ -11,7 +11,10 @@ use crate::{
   logic::command::{CommandEnum, SubCommandEnum},
   logic::save_slot::SaveSlotEnum,
   logic::sources::PasswordSources,
-  ui::window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum},
+  ui::{
+    page::AppRequest,
+    window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum},
+  },
 };
 
 #[derive(Debug, Clone)]
@@ -49,6 +52,8 @@ pub struct App {
   pub toasts: Toasts,
   pub command: CommandEnum,
   pub subcommand: SubCommandEnum,
+  /// 跨功能的请求队列：先在ui侧发送请求进行登记，再到下一帧由`App::logic()`消费（约定见`ui/page.rs`）
+  pub requests: Vec<AppRequest>,
   pub err_modal_open: bool,
   pub err_msg: String,
   // 1. 密码导出功能部分
@@ -174,6 +179,7 @@ impl App {
         }),
       command: CommandEnum::First,
       subcommand: SubCommandEnum::First,
+      requests: Vec::new(),
       err_modal_open: false,
       err_msg: String::new(),
       // 1. 密码导出功能部分
@@ -231,7 +237,123 @@ impl App {
   }
 }
 
+impl App {
+  /// 当前功能是否可以运行（【运行】按钮与Ctrl+Enter快捷键共用）
+  pub fn can_run(&self) -> bool {
+    match self.command {
+      // 1. 密码导出功能部分
+      CommandEnum::First => match self.subcommand {
+        // 1.1 使用存档文件
+        SubCommandEnum::First => {
+          let bool1 = self.sources.has_save();
+          let bool2 = self.pwd_text_ver_c1s1.is_some()
+            || self.to_export_pwd_bin_c1s1
+            || self.pwd_cheat_ver_c1s1.is_some()
+            || self.to_export_pwd_data_text_c1s1;
+
+          bool1 && bool2
+        }
+        // 1.2 使用密码文本文件
+        SubCommandEnum::Second => {
+          let bool1 = self.sources.has_text();
+          let bool2 = self.pwd_grade_c1s2.is_some()
+            || self.to_convert_pwd_text_ver
+            || self.to_export_pwd_bin_c1s2
+            || self.pwd_cheat_ver_c1s2.is_some()
+            || self.to_export_pwd_data_text_c1s2;
+
+          bool1 && bool2
+        }
+        // 1.3 使用内存转储文件
+        SubCommandEnum::Third => {
+          let bool1 = self.sources.has_dump();
+          let bool2 = self.pwd_grade_c1s3.is_some()
+            || self.pwd_text_ver_c1s3.is_some()
+            || self.pwd_cheat_ver_c1s3.is_some()
+            || self.to_export_pwd_data_text_c1s3;
+
+          bool1 && bool2
+        }
+      },
+      // 2. 存档转换功能部分
+      CommandEnum::Second => {
+        let bool1 = self.save_src_type_index.is_some();
+        let bool2 = self.default_name_ver.is_some() || self.build_date_ver.is_some();
+
+        bool1 && bool2
+      }
+      // 3. 自定义角色名部分
+      CommandEnum::Third => {
+        let mut bool1 = false;
+        for ele in self.new_pc_names.clone() {
+          if !ele.is_empty() {
+            bool1 = true;
+          }
+        }
+        bool1
+      }
+      CommandEnum::Fourth => !self.input_file_path_c4.is_empty(),
+      CommandEnum::Fifth => {
+        !self.input_file_path_c5.is_empty()
+          && (self.pwd_src[0].is_some()
+            || self.pwd_src[1].is_some()
+            || self.pwd_src[2].is_some())
+      }
+    }
+  }
+
+  /// 运行`command`对应的功能（【运行】按钮请求与Ctrl+Enter快捷键的共用）
+  pub fn run_command(&mut self, command: CommandEnum) {
+    match command {
+      CommandEnum::First => self.run_c1(),
+      CommandEnum::Second => self.run_c2(),
+      CommandEnum::Third => self.run_c3(),
+      CommandEnum::Fourth => self.run_c4(),
+      CommandEnum::Fifth => self.run_c5(),
+    }
+  }
+}
+
 impl eframe::App for App {
+  /// 帧级的工作流程：在**本帧**的`ui()`之前执行，目前负责两类事：
+  /// 1. 消费**上一帧**在`ui()`侧发送登记的跨功能请求（`self.requests`）：运行当前功能/打开密码信息预览/重置联动……
+  /// 2. 键盘的快捷键。
+  ///
+  /// 即`logic()`是响应请求和输入事件的唯一入口；
+  /// 各功能之后会有自己对应的状态（State），并各自有自己的`logic()`；
+  /// 一帧内 `logic()` 先于 `ui()`，所以本帧登记的请求一定由**下一帧**的`logic()`消费。
+  fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    // Ctrl+Enter 快捷键
+    if self.can_run()
+      && ctx.input_mut(|input| {
+        input.consume_shortcut(&egui::KeyboardShortcut::new(
+          egui::Modifiers::COMMAND,
+          egui::Key::Enter,
+        ))
+      })
+    {
+      self.run_command(self.command);
+    }
+
+    // 消费上一帧在ui()登记的跨功能请求
+    // 使用std::mem::take取出来“消费”
+    let requests = std::mem::take(&mut self.requests);
+    for request in requests {
+      match request {
+        AppRequest::Run(command) => self.run_command(command),
+        AppRequest::OpenPasswordPreview(sub) => self.read_from(sub),
+        AppRequest::ResetPasswordSources(sub) => {
+          for i in 0..3 {
+            if self.pwd_src[i] == Some(sub) {
+              self.pwd_src[i] = None;
+              self.pwd_src_slot[i] = None;
+            }
+          }
+        }
+      }
+    }
+  }
+
   fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
     let svg_icon_size = ui.text_style_height(&TextStyle::Body);
     let is_dark = ui.visuals().dark_mode;

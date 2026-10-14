@@ -17,6 +17,7 @@ use crate::{
     write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
   },
   logic::command::SubCommandEnum,
+  ui::page::AppRequest,
   widgets::{
     buttons::pwd_info_btn,
     rows::{PathAction, checkbox_row, combo_row, dir_row, file_row, row_label},
@@ -89,12 +90,8 @@ impl App {
             self.pwd_cheat_ver_c1s1 = None;
             self.to_export_pwd_data_text_c1s1 = false;
 
-            for i in 0..3 {
-              if self.pwd_src[i] == Some(SubCommandEnum::First) {
-                self.pwd_src[i] = None;
-                self.pwd_src_slot[i] = None;
-              }
-            }
+            // `存档文件`的【重置】要联动`注入密码`的密码源，因此发送重置`注入密码`中密码源选择为`存档文件`的请求，由下一帧的`App::logic()`消费
+            self.requests.push(AppRequest::ResetPasswordSources(SubCommandEnum::First));
           }
           PathAction::None => {}
         }
@@ -177,7 +174,8 @@ impl App {
             .add_enabled(self.sources.has_save(), pwd_info_btn(svg_icon_size))
             .clicked()
           {
-            self.read_from(SubCommandEnum::First);
+            // 发送打开密码信息预览窗口的请求（以`存档文件`为数据源）
+            self.requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::First));
           }
         });
         ui.end_row();

@@ -3,6 +3,7 @@ use std::time::Duration;
 use crate::{
   App,
   logic::command::{CommandEnum, SubCommandEnum},
+  ui::page::AppRequest,
   widgets::atoms::command_atoms,
   widgets::buttons::{copy_btn, run_btn_available, run_btn_unavailable},
 };
@@ -44,66 +45,7 @@ impl App {
         ui.separator();
 
         // 判断是否可以点击运行按钮
-        let enable_run_button = match self.command {
-          // 1. 密码导出功能部分
-          CommandEnum::First => match self.subcommand {
-            // 1.1 使用存档文件
-            SubCommandEnum::First => {
-              let bool1 = self.sources.has_save();
-              let bool2 = self.pwd_text_ver_c1s1.is_some()
-                || self.to_export_pwd_bin_c1s1
-                || self.pwd_cheat_ver_c1s1.is_some()
-                || self.to_export_pwd_data_text_c1s1;
-
-              bool1 && bool2
-            }
-            // 1.2 使用密码文本文件
-            SubCommandEnum::Second => {
-              let bool1 = self.sources.has_text();
-              let bool2 = self.pwd_grade_c1s2.is_some()
-                || self.to_convert_pwd_text_ver
-                || self.to_export_pwd_bin_c1s2
-                || self.pwd_cheat_ver_c1s2.is_some()
-                || self.to_export_pwd_data_text_c1s2;
-
-              bool1 && bool2
-            }
-            // 1.3 使用内存转储文件
-            SubCommandEnum::Third => {
-              let bool1 = self.sources.has_dump();
-              let bool2 = self.pwd_grade_c1s3.is_some()
-                || self.pwd_text_ver_c1s3.is_some()
-                || self.pwd_cheat_ver_c1s3.is_some()
-                || self.to_export_pwd_data_text_c1s3;
-
-              bool1 && bool2
-            }
-          },
-          // 2. 存档转换功能部分
-          CommandEnum::Second => {
-            let bool1 = self.save_src_type_index.is_some();
-            let bool2 = self.default_name_ver.is_some() || self.build_date_ver.is_some();
-
-            bool1 && bool2
-          }
-          // 3. 自定义角色名部分
-          CommandEnum::Third => {
-            let mut bool1 = false;
-            for ele in self.new_pc_names.clone() {
-              if !ele.is_empty() {
-                bool1 = true;
-              }
-            }
-            bool1
-          }
-          CommandEnum::Fourth => !self.input_file_path_c4.is_empty(),
-          CommandEnum::Fifth => {
-            !self.input_file_path_c5.is_empty()
-              && (self.pwd_src[0].is_some()
-                || self.pwd_src[1].is_some()
-                || self.pwd_src[2].is_some())
-          }
-        };
+        let enable_run_button = self.can_run();
 
         // 判断是否可以点击输出按钮
         let enable_copy_button = !match self.command {
@@ -120,21 +62,9 @@ impl App {
 
         ui.vertical_centered(|ui| {
           if enable_run_button {
-            if ui.add(run_btn_available(svg_icon_size)).clicked()
-              || ui.input_mut(|input| {
-                input.consume_shortcut(&egui::KeyboardShortcut::new(
-                  egui::Modifiers::COMMAND,
-                  egui::Key::Enter,
-                ))
-              })
-            {
-              match self.command {
-                CommandEnum::First => self.run_c1(),
-                CommandEnum::Second => self.run_c2(),
-                CommandEnum::Third => self.run_c3(),
-                CommandEnum::Fourth => self.run_c4(),
-                CommandEnum::Fifth => self.run_c5(),
-              }
+            if ui.add(run_btn_available(svg_icon_size)).clicked() {
+              // 现在运行逻辑交由`App::logic()`处理，因此这里改为发送请求；
+              self.requests.push(AppRequest::Run(self.command));
             }
           } else {
             ui.add_enabled(false, run_btn_unavailable(svg_icon_size));
