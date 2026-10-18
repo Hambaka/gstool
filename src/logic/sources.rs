@@ -20,7 +20,7 @@ pub struct LoadedPassword {
   pub grade: PasswordGrade,
   /// 密码所使用的字符集版本，区分日文/英文版密码。仅`密码文本`来源能判断（内存转储无法区分）
   pub version: Option<PasswordVersion>,
-  /// 去空白后的原文。仅「密码文本」来源有（c1s2「转换版本」用）
+  /// 去空白后的原文。仅`密码文本`来源有（用于转换版本判断）
   pub text: Option<String>,
 }
 

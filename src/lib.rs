@@ -24,12 +24,7 @@ mod util {
 }
 pub mod ui {
   pub mod central_panel {
-    mod password_export {
-      mod memory;
-      mod save;
-      mod shared_view;
-      mod text;
-    }
+    mod password_export;
     mod custom_names;
     pub mod inject_pwd;
     mod main_panel;

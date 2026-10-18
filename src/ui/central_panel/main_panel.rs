@@ -2,8 +2,11 @@ use std::time::Duration;
 
 use crate::{
   App,
-  logic::command::{CommandEnum, SubCommandEnum},
-  ui::page::AppRequest,
+  logic::command::CommandEnum,
+  ui::{
+    central_panel::password_export,
+    page::{AppRequest, FrameCtx},
+  },
   widgets::atoms::command_atoms,
   widgets::buttons::{copy_btn, run_btn_available, run_btn_unavailable},
 };
@@ -35,8 +38,16 @@ impl App {
           }
         });
         // 显示对应的功能页面
+        let ctx = FrameCtx {
+          svg_icon_size,
+          is_dark,
+        };
         match self.command {
-          CommandEnum::First => self.show_c1(ui, svg_icon_size, is_dark),
+          CommandEnum::First => {
+            let requests =
+              password_export::show(ui, &mut self.c1, &mut self.sources, ctx);
+            self.requests.extend(requests);
+          }
           CommandEnum::Second => self.show_c2(ui, svg_icon_size),
           CommandEnum::Third => self.show_c3(ui),
           CommandEnum::Fourth => self.show_c4(ui, svg_icon_size),
@@ -49,11 +60,7 @@ impl App {
 
         // 判断是否可以点击输出按钮
         let enable_copy_button = !match self.command {
-          CommandEnum::First => match self.subcommand {
-            SubCommandEnum::First => self.out_log_c1s1.is_empty(),
-            SubCommandEnum::Second => self.out_log_c1s2.is_empty(),
-            SubCommandEnum::Third => self.out_log_c1s3.is_empty(),
-          },
+          CommandEnum::First => !self.c1.has_output(),
           CommandEnum::Second => self.out_log_c2.is_empty(),
           CommandEnum::Third => self.out_log_c3.is_empty(),
           CommandEnum::Fourth => self.out_log_c4.is_empty(),
@@ -75,11 +82,7 @@ impl App {
             .clicked()
           {
             let log = match self.command {
-              CommandEnum::First => match self.subcommand {
-                SubCommandEnum::First => &self.out_log_c1s1,
-                SubCommandEnum::Second => &self.out_log_c1s2,
-                SubCommandEnum::Third => &self.out_log_c1s3,
-              },
+              CommandEnum::First => self.c1.log(),
               CommandEnum::Second => &self.out_log_c2,
               CommandEnum::Third => &self.out_log_c3,
               CommandEnum::Fourth => &self.out_log_c4,
@@ -96,7 +99,7 @@ impl App {
         // 显示输出日志（概要）
         if enable_copy_button {
           match self.command {
-            CommandEnum::First => self.show_log_c1(ui),
+            CommandEnum::First => password_export::show_log(ui, &self.c1),
             CommandEnum::Second => self.show_log_c2(ui),
             CommandEnum::Third => self.show_log_c3(ui),
             CommandEnum::Fourth => self.show_log_c4(ui),

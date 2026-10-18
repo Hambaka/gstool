@@ -5,10 +5,11 @@ use image::GenericImageView;
 use crate::{
   core::{
     data::Language,
-    enums::{GameRegion, NameType, PasswordGrade, PasswordVersion},
+    enums::{GameRegion, NameType},
     save::GameInfo,
   },
   logic::command::{CommandEnum, SubCommandEnum},
+  logic::password_export::PasswordExportState,
   logic::save_slot::SaveSlotEnum,
   logic::sources::PasswordSources,
   ui::{
@@ -51,42 +52,16 @@ pub struct App {
   pub pwd_info_window_open: bool,
   pub toasts: Toasts,
   pub command: CommandEnum,
-  pub subcommand: SubCommandEnum,
   /// 跨功能的请求队列：先在ui侧发送请求进行登记，再到下一帧由`App::logic()`消费（约定见`ui/page.rs`）
   pub requests: Vec<AppRequest>,
   pub err_modal_open: bool,
   pub err_msg: String,
   // 1. 密码导出功能部分
+  /// `密码导出`功能的状态（三个子页：游戏存档 / 密码文本 / 内存转储）
+  pub c1: PasswordExportState,
   /// 三个子页共享的已载入密码来源：存档、文本，内存转储各写自己的槽位，
   /// 注入密码功能与密码信息预览窗口是读方
   pub sources: PasswordSources,
-  // 1.1 使用存档文件
-  pub to_export_all_save: bool,
-  pub input_file_path_c1s1: String,
-  pub pwd_grade_c1s1: PasswordGrade,
-  pub pwd_text_ver_c1s1: Option<PasswordVersion>,
-  pub to_export_pwd_bin_c1s1: bool,
-  pub pwd_cheat_ver_c1s1: Option<GameRegion>,
-  pub to_export_pwd_data_text_c1s1: bool,
-  pub out_dir_c1s1: String,
-  pub out_log_c1s1: String,
-  // 1.2 使用密码文本文件
-  pub input_file_path_c1s2: String,
-  pub pwd_grade_c1s2: Option<PasswordGrade>,
-  pub to_convert_pwd_text_ver: bool,
-  pub to_export_pwd_bin_c1s2: bool,
-  pub pwd_cheat_ver_c1s2: Option<GameRegion>,
-  pub to_export_pwd_data_text_c1s2: bool,
-  pub out_dir_c1s2: String,
-  pub out_log_c1s2: String,
-  // 1.3 使用内存转储文件
-  pub input_file_path_c1s3: String,
-  pub pwd_grade_c1s3: Option<PasswordGrade>,
-  pub pwd_text_ver_c1s3: Option<PasswordVersion>,
-  pub pwd_cheat_ver_c1s3: Option<GameRegion>,
-  pub to_export_pwd_data_text_c1s3: bool,
-  pub out_dir_c1s3: String,
-  pub out_log_c1s3: String,
   // 2. 存档转换功能部分
   pub input_file_path_c2: String,
   pub save_file: Vec<u8>,
@@ -178,39 +153,12 @@ impl App {
           color: egui::Color32::from_black_alpha(70),
         }),
       command: CommandEnum::First,
-      subcommand: SubCommandEnum::First,
       requests: Vec::new(),
       err_modal_open: false,
       err_msg: String::new(),
       // 1. 密码导出功能部分
+      c1: PasswordExportState::default(),
       sources: PasswordSources::default(),
-      // 1.1 使用存档文件
-      to_export_all_save: false,
-      input_file_path_c1s1: String::new(),
-      pwd_grade_c1s1: PasswordGrade::Gold,
-      pwd_text_ver_c1s1: Some(PasswordVersion::English),
-      to_export_pwd_bin_c1s1: false,
-      pwd_cheat_ver_c1s1: None,
-      to_export_pwd_data_text_c1s1: false,
-      out_dir_c1s1: String::new(),
-      out_log_c1s1: String::new(),
-      // 1.2 使用密码文本文件
-      input_file_path_c1s2: String::new(),
-      pwd_grade_c1s2: None,
-      to_convert_pwd_text_ver: false,
-      to_export_pwd_bin_c1s2: false,
-      pwd_cheat_ver_c1s2: None,
-      to_export_pwd_data_text_c1s2: false,
-      out_dir_c1s2: String::new(),
-      out_log_c1s2: String::new(),
-      // 1.3 使用内存转储文件
-      input_file_path_c1s3: String::new(),
-      pwd_grade_c1s3: None,
-      pwd_text_ver_c1s3: None,
-      pwd_cheat_ver_c1s3: None,
-      to_export_pwd_data_text_c1s3: false,
-      out_dir_c1s3: String::new(),
-      out_log_c1s3: String::new(),
       // 2. 存档转换功能部分
       input_file_path_c2: String::new(),
       save_file: Vec::new(),
@@ -242,39 +190,7 @@ impl App {
   pub fn can_run(&self) -> bool {
     match self.command {
       // 1. 密码导出功能部分
-      CommandEnum::First => match self.subcommand {
-        // 1.1 使用存档文件
-        SubCommandEnum::First => {
-          let bool1 = self.sources.has_save();
-          let bool2 = self.pwd_text_ver_c1s1.is_some()
-            || self.to_export_pwd_bin_c1s1
-            || self.pwd_cheat_ver_c1s1.is_some()
-            || self.to_export_pwd_data_text_c1s1;
-
-          bool1 && bool2
-        }
-        // 1.2 使用密码文本文件
-        SubCommandEnum::Second => {
-          let bool1 = self.sources.has_text();
-          let bool2 = self.pwd_grade_c1s2.is_some()
-            || self.to_convert_pwd_text_ver
-            || self.to_export_pwd_bin_c1s2
-            || self.pwd_cheat_ver_c1s2.is_some()
-            || self.to_export_pwd_data_text_c1s2;
-
-          bool1 && bool2
-        }
-        // 1.3 使用内存转储文件
-        SubCommandEnum::Third => {
-          let bool1 = self.sources.has_dump();
-          let bool2 = self.pwd_grade_c1s3.is_some()
-            || self.pwd_text_ver_c1s3.is_some()
-            || self.pwd_cheat_ver_c1s3.is_some()
-            || self.to_export_pwd_data_text_c1s3;
-
-          bool1 && bool2
-        }
-      },
+      CommandEnum::First => self.c1.can_run(&self.sources),
       // 2. 存档转换功能部分
       CommandEnum::Second => {
         let bool1 = self.save_src_type_index.is_some();
@@ -305,7 +221,12 @@ impl App {
   /// 运行`command`对应的功能（【运行】按钮请求与Ctrl+Enter快捷键的共用）
   pub fn run_command(&mut self, command: CommandEnum) {
     match command {
-      CommandEnum::First => self.run_c1(),
+      CommandEnum::First => {
+        let result = self.c1.run(&mut self.sources);
+        if let Err(msg) = result {
+          self.fail(msg);
+        }
+      }
       CommandEnum::Second => self.run_c2(),
       CommandEnum::Third => self.run_c3(),
       CommandEnum::Fourth => self.run_c4(),
@@ -351,6 +272,11 @@ impl eframe::App for App {
           }
         }
       }
+    }
+
+    // 各功能自己待办的逻辑处理（例如各功能的选文件后的读取/解析）；
+    if let Err(msg) = self.c1.logic(&mut self.sources) {
+      self.fail(msg);
     }
   }
 
