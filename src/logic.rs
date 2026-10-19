@@ -6,6 +6,7 @@
 pub mod command;
 pub mod custom_name;
 pub mod password_export;
+pub mod patch_rom;
 pub mod save_convert;
 pub mod save_slot;
 pub mod sources;

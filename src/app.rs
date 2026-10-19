@@ -7,6 +7,7 @@ use crate::{
   logic::command::{CommandEnum, SubCommandEnum},
   logic::custom_name::CustomNameState,
   logic::password_export::PasswordExportState,
+  logic::patch_rom::PatchRomState,
   logic::save_convert::SaveConvertState,
   logic::save_slot::SaveSlotEnum,
   logic::sources::PasswordSources,
@@ -67,10 +68,8 @@ pub struct App {
   /// `自定义角色名`功能的状态
   pub c3: CustomNameState,
   // 4. 打汉化补丁功能部分
-  pub input_file_path_c4: String,
-  pub input_file_crc32: Option<u32>,
-  pub out_dir_c4: String,
-  pub out_log_c4: String,
+  /// `应用汉化补丁`功能的状态
+  pub c4: PatchRomState,
   // 5. 注入密码功能部分
   pub input_file_path_c5: String,
   pub pwd_src: [Option<SubCommandEnum>; 3],
@@ -156,10 +155,7 @@ impl App {
       // 3. 自定义角色名部分
       c3: CustomNameState::default(),
       // 4. 打汉化补丁功能部分
-      input_file_path_c4: String::new(),
-      input_file_crc32: None,
-      out_dir_c4: String::new(),
-      out_log_c4: String::new(),
+      c4: PatchRomState::default(),
       // 5. 注入密码功能部分
       input_file_path_c5: String::new(),
       pwd_src: [None, None, None],
@@ -179,7 +175,7 @@ impl App {
       // 2. 存档转换功能部分
       CommandEnum::Second => self.c2.can_run(),
       CommandEnum::Third => self.c3.can_run(),
-      CommandEnum::Fourth => !self.input_file_path_c4.is_empty(),
+      CommandEnum::Fourth => self.c4.can_run(),
       CommandEnum::Fifth => {
         !self.input_file_path_c5.is_empty()
           && (self.pwd_src[0].is_some() || self.pwd_src[1].is_some() || self.pwd_src[2].is_some())
@@ -208,7 +204,12 @@ impl App {
           self.fail(msg);
         }
       }
-      CommandEnum::Fourth => self.run_c4(),
+      CommandEnum::Fourth => {
+        let result = self.c4.run();
+        if let Err(msg) = result {
+          self.fail(msg);
+        }
+      }
       CommandEnum::Fifth => self.run_c5(),
     }
   }
@@ -261,6 +262,9 @@ impl eframe::App for App {
       self.fail(msg);
     }
     if let Err(msg) = self.c3.logic() {
+      self.fail(msg);
+    }
+    if let Err(msg) = self.c4.logic() {
       self.fail(msg);
     }
   }
