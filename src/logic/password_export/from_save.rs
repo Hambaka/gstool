@@ -2,7 +2,7 @@
 //!
 //! ui侧只能经`request()`追加待办的request；
 //! 唯一进行IO操作的地方是`logic()`与`run()`。
-//! `run`分为生成计划 → 执行 → 生成日志散步：`build_job`→ `execute`(IO)→ `render_log`。
+//! `run`分为生成计划 → 执行 → 生成日志三步：`build_job`→ `execute`(IO)→ `render_log`。
 
 use std::{
   fmt::Write as _,
@@ -19,7 +19,7 @@ use crate::{
     derived_output_dir, read_bytes, sheet_from_password_bytes, sheet_from_save_slot, slot_dir_name,
   },
   logic::{
-    password_export::shared::{output_notes, write_outputs, ExportOptions, Subject},
+    password_export::shared::{ExportOptions, Subject, output_notes, write_outputs},
     sources::PasswordSources,
   },
 };
@@ -114,8 +114,8 @@ impl FromSaveState {
         FromSaveRequest::Load(path) => {
           // 验证存档文件
           let bytes = read_bytes(&path, None).map_err(|e| e.to_string())?;
-          let save_slots = parse_save_slots(&bytes, self.export_all_saves)
-            .map_err(|e| e.to_string())?;
+          let save_slots =
+            parse_save_slots(&bytes, self.export_all_saves).map_err(|e| e.to_string())?;
 
           self.input_file_path = path.to_string_lossy().to_string();
           sources.from_save = save_slots.slots;
@@ -209,7 +209,9 @@ fn build_job(state: &FromSaveState, sources: &PasswordSources) -> ExportJob {
 fn execute(job: &ExportJob) -> Result<(), String> {
   for slot in &job.slots {
     // Key is save slot number: 0, 1, 2 -> 1, 2, 3
-    let sub_dir_str = job.output_dir.join(slot_dir_name(slot.slot_number, slot.is_clear_data));
+    let sub_dir_str = job
+      .output_dir
+      .join(slot_dir_name(slot.slot_number, slot.is_clear_data));
     write_outputs(
       &slot.password_bytes,
       &job.options,

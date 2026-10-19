@@ -49,7 +49,11 @@ pub fn show(
       );
       ui.add_enabled_ui(state.input_file_path.is_empty(), |ui| {
         ui.radio_value(&mut state.export_all_saves, false, "仅导出通关存档");
-        ui.radio_value(&mut state.export_all_saves, true, "导出全部存档（无论是否通关）");
+        ui.radio_value(
+          &mut state.export_all_saves,
+          true,
+          "导出全部存档（无论是否通关）",
+        );
       });
       ui.end_row();
       // 第2行

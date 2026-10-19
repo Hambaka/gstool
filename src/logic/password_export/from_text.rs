@@ -2,7 +2,7 @@
 //!
 //! ui侧只能经`request()`追加待办的request；
 //! 唯一进行IO操作的地方是`logic()`与`run()`。
-//! `run`分为生成计划 → 执行 → 生成日志散步：`build_job`→ `execute`(IO)→ `render_log`。
+//! `run`分为生成计划 → 执行 → 生成日志三步：`build_job`→ `execute`(IO)→ `render_log`。
 //!
 //! 本子页的密码文本文件由自己处理（4个条件分支（转换 × 降级）），
 //! 不走三个页面共用的 `write_outputs`
@@ -29,7 +29,7 @@ use crate::{
     write_converted_password_text,
   },
   logic::{
-    password_export::shared::{output_notes, write_outputs, ExportOptions, Subject},
+    password_export::shared::{ExportOptions, Subject, output_notes, write_outputs},
     sources::{LoadedPassword, PasswordSources},
   },
 };
@@ -124,21 +124,18 @@ impl FromTextState {
         FromTextRequest::LoadFile(path) => {
           // 验证密码文本文件
           let text = read_text(&path, 0x10_0000).map_err(|e| e.to_string())?;
-          let parsed_password =
-            parse_password_text(&text).map_err(|e| e.to_string())?;
+          let parsed_password = parse_password_text(&text).map_err(|e| e.to_string())?;
 
           self.input_file_path = path.to_string_lossy().to_string();
           sources.from_text = Some(Self::into_loaded(&parsed_password));
           self.reset_options();
         }
         FromTextRequest::LoadClipboard => {
-          let mut clipboard =
-            Clipboard::new().map_err(|_| "访问剪贴板时出现错误！".to_string())?;
+          let mut clipboard = Clipboard::new().map_err(|_| "访问剪贴板时出现错误！".to_string())?;
           let text = clipboard
             .get_text()
             .map_err(|_| "获取剪贴板的文本时出现错误！".to_string())?;
-          let parsed_password =
-            parse_password_text(&text).map_err(|e| e.to_string())?;
+          let parsed_password = parse_password_text(&text).map_err(|e| e.to_string())?;
 
           // 剪贴板来源没有输入文件，路径清空
           self.input_file_path.clear();
@@ -194,10 +191,7 @@ struct TextJob {
 }
 
 /// 把要生成哪些输出文件算好
-fn build_job(
-  state: &FromTextState,
-  sources: &PasswordSources,
-) -> Result<TextJob, String> {
+fn build_job(state: &FromTextState, sources: &PasswordSources) -> Result<TextJob, String> {
   // 理论上不会触发
   let src = sources
     .from_text
@@ -241,7 +235,8 @@ fn build_job(
     } else {
       Some((
         txt_to_another_version(
-          src.text
+          src
+            .text
             .as_ref()
             .ok_or_else(|| "密码文本来源缺少原文".to_string())?,
           password_version,
@@ -250,18 +245,18 @@ fn build_job(
       ))
     }
   } else if state.grade.is_some() {
-    Some((dmp_to_txt(&password_bytes, password_version), password_version))
+    Some((
+      dmp_to_txt(&password_bytes, password_version),
+      password_version,
+    ))
   } else {
     None
   };
 
   // 金手指文件：级别是降级目标（未降级则为来源级别）
-  let cheat = state.cheat_region.map(|region| {
-    (
-      state.grade.unwrap_or_else(|| src.grade),
-      region,
-    )
-  });
+  let cheat = state
+    .cheat_region
+    .map(|region| (state.grade.unwrap_or_else(|| src.grade), region));
 
   // 数据文本
   let data_sheet = if state.export_data_text {

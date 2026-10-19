@@ -9,10 +9,7 @@ pub mod from_save;
 pub mod from_text;
 pub mod shared;
 
-use crate::{
-  logic::command::SubCommandEnum,
-  logic::sources::PasswordSources,
-};
+use crate::{logic::command::SubCommandEnum, logic::sources::PasswordSources};
 
 /// `密码导出`功能的三个子页状态合而为一
 #[derive(Debug)]

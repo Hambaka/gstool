@@ -24,10 +24,10 @@ mod util {
 }
 pub mod ui {
   pub mod central_panel {
-    mod password_export;
     mod custom_names;
     pub mod inject_pwd;
     mod main_panel;
+    mod password_export;
     mod patch_rom;
     mod save_convert;
   }

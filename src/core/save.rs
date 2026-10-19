@@ -4,4 +4,4 @@ pub mod pc_name;
 pub mod raw;
 
 pub use convert::convert_save;
-pub use raw::{GameInfo, SaveSlot};
+pub use raw::SaveSlot;

@@ -3,13 +3,10 @@ use egui_notify::{Anchor, Toasts};
 use image::GenericImageView;
 
 use crate::{
-  core::{
-    data::Language,
-    enums::{GameRegion, NameType},
-    save::GameInfo,
-  },
+  core::data::Language,
   logic::command::{CommandEnum, SubCommandEnum},
   logic::password_export::PasswordExportState,
+  logic::save_convert::SaveConvertState,
   logic::save_slot::SaveSlotEnum,
   logic::sources::PasswordSources,
   ui::{
@@ -63,13 +60,8 @@ pub struct App {
   /// 注入密码功能与密码信息预览窗口是读方
   pub sources: PasswordSources,
   // 2. 存档转换功能部分
-  pub input_file_path_c2: String,
-  pub save_file: Vec<u8>,
-  pub save_src_type_index: Option<GameInfo>,
-  pub default_name_ver: Option<NameType>,
-  pub build_date_ver: Option<GameRegion>,
-  pub out_dir_c2: String,
-  pub out_log_c2: String,
+  /// `存档转换`功能的状态
+  pub c2: SaveConvertState,
   // 3. 自定义角色名部分
   /// 主角团7人的自定义名字
   pub new_pc_names: Vec<String>,
@@ -160,13 +152,7 @@ impl App {
       c1: PasswordExportState::default(),
       sources: PasswordSources::default(),
       // 2. 存档转换功能部分
-      input_file_path_c2: String::new(),
-      save_file: Vec::new(),
-      save_src_type_index: None,
-      default_name_ver: None,
-      build_date_ver: None,
-      out_dir_c2: String::new(),
-      out_log_c2: String::new(),
+      c2: SaveConvertState::default(),
       // 3. 自定义角色名部分
       new_pc_names: vec![String::new(); 7],
       out_log_c3: String::new(),
@@ -192,12 +178,7 @@ impl App {
       // 1. 密码导出功能部分
       CommandEnum::First => self.c1.can_run(&self.sources),
       // 2. 存档转换功能部分
-      CommandEnum::Second => {
-        let bool1 = self.save_src_type_index.is_some();
-        let bool2 = self.default_name_ver.is_some() || self.build_date_ver.is_some();
-
-        bool1 && bool2
-      }
+      CommandEnum::Second => self.c2.can_run(),
       // 3. 自定义角色名部分
       CommandEnum::Third => {
         let mut bool1 = false;
@@ -211,9 +192,7 @@ impl App {
       CommandEnum::Fourth => !self.input_file_path_c4.is_empty(),
       CommandEnum::Fifth => {
         !self.input_file_path_c5.is_empty()
-          && (self.pwd_src[0].is_some()
-            || self.pwd_src[1].is_some()
-            || self.pwd_src[2].is_some())
+          && (self.pwd_src[0].is_some() || self.pwd_src[1].is_some() || self.pwd_src[2].is_some())
       }
     }
   }
@@ -227,7 +206,12 @@ impl App {
           self.fail(msg);
         }
       }
-      CommandEnum::Second => self.run_c2(),
+      CommandEnum::Second => {
+        let result = self.c2.run();
+        if let Err(msg) = result {
+          self.fail(msg);
+        }
+      }
       CommandEnum::Third => self.run_c3(),
       CommandEnum::Fourth => self.run_c4(),
       CommandEnum::Fifth => self.run_c5(),
@@ -276,6 +260,9 @@ impl eframe::App for App {
 
     // 各功能自己待办的逻辑处理（例如各功能的选文件后的读取/解析）；
     if let Err(msg) = self.c1.logic(&mut self.sources) {
+      self.fail(msg);
+    }
+    if let Err(msg) = self.c2.logic() {
       self.fail(msg);
     }
   }

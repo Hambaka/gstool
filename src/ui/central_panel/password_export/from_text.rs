@@ -9,9 +9,7 @@ use crate::{
   logic::password_export::from_text::{FromTextRequest, FromTextState},
   logic::sources::PasswordSources,
   ui::page::{AppRequest, FrameCtx},
-  widgets::buttons::{
-    clipboard_btn, pwd_info_btn, reset_btn, select_dir_btn, select_file_btn,
-  },
+  widgets::buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
 };
 
 use crate::core::enums::PasswordGrade;

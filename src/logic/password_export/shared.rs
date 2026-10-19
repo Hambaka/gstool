@@ -7,9 +7,7 @@ use std::path::Path;
 
 use crate::{
   core::enums::{GameRegion, PasswordGrade, PasswordVersion},
-  io::{
-    write_cheat_code, write_memory_dump, write_password_data_text, write_password_text,
-  },
+  io::{write_cheat_code, write_memory_dump, write_password_data_text, write_password_text},
 };
 
 /// 三个导出页共用的输出选项
@@ -84,7 +82,11 @@ pub fn output_notes(options: &ExportOptions, subject: Subject) -> Vec<String> {
   let mut notes = Vec::new();
   match subject {
     Subject::SaveRecord { export_all } => {
-      let subject_cn = if export_all { "存档记录" } else { "通关的存档记录" };
+      let subject_cn = if export_all {
+        "存档记录"
+      } else {
+        "通关的存档记录"
+      };
       let grade_cn = options.grade.short_name();
       if let Some(text_version) = options.text_version {
         notes.push(format!(

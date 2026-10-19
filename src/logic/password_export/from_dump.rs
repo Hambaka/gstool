@@ -2,7 +2,7 @@
 //!
 //! ui侧只能经`request()`追加待办的request；
 //! 唯一进行IO操作的地方是`logic()`与`run()`。
-//! `run`分为生成计划 → 执行 → 生成日志散步：`build_job`→ `execute`(IO)→ `render_log`。
+//! `run`分为生成计划 → 执行 → 生成日志三步：`build_job`→ `execute`(IO)→ `render_log`。
 //!
 //! 本子页**没有**生成内存转储文件的选框
 //! 内存转储文件的输出由`grade.is_some()`隐含触发（选了降级级别才生成）。
@@ -25,7 +25,7 @@ use crate::{
     write_memory_dump,
   },
   logic::{
-    password_export::shared::{output_notes, write_outputs, ExportOptions, Subject},
+    password_export::shared::{ExportOptions, Subject, output_notes, write_outputs},
     sources::{LoadedPassword, PasswordSources},
   },
 };
@@ -114,8 +114,7 @@ impl FromDumpState {
         FromDumpRequest::Load(path) => {
           // 验证内存转储文件
           let bytes = read_bytes(&path, Some(0x10_0000)).map_err(|e| e.to_string())?;
-          let parsed_password_bytes =
-            parse_password_bytes(bytes).map_err(|e| e.to_string())?;
+          let parsed_password_bytes = parse_password_bytes(bytes).map_err(|e| e.to_string())?;
 
           self.input_file_path = path.to_string_lossy().to_string();
           sources.from_dump = Some(LoadedPassword {
@@ -160,10 +159,7 @@ struct DumpJob {
 }
 
 /// 把要生成哪些输出文件先算好
-fn build_job(
-  state: &FromDumpState,
-  sources: &PasswordSources,
-) -> Result<DumpJob, String> {
+fn build_job(state: &FromDumpState, sources: &PasswordSources) -> Result<DumpJob, String> {
   let src = sources
     .from_dump
     .as_ref()
@@ -183,12 +179,9 @@ fn build_job(
   };
 
   // 金手指文件：级别是降级目标（未降级则为来源级别）
-  let cheat = state.cheat_region.map(|region| {
-    (
-      state.grade.unwrap_or_else(|| src.grade),
-      region,
-    )
-  });
+  let cheat = state
+    .cheat_region
+    .map(|region| (state.grade.unwrap_or_else(|| src.grade), region));
 
   // 数据文本
   let data_sheet = if state.export_data_text {
@@ -230,6 +223,7 @@ fn execute(job: &DumpJob) -> Result<(), String> {
     cheat_region: job.cheat.map(|(_, region)| region),
     export_data_text: job.data_sheet.is_some(),
   };
+
   write_outputs(
     &job.password_bytes,
     &options,
