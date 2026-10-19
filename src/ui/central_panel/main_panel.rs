@@ -4,7 +4,7 @@ use crate::{
   App,
   logic::command::CommandEnum,
   ui::{
-    central_panel::{password_export, save_convert},
+    central_panel::{custom_names, password_export, save_convert},
     page::{AppRequest, FrameCtx},
   },
   widgets::atoms::command_atoms,
@@ -51,7 +51,10 @@ impl App {
             let requests = save_convert::show(ui, &mut self.c2, ctx);
             self.requests.extend(requests);
           }
-          CommandEnum::Third => self.show_c3(ui),
+          CommandEnum::Third => {
+            let requests = custom_names::show(ui, &mut self.c3, ctx);
+            self.requests.extend(requests);
+          }
           CommandEnum::Fourth => self.show_c4(ui, svg_icon_size),
           CommandEnum::Fifth => self.show_c5(ui, svg_icon_size, is_dark),
         }
@@ -64,7 +67,7 @@ impl App {
         let enable_copy_button = !match self.command {
           CommandEnum::First => !self.c1.has_output(),
           CommandEnum::Second => !self.c2.has_output(),
-          CommandEnum::Third => self.out_log_c3.is_empty(),
+          CommandEnum::Third => !self.c3.has_output(),
           CommandEnum::Fourth => self.out_log_c4.is_empty(),
           CommandEnum::Fifth => self.out_log_c5.is_empty(),
         };
@@ -86,7 +89,7 @@ impl App {
             let log = match self.command {
               CommandEnum::First => self.c1.log(),
               CommandEnum::Second => self.c2.log(),
-              CommandEnum::Third => self.out_log_c3.as_str(),
+              CommandEnum::Third => self.c3.log(),
               CommandEnum::Fourth => self.out_log_c4.as_str(),
               CommandEnum::Fifth => self.out_log_c5.as_str(),
             };
@@ -103,7 +106,7 @@ impl App {
           match self.command {
             CommandEnum::First => password_export::show_log(ui, &self.c1),
             CommandEnum::Second => save_convert::show_log(ui, &self.c2),
-            CommandEnum::Third => self.show_log_c3(ui),
+            CommandEnum::Third => custom_names::show_log(ui, &self.c3),
             CommandEnum::Fourth => self.show_log_c4(ui),
             CommandEnum::Fifth => self.show_c5_log(ui),
           }

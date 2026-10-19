@@ -5,6 +5,7 @@ use image::GenericImageView;
 use crate::{
   core::data::Language,
   logic::command::{CommandEnum, SubCommandEnum},
+  logic::custom_name::CustomNameState,
   logic::password_export::PasswordExportState,
   logic::save_convert::SaveConvertState,
   logic::save_slot::SaveSlotEnum,
@@ -63,9 +64,8 @@ pub struct App {
   /// `存档转换`功能的状态
   pub c2: SaveConvertState,
   // 3. 自定义角色名部分
-  /// 主角团7人的自定义名字
-  pub new_pc_names: Vec<String>,
-  pub out_log_c3: String,
+  /// `自定义角色名`功能的状态
+  pub c3: CustomNameState,
   // 4. 打汉化补丁功能部分
   pub input_file_path_c4: String,
   pub input_file_crc32: Option<u32>,
@@ -154,8 +154,7 @@ impl App {
       // 2. 存档转换功能部分
       c2: SaveConvertState::default(),
       // 3. 自定义角色名部分
-      new_pc_names: vec![String::new(); 7],
-      out_log_c3: String::new(),
+      c3: CustomNameState::default(),
       // 4. 打汉化补丁功能部分
       input_file_path_c4: String::new(),
       input_file_crc32: None,
@@ -179,16 +178,7 @@ impl App {
       CommandEnum::First => self.c1.can_run(&self.sources),
       // 2. 存档转换功能部分
       CommandEnum::Second => self.c2.can_run(),
-      // 3. 自定义角色名部分
-      CommandEnum::Third => {
-        let mut bool1 = false;
-        for ele in self.new_pc_names.clone() {
-          if !ele.is_empty() {
-            bool1 = true;
-          }
-        }
-        bool1
-      }
+      CommandEnum::Third => self.c3.can_run(),
       CommandEnum::Fourth => !self.input_file_path_c4.is_empty(),
       CommandEnum::Fifth => {
         !self.input_file_path_c5.is_empty()
@@ -212,7 +202,12 @@ impl App {
           self.fail(msg);
         }
       }
-      CommandEnum::Third => self.run_c3(),
+      CommandEnum::Third => {
+        let result = self.c3.run();
+        if let Err(msg) = result {
+          self.fail(msg);
+        }
+      }
       CommandEnum::Fourth => self.run_c4(),
       CommandEnum::Fifth => self.run_c5(),
     }
@@ -263,6 +258,9 @@ impl eframe::App for App {
       self.fail(msg);
     }
     if let Err(msg) = self.c2.logic() {
+      self.fail(msg);
+    }
+    if let Err(msg) = self.c3.logic() {
       self.fail(msg);
     }
   }
