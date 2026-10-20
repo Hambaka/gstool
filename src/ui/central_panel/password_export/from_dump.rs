@@ -1,6 +1,6 @@
 //! ③ 内存转储子页视图：ui侧只负责画widget、登记下一帧logic侧要处理的request。
 
-use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
+use egui::{Checkbox, Grid, Label, Ui, Widget};
 
 use crate::{
   core::enums::{GameRegion, PasswordGrade, PasswordVersion},
@@ -10,7 +10,7 @@ use crate::{
   ui::page::{AppRequest, FrameCtx},
   widgets::{
     buttons::pwd_info_btn,
-    rows::{PathAction, dir_row, file_row},
+    rows::{PathAction, combo_row, dir_row, file_row, row_label},
   },
 };
 
@@ -61,99 +61,77 @@ pub fn show(
         PathAction::None => {}
       }
       // 第2行
-      if let Some(source_grade) = sources.dmp_grade() {
-        Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
-        ComboBox::from_id_salt("ID_CB_C1S3_密码级别")
-          .width(100.0)
-          .selected_text(match &state.grade {
-            Some(password_grade_enum) => password_grade_enum.short_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut state.grade, None, "无");
+      combo_row(
+        ui,
+        "密码级别",
+        "目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。",
+        sources.dmp_grade().is_some(),
+        "ID_CB_C1S3_密码级别",
+        match &state.grade {
+          Some(password_grade_enum) => password_grade_enum.short_name(),
+          None => "无",
+        },
+        |ui| {
+          ui.selectable_value(&mut state.grade, None, "无");
+          if let Some(source_grade) = sources.dmp_grade() {
             for ele in PasswordGrade::ALL {
               ui.add_enabled_ui(source_grade.priority() < ele.priority(), |ui| {
                 ui.selectable_value(&mut state.grade, Some(ele), ele.short_name());
               });
             }
-          });
-      } else {
-        Label::new(RichText::new("密码级别").weak()).selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
-        ui.add_enabled_ui(false, |ui| {
-          ComboBox::from_id_salt("ID_CB_C1S3_密码级别（不可用）")
-            .width(100.0)
-            .selected_text("无")
-            .show_ui(ui, |_ui| {});
-        });
-      }
-      ui.end_row();
-      // 第3行
-      if sources.has_dump() {
-        Label::new("密码文本版本").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的密码文本文件。");
-        ComboBox::from_id_salt("ID_CB_C1S3_密码文本版本")
-          .width(100.0)
-          .selected_text(match &state.text_version {
-            Some(password_version_enum) => password_version_enum.name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut state.text_version, None, "无");
-            for ele in PasswordVersion::ALL {
-              ui.selectable_value(&mut state.text_version, Some(ele), ele.name());
-            }
-          });
-      } else {
-        Label::new(RichText::new("密码文本版本").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的密码文本文件。");
-        ui.add_enabled_ui(false, |ui| {
-          ComboBox::from_id_salt("ID_CB_C1S3_密码文本版本（不可用）")
-            .width(100.0)
-            .selected_text("无")
-            .show_ui(ui, |_ui| {});
-        });
-      }
-      ui.end_row();
-      // 第4行
-      if sources.has_dump() {
-        Label::new("生成密码金手指").selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
-        ComboBox::from_id_salt("ID_CB_C1S3_生成密码金手指")
-          .width(100.0)
-          .selected_text(match &state.cheat_region {
-            Some(version_enum) => version_enum.short_name(),
-            None => "无",
-          })
-          .show_ui(ui, |ui| {
-            ui.selectable_value(&mut state.cheat_region, None, "无");
-            for ele in GameRegion::ALL {
-              ui.selectable_value(&mut state.cheat_region, Some(ele), ele.short_name());
-            }
-          });
-      } else {
-        Label::new(RichText::new("生成密码金手指").weak()).selectable(false).ui(ui).on_hover_text("若选择了值，则生成指定版本的金手指文本文件。");
-        ui.add_enabled_ui(false, |ui| {
-          ComboBox::from_id_salt("ID_CB_C1S3_生成密码金手指（不可用）")
-            .width(100.0)
-            .selected_text("无")
-            .show_ui(ui, |_ui| {});
-        });
-      }
-      ui.end_row();
-      // 第5行
-      if sources.has_dump() {
-        Label::new("导出密码数据至文本文件").selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-        ui.horizontal(|ui| {
-          Checkbox::without_text(&mut state.export_data_text).ui(ui);
-          if ui.add(pwd_info_btn(svg_icon_size)).clicked() {
-            // 发送打开密码信息预览窗口的请求（以`内存转储`为数据源）
-            requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Third));
           }
-        });
-      } else {
-        Label::new(RichText::new("导出密码数据至文本文件").weak()).selectable(false).ui(ui).on_hover_text("若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。");
-        ui.horizontal(|ui| {
-          ui.add_enabled(false, Checkbox::without_text(&mut state.export_data_text));
-          ui.add_enabled(false, pwd_info_btn(svg_icon_size));
-        });
-      }
+        },
+      );
+      // 第3行
+      combo_row(
+        ui,
+        "密码文本版本",
+        "若选择了值，则生成指定版本的密码文本文件。",
+        sources.has_dump(),
+        "ID_CB_C1S3_密码文本版本",
+        match &state.text_version {
+          Some(password_version_enum) => password_version_enum.name(),
+          None => "无",
+        },
+        |ui| {
+          ui.selectable_value(&mut state.text_version, None, "无");
+          for ele in PasswordVersion::ALL {
+            ui.selectable_value(&mut state.text_version, Some(ele), ele.name());
+          }
+        },
+      );
+      // 第4行
+      combo_row(
+        ui,
+        "生成密码金手指",
+        "若选择了值，则生成指定版本的金手指文本文件。",
+        sources.has_dump(),
+        "ID_CB_C1S3_生成密码金手指",
+        match &state.cheat_region {
+          Some(version_enum) => version_enum.short_name(),
+          None => "无",
+        },
+        |ui| {
+          ui.selectable_value(&mut state.cheat_region, None, "无");
+          for ele in GameRegion::ALL {
+            ui.selectable_value(&mut state.cheat_region, Some(ele), ele.short_name());
+          }
+        },
+      );
+      // 第5行
+      row_label(
+        ui,
+        "导出密码数据至文本文件",
+        "若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。",
+        sources.has_dump(),
+      );
+      ui.horizontal(|ui| {
+        ui.add_enabled(sources.has_dump(), Checkbox::without_text(&mut state.export_data_text));
+        if ui.add_enabled(sources.has_dump(), pwd_info_btn(svg_icon_size)).clicked() {
+          // 发送打开密码信息预览窗口的请求（以`内存转储`为数据源）
+          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Third));
+        }
+      });
       ui.end_row();
       // 第6行
       match dir_row(
