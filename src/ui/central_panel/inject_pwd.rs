@@ -12,7 +12,7 @@ use crate::{
   ui::page::{AppRequest, FrameCtx},
   widgets::{
     atoms::sub_command_atoms,
-    buttons::save_slot_atoms,
+    buttons::{pwd_info_btn, save_slot_atoms},
     rows::{PathAction, dir_row, file_row},
   },
 };
@@ -44,6 +44,7 @@ pub fn show(
 ) -> Vec<AppRequest> {
   let svg_icon_size = ctx.svg_icon_size;
   let is_dark = ctx.is_dark;
+  let mut requests = Vec::new();
 
   Label::new(DESC_C5).selectable(false).ui(ui);
   ui.add_space(16.0);
@@ -158,6 +159,15 @@ pub fn show(
                   }
                 });
             }
+
+            // 预览按钮（选择来源后启用）
+            if let Some(source_choice)  = state.source[i] {
+              if ui.add(pwd_info_btn(svg_icon_size))
+                .clicked()
+              {
+                requests.push(AppRequest::OpenPasswordPreview(source_choice.kind));
+              }
+            }
           });
         }
 
@@ -179,8 +189,8 @@ pub fn show(
       };
     });
 
-  // 因为无跨功能请求，所以是空的Vec
-  Vec::new()
+  // 跨功能请求由“查看信息”按钮提供
+  requests
 }
 
 /// 显示输出日志（概要）
