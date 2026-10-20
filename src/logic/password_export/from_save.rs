@@ -118,7 +118,7 @@ impl FromSaveState {
             parse_save_slots(&bytes, self.export_all_saves).map_err(|e| e.to_string())?;
 
           self.input_file_path = path.to_string_lossy().to_string();
-          sources.from_save = save_slots.slots;
+          sources.from_save = save_slots;
           self.reset_options();
         }
       }
@@ -173,6 +173,7 @@ fn build_job(state: &FromSaveState, sources: &PasswordSources) -> ExportJob {
 
   let slots = sources
     .from_save
+    .slots
     .iter()
     .enumerate()
     .filter_map(|(slot_number, val_option)| {

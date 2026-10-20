@@ -7,7 +7,7 @@ use crate::{
   core::{
     bits::BitVec,
     enums::{PasswordGrade, PasswordVersion},
-    save::SaveSlot,
+    save::raw::SaveSlots,
   },
   logic::save_slot::SaveSlotEnum,
 };
@@ -27,7 +27,7 @@ pub struct LoadedPassword {
 #[derive(Debug)]
 pub struct PasswordSources {
   /// 来自存档文件（下标 = 槽位号）
-  pub from_save: [Option<SaveSlot>; 3],
+  pub from_save: SaveSlots,
   /// 来自密码文本（文件 / 剪贴板）
   pub from_text: Option<LoadedPassword>,
   /// 来自内存转储
@@ -37,16 +37,16 @@ pub struct PasswordSources {
 impl PasswordSources {
   /// 存档来源是否已载入（三个槽位任一有数据）
   pub fn has_save(&self) -> bool {
-    self.from_save.iter().any(Option::is_some)
+    // self.from_save.slots.iter().any(Option::is_some)
+    self.from_save.first_available_slot.is_some()
   }
 
   /// 第一个有数据的槽位（按下标顺序）；无存档来源时为 None
   pub fn first_available_slot(&self) -> Option<SaveSlotEnum> {
     self
       .from_save
-      .iter()
-      .position(Option::is_some)
-      .map(SaveSlotEnum::from)
+      .first_available_slot
+      .map(|slot_num| SaveSlotEnum::from(slot_num as usize))
   }
 
   /// 密码文本来源是否已载入
@@ -71,7 +71,10 @@ impl PasswordSources {
 
   /// 重置存档来源（三个槽位全清）
   pub fn reset_save(&mut self) {
-    self.from_save = [None, None, None];
+    self.from_save = SaveSlots {
+      slots: [None, None, None],
+      first_available_slot: None,
+    };
   }
 
   /// 重置密码文本来源
@@ -88,7 +91,10 @@ impl PasswordSources {
 impl Default for PasswordSources {
   fn default() -> Self {
     Self {
-      from_save: [None, None, None],
+      from_save: SaveSlots {
+        slots: [None, None, None],
+        first_available_slot: None,
+      },
       from_text: None,
       from_dump: None,
     }

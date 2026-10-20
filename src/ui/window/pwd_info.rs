@@ -544,7 +544,7 @@ impl App {
         self.preview_data = [None, None, None];
         let mut is_first_element = true;
         let mut min_slot = 0;
-        for (index, ele) in self.sources.from_save.iter().enumerate() {
+        for (index, ele) in self.sources.from_save.slots.iter().enumerate() {
           if let Some(raw_save) = ele {
             if is_first_element {
               min_slot = index;

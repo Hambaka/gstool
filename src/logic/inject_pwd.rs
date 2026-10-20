@@ -167,7 +167,7 @@ impl InjectPwdState {
     match choice?.kind {
       SubCommandEnum::First => {
         let slot = choice?.slot?;
-        let save = sources.from_save[slot.index()].as_ref()?;
+        let save = sources.from_save.slots[slot.index()].as_ref()?;
         Some(from_raw_save(&save.data, target))
       }
       SubCommandEnum::Second => {

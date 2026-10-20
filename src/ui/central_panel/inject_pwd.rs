@@ -148,7 +148,7 @@ pub fn show(
                 })
                 .show_ui(ui, |ui| {
                   for j in 0..3 {
-                    ui.add_enabled_ui(sources.from_save[j].is_some(), |ui| {
+                    ui.add_enabled_ui(sources.from_save.slots[j].is_some(), |ui| {
                       ui.selectable_value(
                         &mut state.source[i].as_mut().unwrap().slot,
                         Some(SaveSlotEnum::SAVE_SLOTS[j]),
