@@ -1,7 +1,7 @@
 use egui::{Label, Ui, Widget};
 
 use crate::{
-  logic::patch_rom::PatchRomState,
+  logic::patch_rom::{PatchRomRequest, PatchRomState},
   ui::page::{AppRequest, FrameCtx},
   widgets::rows::{PathAction, dir_row, file_row},
 };
@@ -31,29 +31,33 @@ pub fn show(ui: &mut Ui, state: &mut PatchRomState, ctx: FrameCtx) -> Vec<AppReq
     .striped(true)
     .show(ui, |ui| {
       // 第1行 -> 输入文件路径
-      let action = file_row(
+      match file_row(
         ui,
         "输入文件路径",
         "《黄金太阳 开启的封印》的ROM文件",
         "ROM文件路径",
         &mut state.display_path,
         svg_icon_size,
-      );
-      if let PathAction::Picked(file) = action {
-        state.request(crate::logic::patch_rom::PatchRomRequest::Load(file));
-      } else if let PathAction::Reset = action {
-        state.reset();
-      }
+      ) {
+        PathAction::Picked(file) => state.request(PatchRomRequest::Load(file)),
+        PathAction::Reset => state.reset(),
+        PathAction::None => {},
+      };
+
 
       // 第2行 -> 指定输出文件保存目录
-      let _action = dir_row(
+      match dir_row(
         ui,
         "指定输出文件保存目录",
         "自定义输出的汉化版ROM文件路径（推荐留空），若留空则将转换后的ROM文件保存到输入文件的同目录下。",
         "最新版汉化ROM输出路径",
         &mut state.out_dir,
         svg_icon_size,
-      );
+      ) {
+        PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
+        PathAction::Reset => state.out_dir.clear(),
+        PathAction::None => {},
+      };
     });
 
   // 因为无跨功能请求，所以是空的Vec
@@ -62,6 +66,5 @@ pub fn show(ui: &mut Ui, state: &mut PatchRomState, ctx: FrameCtx) -> Vec<AppReq
 
 /// 显示输出日志（概要）
 pub fn show_log(ui: &mut Ui, state: &PatchRomState) {
-  use egui::Widget;
   Label::new(state.log()).selectable(false).ui(ui);
 }

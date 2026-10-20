@@ -4,7 +4,7 @@ use crate::{
   App,
   logic::command::CommandEnum,
   ui::{
-    central_panel::{custom_names, password_export, patch_rom, save_convert},
+    central_panel::{custom_names, inject_pwd, password_export, patch_rom, save_convert},
     page::{AppRequest, FrameCtx},
   },
   widgets::atoms::command_atoms,
@@ -59,7 +59,10 @@ impl App {
             let requests = patch_rom::show(ui, &mut self.c4, ctx);
             self.requests.extend(requests);
           }
-          CommandEnum::Fifth => self.show_c5(ui, svg_icon_size, is_dark),
+          CommandEnum::Fifth => {
+            let requests = inject_pwd::show(ui, &mut self.c5, &self.sources, ctx);
+            self.requests.extend(requests);
+          }
         }
         ui.separator();
 
@@ -67,12 +70,12 @@ impl App {
         let enable_run_button = self.can_run();
 
         // 判断是否可以点击输出按钮
-        let enable_copy_button = !match self.command {
-          CommandEnum::First => !self.c1.has_output(),
-          CommandEnum::Second => !self.c2.has_output(),
-          CommandEnum::Third => !self.c3.has_output(),
-          CommandEnum::Fourth => !self.c4.has_output(),
-          CommandEnum::Fifth => self.out_log_c5.is_empty(),
+        let enable_copy_button = match self.command {
+          CommandEnum::First => self.c1.has_output(),
+          CommandEnum::Second => self.c2.has_output(),
+          CommandEnum::Third => self.c3.has_output(),
+          CommandEnum::Fourth => self.c4.has_output(),
+          CommandEnum::Fifth => self.c5.has_output(),
         };
 
         ui.vertical_centered(|ui| {
@@ -94,7 +97,7 @@ impl App {
               CommandEnum::Second => self.c2.log(),
               CommandEnum::Third => self.c3.log(),
               CommandEnum::Fourth => self.c4.log(),
-              CommandEnum::Fifth => self.out_log_c5.as_str(),
+              CommandEnum::Fifth => self.c5.log(),
             };
             ui.copy_text(log.to_string());
             self
@@ -111,7 +114,7 @@ impl App {
             CommandEnum::Second => save_convert::show_log(ui, &self.c2),
             CommandEnum::Third => custom_names::show_log(ui, &self.c3),
             CommandEnum::Fourth => patch_rom::show_log(ui, &self.c4),
-            CommandEnum::Fifth => self.show_c5_log(ui),
+            CommandEnum::Fifth => inject_pwd::show_log(ui, &self.c5),
           }
         }
       });

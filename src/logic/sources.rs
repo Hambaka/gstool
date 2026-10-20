@@ -24,7 +24,7 @@ pub struct LoadedPassword {
   pub text: Option<String>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PasswordSources {
   /// 来自存档文件（下标 = 槽位号）
   pub from_save: [Option<SaveSlot>; 3],
@@ -82,5 +82,15 @@ impl PasswordSources {
   /// 重置内存转储来源
   pub fn reset_dump(&mut self) {
     self.from_dump = None;
+  }
+}
+
+impl Default for PasswordSources {
+  fn default() -> Self {
+    Self {
+      from_save: [None, None, None],
+      from_text: None,
+      from_dump: None,
+    }
   }
 }

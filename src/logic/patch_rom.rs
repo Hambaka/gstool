@@ -26,7 +26,7 @@ pub struct RomInput {
 }
 
 /// “应用汉化补丁”功能状态
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PatchRomState {
   /// 输入 ROM（None = 未选择）
   pub input: Option<RomInput>,
@@ -71,7 +71,7 @@ impl PatchRomState {
 
   /// 重置本页
   ///
-  /// 纯内存改动，因此可在ui侧直接调用（清输入、清显示、清输出目录）
+  /// 纯内存改动，因此可在ui侧直接调用（清输入、清显示）
   pub fn reset(&mut self) {
     self.input = None;
     self.display_path.clear();
@@ -132,6 +132,18 @@ impl PatchRomState {
     self.log = render_log(input.crc32, patched.source_crc32, &out_file);
 
     Ok(())
+  }
+}
+
+impl Default for PatchRomState {
+  fn default() -> Self {
+    Self {
+      input: None,
+      display_path: String::new(),
+      out_dir: String::new(),
+      log: String::new(),
+      pending: Vec::new(),
+    }
   }
 }
 

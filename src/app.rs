@@ -4,8 +4,9 @@ use image::GenericImageView;
 
 use crate::{
   core::data::Language,
-  logic::command::{CommandEnum, SubCommandEnum},
+  logic::command::CommandEnum,
   logic::custom_name::CustomNameState,
+  logic::inject_pwd::InjectPwdState,
   logic::password_export::PasswordExportState,
   logic::patch_rom::PatchRomState,
   logic::save_convert::SaveConvertState,
@@ -71,11 +72,8 @@ pub struct App {
   /// `应用汉化补丁`功能的状态
   pub c4: PatchRomState,
   // 5. 注入密码功能部分
-  pub input_file_path_c5: String,
-  pub pwd_src: [Option<SubCommandEnum>; 3],
-  pub pwd_src_slot: [Option<SaveSlotEnum>; 3],
-  pub out_dir_c5: String,
-  pub out_log_c5: String,
+  /// `注入密码`功能的状态
+  pub c5: InjectPwdState,
 }
 
 impl App {
@@ -157,11 +155,7 @@ impl App {
       // 4. 打汉化补丁功能部分
       c4: PatchRomState::default(),
       // 5. 注入密码功能部分
-      input_file_path_c5: String::new(),
-      pwd_src: [None, None, None],
-      pwd_src_slot: [None, None, None],
-      out_dir_c5: String::new(),
-      out_log_c5: String::new(),
+      c5: InjectPwdState::default(),
     }
   }
 }
@@ -176,10 +170,7 @@ impl App {
       CommandEnum::Second => self.c2.can_run(),
       CommandEnum::Third => self.c3.can_run(),
       CommandEnum::Fourth => self.c4.can_run(),
-      CommandEnum::Fifth => {
-        !self.input_file_path_c5.is_empty()
-          && (self.pwd_src[0].is_some() || self.pwd_src[1].is_some() || self.pwd_src[2].is_some())
-      }
+      CommandEnum::Fifth => self.c5.can_run(),
     }
   }
 
@@ -210,7 +201,12 @@ impl App {
           self.fail(msg);
         }
       }
-      CommandEnum::Fifth => self.run_c5(),
+      CommandEnum::Fifth => {
+        let result = self.c5.run(&self.sources);
+        if let Err(msg) = result {
+          self.fail(msg);
+        }
+      }
     }
   }
 }
@@ -243,14 +239,7 @@ impl eframe::App for App {
       match request {
         AppRequest::Run(command) => self.run_command(command),
         AppRequest::OpenPasswordPreview(sub) => self.read_from(sub),
-        AppRequest::ResetPasswordSources(sub) => {
-          for i in 0..3 {
-            if self.pwd_src[i] == Some(sub) {
-              self.pwd_src[i] = None;
-              self.pwd_src_slot[i] = None;
-            }
-          }
-        }
+        AppRequest::ResetPasswordSources(sub) => self.c5.clear_source(sub),
       }
     }
 
@@ -265,6 +254,9 @@ impl eframe::App for App {
       self.fail(msg);
     }
     if let Err(msg) = self.c4.logic() {
+      self.fail(msg);
+    }
+    if let Err(msg) = self.c5.logic() {
       self.fail(msg);
     }
   }

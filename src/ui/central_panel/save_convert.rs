@@ -25,11 +25,10 @@ const DESC_C2: &str = r"使用该功能可转换《黄金太阳 开启的封印�
 /// 因为这一页只有自己状态的请求而没有跨功能的请求，
 /// 所以返回值是空的Vec。
 pub fn show(ui: &mut Ui, state: &mut SaveConvertState, ctx: FrameCtx) -> Vec<AppRequest> {
-  // 说明文本
-
   let svg_icon_size = ctx.svg_icon_size;
   let enabled = state.source.is_some();
 
+  // 说明文本
   Label::new(DESC_C2).selectable(false).ui(ui);
   ui.add_space(16.0);
 
@@ -47,15 +46,11 @@ pub fn show(ui: &mut Ui, state: &mut SaveConvertState, ctx: FrameCtx) -> Vec<App
         &mut state.input_file_path,
         svg_icon_size,
       ) {
-        PathAction::Picked(file) => {
-          state.request(SaveConvertRequest::Load(file));
-        },
-        PathAction::Reset => {
-          // 因为是纯内存改动，直接ui侧动就行
-          state.reset();
-        },
+        PathAction::Picked(file) => state.request(SaveConvertRequest::Load(file)),
+        // 因为是纯内存改动，直接ui侧动就行
+        PathAction::Reset => state.reset(),
         PathAction::None => {},
-        }
+      }
 
       // 第2行 -> 名字版本
       combo_row(
@@ -130,7 +125,7 @@ pub fn show(ui: &mut Ui, state: &mut SaveConvertState, ctx: FrameCtx) -> Vec<App
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),
         PathAction::None => {},
-        };
+      };
     });
 
   // 因为无跨功能请求，所以是空的Vec

@@ -5,6 +5,7 @@
 //! 而UI侧只负责画并报告动作，具体的工作流程在这各模块。
 pub mod command;
 pub mod custom_name;
+pub mod inject_pwd;
 pub mod password_export;
 pub mod patch_rom;
 pub mod save_convert;

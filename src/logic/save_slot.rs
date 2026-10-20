@@ -27,6 +27,12 @@ impl SaveSlotEnum {
     SaveSlotEnum::Third,
   ];
 
+  /// 槽位序号：
+  /// `0/1/2`对应`一/二/三`号槽位
+  pub fn index(self) -> usize {
+    self as usize
+  }
+
   /// `N号存档`的显示名；`is_password_preview_window` 为真且是第一槽位时多带`/密码数据`文本。
   pub fn get_name(&self, is_password_preview_window: bool) -> &'static str {
     if is_password_preview_window {

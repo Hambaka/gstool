@@ -65,13 +65,10 @@ pub fn show(
         &mut state.input_file_path,
         svg_icon_size,
       ) {
-        PathAction::Picked(file) => {
-          // 登记读取存档文件并解析的请求，由下一帧的`logic()`实际进行处理
-          state.request(FromSaveRequest::Load(file));
-        }
+        // 登记读取存档文件并解析的请求，由下一帧的`logic()`实际进行处理
+        PathAction::Picked(file) => state.request(FromSaveRequest::Load(file)),
         PathAction::Reset => {
           state.reset(sources);
-
           // `存档文件`的【重置】要联动`注入密码`的密码源，因此发送重置`注入密码`中密码源选择为`存档文件`的请求，由下一帧的`App::logic()`实际进行处理
           requests.push(AppRequest::ResetPasswordSources(SubCommandEnum::First));
         }
