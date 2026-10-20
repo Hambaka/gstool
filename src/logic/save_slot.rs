@@ -21,7 +21,7 @@ impl From<usize> for SaveSlotEnum {
 }
 
 impl SaveSlotEnum {
-  pub const SAVE_SLOTS: [SaveSlotEnum; 3] = [
+  pub const ALL: [SaveSlotEnum; 3] = [
     SaveSlotEnum::First,
     SaveSlotEnum::Second,
     SaveSlotEnum::Third,

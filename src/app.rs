@@ -3,19 +3,10 @@ use egui_notify::{Anchor, Toasts};
 use image::GenericImageView;
 
 use crate::{
-  core::data::Language,
-  logic::command::CommandEnum,
-  logic::custom_name::CustomNameState,
-  logic::inject_pwd::InjectPwdState,
-  logic::password_export::PasswordExportState,
-  logic::patch_rom::PatchRomState,
-  logic::save_convert::SaveConvertState,
-  logic::save_slot::SaveSlotEnum,
-  logic::sources::PasswordSources,
-  ui::{
-    page::AppRequest,
-    window::pwd_info::{PreviewData, PreviewModeEnum, PreviewPageEnum},
-  },
+  logic::command::CommandEnum, logic::custom_name::CustomNameState,
+  logic::inject_pwd::InjectPwdState, logic::password_export::PasswordExportState,
+  logic::patch_rom::PatchRomState, logic::preview::PwdInfoState,
+  logic::save_convert::SaveConvertState, logic::sources::PasswordSources, ui::page::AppRequest,
 };
 
 #[derive(Debug, Clone)]
@@ -34,45 +25,28 @@ impl<'a> egui::IntoAtoms<'a> for AtomsEnum {
 }
 
 pub struct App {
-  pub preview_data: [Option<PreviewData>; 3],
-  pub preview_current: Option<PreviewData>,
-  pub preview_slot: SaveSlotEnum,
-  pub preview_page: PreviewPageEnum,
-  /// 全属性（金、银），仅等级（铜）
-  pub char_page_mode: PreviewModeEnum,
-  /// 基础属性，属性
-  pub stats_mode: PreviewModeEnum,
-  /// 全道具（金），仅精神力道具（银、铜）
-  pub item_page_mode: PreviewModeEnum,
-  pub item_preview_lang: Language,
-  pub djinn_preview_lang: Language,
+  pub preview: PwdInfoState,
   pub item_icon_img: Vec<TextureHandle>,
 
   pub about_window_open: bool,
-  pub pwd_info_window_open: bool,
   pub toasts: Toasts,
   pub command: CommandEnum,
   /// 跨功能的请求队列：先在ui侧发送请求进行登记，再到下一帧由`App::logic()`消费（约定见`ui/page.rs`）
   pub requests: Vec<AppRequest>,
   pub err_modal_open: bool,
   pub err_msg: String,
-  // 1. 密码导出功能部分
-  /// `密码导出`功能的状态（三个子页：游戏存档 / 密码文本 / 内存转储）
+  /// 1. `密码导出`功能的状态（三个子页：游戏存档 / 密码文本 / 内存转储）
   pub c1: PasswordExportState,
   /// 三个子页共享的已载入密码来源：存档、文本，内存转储各写自己的槽位，
   /// 注入密码功能与密码信息预览窗口是读方
   pub sources: PasswordSources,
-  // 2. 存档转换功能部分
-  /// `存档转换`功能的状态
+  /// 2. `存档转换`功能的状态
   pub c2: SaveConvertState,
-  // 3. 自定义角色名部分
-  /// `自定义角色名`功能的状态
+  /// 3. `自定义角色名`功能的状态
   pub c3: CustomNameState,
-  // 4. 打汉化补丁功能部分
-  /// `应用汉化补丁`功能的状态
+  /// 4. `应用汉化补丁`功能的状态
   pub c4: PatchRomState,
-  // 5. 注入密码功能部分
-  /// `注入密码`功能的状态
+  /// 5. `注入密码`功能的状态
   pub c5: InjectPwdState,
 }
 
@@ -120,19 +94,10 @@ impl App {
     }
 
     Self {
-      preview_data: [None, None, None],
-      preview_current: None,
-      preview_slot: SaveSlotEnum::First,
-      preview_page: PreviewPageEnum::Character,
-      char_page_mode: PreviewModeEnum::Main,
-      stats_mode: PreviewModeEnum::Main,
-      item_page_mode: PreviewModeEnum::Main,
-      item_preview_lang: Language::ChineseTBS,
-      djinn_preview_lang: Language::ChineseTBS,
+      preview: PwdInfoState::default(),
       item_icon_img: handles,
 
       about_window_open: false,
-      pwd_info_window_open: false,
       toasts: Toasts::default()
         .with_anchor(Anchor::BottomRight)
         .with_shadow(Shadow {
@@ -238,7 +203,7 @@ impl eframe::App for App {
     for request in requests {
       match request {
         AppRequest::Run(command) => self.run_command(command),
-        AppRequest::OpenPasswordPreview(sub) => self.read_from(sub),
+        AppRequest::OpenPasswordPreview(sub) => self.preview.load_from(&self.sources, sub),
         AppRequest::ResetPasswordSources(sub) => self.c5.clear_source(sub),
       }
     }

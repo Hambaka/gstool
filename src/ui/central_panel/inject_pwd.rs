@@ -151,8 +151,8 @@ pub fn show(
                     ui.add_enabled_ui(sources.from_save.slots[j].is_some(), |ui| {
                       ui.selectable_value(
                         &mut state.source[i].as_mut().unwrap().slot,
-                        Some(SaveSlotEnum::SAVE_SLOTS[j]),
-                        save_slot_atoms(SaveSlotEnum::SAVE_SLOTS[j], svg_icon_size, is_dark, false),
+                        Some(SaveSlotEnum::ALL[j]),
+                        save_slot_atoms(SaveSlotEnum::ALL[j], svg_icon_size, is_dark, false),
                       );
                     });
                   }

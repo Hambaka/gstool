@@ -7,14 +7,15 @@ use crate::{
     enums::PasswordGrade,
     password::{
       items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
-      read_from_bits,
       stats::MAX_BASE_STATS,
-      structs::PasswordView,
-      view_from_data, view_from_raw_save,
+      view::Element,
     },
   },
-  logic::command::SubCommandEnum,
-  logic::save_slot::SaveSlotEnum,
+  logic::{
+    custom_name::PC_NAMES,
+    preview::{PreviewModeEnum, PreviewPageEnum},
+    save_slot::SaveSlotEnum,
+  },
   widgets::{
     buttons::save_slot_atoms,
     colors::{DANGER, SUCCESS, get_default_svg_color},
@@ -37,253 +38,128 @@ const EVENT_STR: [&str; 6] = [
 const EVENT_GAMEPLAY_ORDER: [usize; 6] = [2, 5, 4, 1, 0, 3];
 const PSYNERGY_ITEM_GAMEPLAY_ORDER: [usize; 8] = [7, 0, 1, 2, 3, 4, 5, 6];
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum PreviewPageEnum {
-  Character = 0,
-  Item = 1,
-  Djinn = 2,
-  Misc = 3,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum PreviewModeEnum {
-  Main = 0,
-  Alt = 1,
-}
-
-#[derive(Debug, Clone)]
-pub struct PreviewData {
-  grade: PasswordGrade,
-  info: PasswordView,
-}
-
-impl PreviewData {
-  pub fn new(grade: PasswordGrade, info: PasswordView) -> Self {
-    PreviewData { grade, info }
-  }
-
-  pub fn get_grade(&self) -> PasswordGrade {
-    self.grade
-  }
-
-  pub fn get_levels(&self, i: usize) -> u8 {
-    self.info.levels[i]
-  }
-
-  pub fn get_djinn(&self, i: usize, j: usize) -> bool {
-    self.info.djinn[j][i]
-  }
-
-  pub fn get_events(&self, i: usize) -> bool {
-    self.info.events[i]
-  }
-
-  pub fn get_base_stats(&self, i: usize, j: usize) -> u16 {
-    self.info.base_stats[j][i]
-  }
-
-  pub fn get_stats(&self, i: usize, j: usize) -> u16 {
-    self.info.stats[j][i]
-  }
-
-  pub fn get_psy_items(&self, i: usize) -> bool {
-    self.info.psy_items[i]
-  }
-
-  pub fn get_items(&self, i: usize, j: usize) -> (u16, u8) {
-    self.info.items[j][i]
-  }
-
-  pub fn get_coins(&self) -> u32 {
-    self.info.coins
-  }
-}
-
+/// 显示“密码数据预览”窗口
 impl App {
   pub fn show_pwd_info_window(&mut self, ui: &mut egui::Ui, svg_icon_size: f32, is_dark: bool) {
     let color = get_default_svg_color(is_dark);
 
     egui::Window::new("密码数据预览")
-      .open(&mut self.pwd_info_window_open)
+      .open(&mut self.preview.window_open)
       .resizable(false)
       .default_width(450.0)
       .show(ui, |ui| {
+        // 槽位选择
         ui.columns_const(|[col_1, col_2, col_3]| {
-          if self.preview_data[0].is_some() {
-            col_1.selectable_value(
-              &mut self.preview_slot,
-              SaveSlotEnum::First,
-              save_slot_atoms(SaveSlotEnum::First, svg_icon_size, is_dark, true),
-            );
-          } else {
-            col_1.add_enabled(
-              false,
-              Button::selectable(
-                self.preview_slot == SaveSlotEnum::First,
-                save_slot_atoms(SaveSlotEnum::First, svg_icon_size, is_dark, true),
-              ),
-            );
-          }
-
-          if self.preview_data[1].is_some() {
-            col_2.selectable_value(
-              &mut self.preview_slot,
-              SaveSlotEnum::Second,
-              save_slot_atoms(SaveSlotEnum::Second, svg_icon_size, is_dark, true),
-            );
-          } else {
-            col_2.add_enabled(
-              false,
-              Button::selectable(
-                self.preview_slot == SaveSlotEnum::Second,
-                save_slot_atoms(SaveSlotEnum::Second, svg_icon_size, is_dark, true),
-              ),
-            );
-          }
-
-          if self.preview_data[2].is_some() {
-            col_3.selectable_value(
-              &mut self.preview_slot,
-              SaveSlotEnum::Third,
-              save_slot_atoms(SaveSlotEnum::Third, svg_icon_size, is_dark, true),
-            );
-          } else {
-            col_3.add_enabled(
-              false,
-              Button::selectable(
-                self.preview_slot == SaveSlotEnum::Third,
-                save_slot_atoms(SaveSlotEnum::Third, svg_icon_size, is_dark, true),
-              ),
-            );
+          for (col, slot) in [col_1, col_2, col_3].iter_mut().zip(SaveSlotEnum::ALL) {
+            if self.preview.data[slot.index()].is_some() {
+              col.selectable_value(
+                &mut self.preview.slot,
+                slot,
+                save_slot_atoms(slot, svg_icon_size, is_dark, true),
+              );
+            } else {
+              col.add_enabled(
+                false,
+                Button::selectable(
+                  self.preview.slot == slot,
+                  save_slot_atoms(slot, svg_icon_size, is_dark, true),
+                ),
+              );
+            }
           }
         });
 
         ui.separator();
 
-        if self.preview_current.is_some() {
-          let current_data = self.preview_current.as_ref().unwrap();
+        // 页签选择
+        ui.columns_const(|[col_1, col_2, col_3, col_4]| {
+          for (i, (col, img)) in [col_1, col_2, col_3, col_4]
+            .iter_mut()
+            .zip([
+              NUMBER_1_SQUARE_FILL,
+              NUMBER_2_SQUARE_FILL,
+              NUMBER_3_SQUARE_FILL,
+              NUMBER_4_SQUARE_FILL,
+            ])
+            .enumerate()
+          {
+            col.selectable_value(
+              &mut self.preview.page,
+              PreviewPageEnum::ALL[i],
+              (
+                Image::new(img).tint(color).max_height(svg_icon_size),
+                PreviewPageEnum::ALL[i].name(),
+              ),
+            );
+          }
+        });
 
-          ui.columns_const(|[col_1, col_2, col_3, col_4]| {
-            col_1.selectable_value(
-              &mut self.preview_page,
-              PreviewPageEnum::Character,
-              (
-                Image::new(NUMBER_1_SQUARE_FILL)
-                  .tint(color)
-                  .max_height(svg_icon_size),
-                "角色",
-              ),
-            );
-            col_2.selectable_value(
-              &mut self.preview_page,
-              PreviewPageEnum::Item,
-              (
-                Image::new(NUMBER_2_SQUARE_FILL)
-                  .tint(color)
-                  .max_height(svg_icon_size),
-                "物品",
-              ),
-            );
-            col_3.selectable_value(
-              &mut self.preview_page,
-              PreviewPageEnum::Djinn,
-              (
-                Image::new(NUMBER_3_SQUARE_FILL)
-                  .tint(color)
-                  .max_height(svg_icon_size),
-                "精灵",
-              ),
-            );
-            col_4.selectable_value(
-              &mut self.preview_page,
-              PreviewPageEnum::Misc,
-              (
-                Image::new(NUMBER_4_SQUARE_FILL)
-                  .tint(color)
-                  .max_height(svg_icon_size),
-                "其他",
-              ),
-            );
-          });
-
-          match self.preview_page {
+        // 按页签渲染
+        if let Some(data) = self.preview.data[self.preview.slot.index()].as_ref() {
+          match self.preview.page {
+            // 角色
             PreviewPageEnum::Character => {
               ui.horizontal(|ui| {
                 ui.radio_value(
-                  &mut self.stats_mode,
+                  &mut self.preview.stats_mode,
                   PreviewModeEnum::Main,
                   "基础能力状态属性",
                 );
-                ui.radio_value(&mut self.stats_mode, PreviewModeEnum::Alt, "能力状态属性");
+                ui.radio_value(
+                  &mut self.preview.stats_mode,
+                  PreviewModeEnum::Alt,
+                  "能力状态属性",
+                );
               });
-
               ui.add_space(8.0);
-
-              ui.columns_const(|[col_1, col_2, col_3, col_4, col_5]| {
-                Label::new("").selectable(false).ui(col_1);
-                Label::new(RichText::new("罗宾").strong())
-                  .selectable(false)
-                  .ui(col_2);
-                Label::new(RichText::new("杰拉德").strong())
-                  .selectable(false)
-                  .ui(col_3);
-                Label::new(RichText::new("伊万").strong())
-                  .selectable(false)
-                  .ui(col_4);
-                Label::new(RichText::new("梅雅莉").strong())
-                  .selectable(false)
-                  .ui(col_5);
+              ui.columns_const(|[c1, c2, c3, c4, c5]| {
+                for (col, name) in [c1, c2, c3, c4, c5].iter_mut().zip([
+                  "",
+                  PC_NAMES[0],
+                  PC_NAMES[1],
+                  PC_NAMES[2],
+                  PC_NAMES[3],
+                ]) {
+                  Label::new(name).selectable(false).ui(col);
+                }
               });
-
               ui.add_space(4.0);
-
               egui::Grid::new("preview_stats")
                 .striped(true)
                 .num_columns(5)
-                .min_col_width(
-                  (ui.available_width() - ui.spacing().item_spacing.x * (5 as f32 - 1.0)) / 5.0,
-                )
+                .min_col_width((ui.available_width() - ui.spacing().item_spacing.x * 4.0) / 5.0)
                 .show(ui, |ui| {
                   Label::new(RichText::new("等级").strong())
                     .selectable(false)
                     .ui(ui);
 
                   for i in 0..4 {
-                    Label::new(format!("{}", current_data.get_levels(i)))
+                    Label::new(format!("{}", data.levels(i)))
                       .selectable(false)
                       .ui(ui);
                   }
                   ui.end_row();
-
-                  // 金、银密码
-                  if self.char_page_mode == PreviewModeEnum::Main {
+                  if self.preview.char_mode == PreviewModeEnum::Main {
                     for i in 0..6 {
                       Label::new(RichText::new(CHAR_STATS_STR[i]).strong())
                         .selectable(false)
                         .ui(ui);
-
                       for j in 0..4 {
-                        let stats_string = match self.stats_mode {
+                        let stats_string = match self.preview.stats_mode {
                           PreviewModeEnum::Main => {
-                            let value = current_data.get_base_stats(i, j);
+                            let value = data.base_stats(i, j);
                             if value > MAX_BASE_STATS[i] {
                               let real_value = match i {
-                                // Attack, Defense, Agility
                                 2 | 3 | 4 => value & MAX_BASE_STATS[i],
                                 _ => MAX_BASE_STATS[i],
                               };
-
                               format!("{value} ({real_value})")
                             } else {
                               format!("{value}")
                             }
                           }
-                          PreviewModeEnum::Alt => {
-                            let value = current_data.get_stats(i, j);
-                            format!("{value}")
-                          }
+                          PreviewModeEnum::Alt => format!("{}", data.stats(i, j)),
                         };
-
                         Label::new(stats_string).selectable(false).ui(ui);
                       }
                       ui.end_row();
@@ -291,6 +167,7 @@ impl App {
                   }
                 });
             }
+            // 物品
             PreviewPageEnum::Item => {
               ui.horizontal(|ui| {
                 Label::new("物品名称")
@@ -299,113 +176,102 @@ impl App {
                   .on_hover_text("默认值为“1代汉化”");
                 ComboBox::from_id_salt("物品名语言版本")
                   .width(100.0)
-                  .selected_text(self.item_preview_lang.name())
+                  .selected_text(self.preview.item_lang.name())
                   .show_ui(ui, |ui| {
-                    for ele in Language::LANGUAGES {
-                      ui.selectable_value(&mut self.item_preview_lang, ele, ele.name());
+                    for lang in Language::LANGUAGES {
+                      ui.selectable_value(&mut self.preview.item_lang, lang, lang.name());
                     }
                   });
               });
-
               ui.add_space(8.0);
-
-              match self.item_page_mode {
+              match self.preview.item_mode {
+                // 物品 → 全物品
                 PreviewModeEnum::Main => {
-                  ui.columns_const(|[col_1, col_2, col_3, col_4]| {
-                    Label::new(RichText::new("罗宾").strong())
-                      .selectable(false)
-                      .ui(col_1);
-                    Label::new(RichText::new("杰拉德").strong())
-                      .selectable(false)
-                      .ui(col_2);
-                    Label::new(RichText::new("伊万").strong())
-                      .selectable(false)
-                      .ui(col_3);
-                    Label::new(RichText::new("梅雅莉").strong())
-                      .selectable(false)
-                      .ui(col_4);
+                  ui.columns_const(|[c1, c2, c3, c4]| {
+                    for (col, name) in [c1, c2, c3, c4].iter_mut().zip([
+                      PC_NAMES[0],
+                      PC_NAMES[1],
+                      PC_NAMES[2],
+                      PC_NAMES[3],
+                    ]) {
+                      Label::new(RichText::new(name).strong())
+                        .selectable(false)
+                        .ui(col);
+                    }
                   });
-
                   ui.add_space(4.0);
-
                   egui::Grid::new("preview_items")
                     .striped(true)
                     .num_columns(4)
-                    .min_col_width(
-                      (ui.available_width() - ui.spacing().item_spacing.x * (4 as f32 - 1.0)) / 4.0,
-                    )
+                    .min_col_width((ui.available_width() - ui.spacing().item_spacing.x * 3.0) / 4.0)
                     .show(ui, |ui| {
                       for i in 0..15 {
                         for j in 0..4 {
-                          let (id, amount) = current_data.get_items(i, j);
+                          let (id, amount) = data.items(i, j);
                           if id == 0 {
                             Label::new("").selectable(false).ui(ui);
                           } else {
                             ui.horizontal(|ui| {
-                              let icon_img = egui::Image::new(&self.item_icon_img[icon_id(id - 1)])
-                                .fit_to_exact_size(egui::vec2(16.0, 16.0));
-                              ui.add(icon_img);
-
+                              ui.add(
+                                egui::Image::new(&self.item_icon_img[icon_id(id - 1)])
+                                  .fit_to_exact_size(egui::vec2(16.0, 16.0)),
+                              );
                               let item_str = if STACKABLE_ITEMS.contains(&id) {
-                                &format!(
+                                format!(
                                   "{}×{amount}",
-                                  ITEM_NAMES[id as usize - 1].name(self.item_preview_lang)
+                                  ITEM_NAMES[id as usize - 1].name(self.preview.item_lang)
                                 )
                               } else {
-                                &format!(
-                                  "{}",
-                                  ITEM_NAMES[id as usize - 1].name(self.item_preview_lang)
-                                )
+                                ITEM_NAMES[id as usize - 1]
+                                  .name(self.preview.item_lang)
+                                  .to_string()
                               };
                               Label::new(item_str).selectable(false).ui(ui);
                             });
-                          };
+                          }
                         }
                         ui.end_row();
                       }
                     });
                 }
+                // 物品 → 精神力物品
                 PreviewModeEnum::Alt => {
                   for i in PSYNERGY_ITEM_GAMEPLAY_ORDER {
                     ui.horizontal(|ui| {
-                      if current_data.get_psy_items(i) {
+                      if data.psy_items(i) {
                         ui.horizontal(|ui| {
                           ui.add(
                             Image::new(CHECK_MARK)
                               .tint(SUCCESS)
                               .max_height(svg_icon_size),
                           );
-
-                          let icon_img = egui::Image::new(
-                            &self.item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
-                          )
-                          .fit_to_exact_size(egui::vec2(16.0, 16.0));
-                          ui.add(icon_img);
-
-                          Label::new(format!(
-                            "{}",
+                          ui.add(
+                            egui::Image::new(
+                              &self.item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
+                            )
+                            .fit_to_exact_size(egui::vec2(16.0, 16.0)),
+                          );
+                          Label::new(
                             ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
-                              .name(self.item_preview_lang)
-                          ))
+                              .name(self.preview.item_lang),
+                          )
                           .selectable(false)
                           .ui(ui);
                         });
                       } else {
                         ui.horizontal(|ui| {
                           ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
-
-                          let icon_img = egui::Image::new(
-                            &self.item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
-                          )
-                          .fit_to_exact_size(egui::vec2(16.0, 16.0));
-                          ui.add(icon_img);
-
+                          ui.add(
+                            egui::Image::new(
+                              &self.item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
+                            )
+                            .fit_to_exact_size(egui::vec2(16.0, 16.0)),
+                          );
                           Label::new(
-                            RichText::new(format!(
-                              "{}",
+                            RichText::new(
                               ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
-                                .name(self.item_preview_lang)
-                            ))
+                                .name(self.preview.item_lang),
+                            )
                             .weak()
                             .strikethrough(),
                           )
@@ -418,6 +284,7 @@ impl App {
                 }
               }
             }
+            // 精灵
             PreviewPageEnum::Djinn => {
               ui.horizontal(|ui| {
                 Label::new("精灵名称")
@@ -426,60 +293,45 @@ impl App {
                   .on_hover_text("默认值为“1代汉化”");
                 ComboBox::from_id_salt("精灵名语言版本")
                   .width(100.0)
-                  .selected_text(self.djinn_preview_lang.name())
+                  .selected_text(self.preview.djinn_lang.name())
                   .show_ui(ui, |ui| {
                     for ele in Language::LANGUAGES {
-                      ui.selectable_value(&mut self.djinn_preview_lang, ele, ele.name());
+                      ui.selectable_value(&mut self.preview.djinn_lang, ele, ele.name());
                     }
                   });
               });
-
               ui.add_space(8.0);
-
-              ui.columns_const(|[col_1, col_2, col_3, col_4]| {
-                Label::new(RichText::new("维纳斯").strong())
-                  .selectable(false)
-                  .ui(col_1);
-                Label::new(RichText::new("玛尔斯").strong())
-                  .selectable(false)
-                  .ui(col_2);
-                Label::new(RichText::new("朱庇特").strong())
-                  .selectable(false)
-                  .ui(col_3);
-                Label::new(RichText::new("墨丘利").strong())
-                  .selectable(false)
-                  .ui(col_4);
+              ui.columns_const(|[c1, c2, c3, c4]| {
+                for (col, element) in [c1, c2, c3, c4].iter_mut().zip(Element::GAMEPLAY_ORDER) {
+                  Label::new(RichText::new(element.name()).strong())
+                    .selectable(false)
+                    .ui(col);
+                }
               });
-
               ui.add_space(4.0);
-
               egui::Grid::new("preview_djinns")
                 .striped(true)
                 .num_columns(4)
-                .min_col_width(
-                  (ui.available_width() - ui.spacing().item_spacing.x * (4 as f32 - 1.0)) / 4.0,
-                )
+                .min_col_width((ui.available_width() - ui.spacing().item_spacing.x * 3.0) / 4.0)
                 .show(ui, |ui| {
                   for i in 0..7 {
                     for j in 0..4 {
-                      if self.preview_current.as_ref().unwrap().get_djinn(i, j) {
+                      if data.djinn(i, j) {
                         ui.horizontal(|ui| {
                           ui.add(
                             Image::new(CHECK_MARK)
                               .tint(SUCCESS)
                               .max_height(svg_icon_size),
                           );
-
-                          Label::new(ALL_DJINN_NAMES[j][i].name(self.djinn_preview_lang))
+                          Label::new(ALL_DJINN_NAMES[j][i].name(self.preview.djinn_lang))
                             .selectable(false)
                             .ui(ui);
                         });
                       } else {
                         ui.horizontal(|ui| {
                           ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
-
                           Label::new(
-                            RichText::new(ALL_DJINN_NAMES[j][i].name(self.djinn_preview_lang))
+                            RichText::new(ALL_DJINN_NAMES[j][i].name(self.preview.djinn_lang))
                               .weak()
                               .strikethrough(),
                           )
@@ -488,47 +340,41 @@ impl App {
                         });
                       }
                     }
-
                     ui.end_row();
                   }
                 });
             }
+            // 其他（金币、事件）
             PreviewPageEnum::Misc => {
-              if current_data.get_grade() == PasswordGrade::Gold {
+              // 金级别 → 金币
+              if data.grade() == PasswordGrade::Gold {
                 ui.horizontal(|ui| {
                   Label::new("金币数").selectable(false).ui(ui);
-                  Label::new(format!("{}", current_data.get_coins()))
+                  Label::new(format!("{}", data.coins()))
                     .selectable(false)
                     .ui(ui);
                 });
+
+                ui.separator();
               }
 
-              ui.separator();
-
+              // 事件（游戏顺序）
               for i in EVENT_GAMEPLAY_ORDER {
-                if current_data.get_events(i) {
+                if data.events(i) {
                   ui.horizontal(|ui| {
                     ui.add(
                       Image::new(CHECK_MARK)
                         .tint(SUCCESS)
                         .max_height(svg_icon_size),
                     );
-
-                    Label::new(format!("{}", EVENT_STR[i]))
-                      .selectable(false)
-                      .ui(ui);
+                    Label::new(EVENT_STR[i]).selectable(false).ui(ui);
                   });
                 } else {
                   ui.horizontal(|ui| {
                     ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
-
-                    Label::new(
-                      RichText::new(format!("{}", EVENT_STR[i]))
-                        .weak()
-                        .strikethrough(),
-                    )
-                    .selectable(false)
-                    .ui(ui);
+                    Label::new(RichText::new(EVENT_STR[i]).weak().strikethrough())
+                      .selectable(false)
+                      .ui(ui);
                   });
                 }
               }
@@ -536,86 +382,5 @@ impl App {
           }
         }
       });
-  }
-
-  pub fn read_from(&mut self, sub_command: SubCommandEnum) {
-    match sub_command {
-      SubCommandEnum::First => {
-        self.preview_data = [None, None, None];
-        let mut is_first_element = true;
-        let mut min_slot = 0;
-        for (index, ele) in self.sources.from_save.slots.iter().enumerate() {
-          if let Some(raw_save) = ele {
-            if is_first_element {
-              min_slot = index;
-              is_first_element = false;
-            }
-
-            let pwd_info = view_from_raw_save(&raw_save.data);
-            self.preview_data[index] = Some(PreviewData::new(PasswordGrade::Gold, pwd_info));
-          }
-        }
-        self.preview_slot = SaveSlotEnum::from(min_slot);
-        self.preview_current = self.preview_data[min_slot].clone();
-
-        self.char_page_mode = PreviewModeEnum::Main;
-        self.item_page_mode = PreviewModeEnum::Main;
-        self.pwd_info_window_open = true;
-      }
-      SubCommandEnum::Second => {
-        self.preview_data = [None, None, None];
-        let src = self.sources.from_text.as_ref().unwrap();
-        let src_grade = src.grade;
-        let password_data = read_from_bits(&src.bits, src_grade);
-        let pwd_info = view_from_data(&password_data);
-        self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
-        self.preview_slot = SaveSlotEnum::First;
-        self.preview_current = self.preview_data[0].clone();
-
-        match src_grade {
-          PasswordGrade::Gold => {
-            self.char_page_mode = PreviewModeEnum::Main;
-            self.item_page_mode = PreviewModeEnum::Main;
-          }
-          PasswordGrade::Silver => {
-            self.char_page_mode = PreviewModeEnum::Main;
-            self.item_page_mode = PreviewModeEnum::Alt;
-          }
-          PasswordGrade::Bronze => {
-            self.char_page_mode = PreviewModeEnum::Alt;
-            self.item_page_mode = PreviewModeEnum::Alt;
-          }
-        }
-
-        self.pwd_info_window_open = true;
-      }
-      SubCommandEnum::Third => {
-        self.preview_data = [None, None, None];
-        let src = self.sources.from_dump.as_ref().unwrap();
-        let src_grade = src.grade;
-        let password_data = read_from_bits(&src.bits, src_grade);
-        let pwd_info = view_from_data(&password_data);
-        self.preview_data[0] = Some(PreviewData::new(src_grade, pwd_info));
-        self.preview_slot = SaveSlotEnum::First;
-        self.preview_current = self.preview_data[0].clone();
-
-        match src_grade {
-          PasswordGrade::Gold => {
-            self.char_page_mode = PreviewModeEnum::Main;
-            self.item_page_mode = PreviewModeEnum::Main;
-          }
-          PasswordGrade::Silver => {
-            self.char_page_mode = PreviewModeEnum::Main;
-            self.item_page_mode = PreviewModeEnum::Alt;
-          }
-          PasswordGrade::Bronze => {
-            self.char_page_mode = PreviewModeEnum::Alt;
-            self.item_page_mode = PreviewModeEnum::Alt;
-          }
-        }
-
-        self.pwd_info_window_open = true;
-      }
-    }
   }
 }

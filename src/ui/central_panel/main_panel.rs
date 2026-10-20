@@ -22,7 +22,7 @@ const CUSTOM_ORDER_COMMANDS: [CommandEnum; CommandEnum::ALL.len()] = [
 impl App {
   pub fn show_main_panel(&mut self, ui: &mut egui::Ui, svg_icon_size: f32, is_dark: bool) {
     egui::CentralPanel::default().show(ui, |ui| {
-      if self.about_window_open || self.pwd_info_window_open {
+      if self.about_window_open || self.preview.window_open {
         ui.disable();
       }
 

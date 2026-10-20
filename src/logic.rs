@@ -8,6 +8,7 @@ pub mod custom_name;
 pub mod inject_pwd;
 pub mod password_export;
 pub mod patch_rom;
+pub mod preview;
 pub mod save_convert;
 pub mod save_slot;
 pub mod sources;

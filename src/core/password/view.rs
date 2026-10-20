@@ -27,6 +27,15 @@ impl Element {
   pub fn index(self) -> usize {
     self as usize
   }
+
+  pub fn name(self) -> &'static str {
+    match self {
+      Self::Venus => "维纳斯",
+      Self::Mercury => "墨丘利",
+      Self::Mars => "玛尔斯",
+      Self::Jupiter => "朱庇特",
+    }
+  }
 }
 
 pub fn view_from_data(data: &PasswordData) -> PasswordView {
