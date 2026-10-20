@@ -4,15 +4,18 @@ use egui::{Checkbox, ComboBox, Grid, Label, RichText, TextEdit, Ui, Widget};
 use rfd::FileDialog;
 
 use crate::{
-  core::enums::GameRegion,
-  logic::command::SubCommandEnum,
-  logic::password_export::from_text::{FromTextRequest, FromTextState},
-  logic::sources::PasswordSources,
+  core::enums::{GameRegion, PasswordGrade},
+  logic::{
+    command::SubCommandEnum,
+    password_export::from_text::{FromTextRequest, FromTextState},
+    sources::PasswordSources,
+  },
   ui::page::{AppRequest, FrameCtx},
-  widgets::buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
+  widgets::{
+    buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_file_btn},
+    rows::{PathAction, dir_row},
+  },
 };
-
-use crate::core::enums::PasswordGrade;
 
 const DESC_C1S2: &str = r"“密码级别”，“转换密码版本”，“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
 以上五项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
@@ -165,26 +168,18 @@ pub fn show(
       }
       ui.end_row();
       // 第7行
-      Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
-      ui.horizontal(|ui| {
-        if ui.add(select_dir_btn(svg_icon_size)).clicked() {
-          if let Some(dir) = FileDialog::new().pick_folder() {
-            state.out_dir = dir.to_string_lossy().into_owned();
-          }
-        }
-        if state.out_dir.is_empty() {
-          ui.add_enabled(false, reset_btn(svg_icon_size));
-        } else if ui.add(reset_btn(svg_icon_size)).clicked() {
-          state.out_dir.clear();
-        }
-        ui.add(
-          TextEdit::singleline(&mut state.out_dir)
-            .interactive(false)
-            .hint_text("若留空，则输出目录与输入的密码文本文件所在目录相同")
-            .desired_width(f32::INFINITY),
-        );
-      });
-      ui.end_row();
+      match dir_row(
+        ui,
+        "指定输出文件保存目录",
+        "自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。",
+        "若留空，则输出目录与输入的密码文本文件所在目录相同",
+        &mut state.out_dir,
+        svg_icon_size,
+      ) {
+        PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
+        PathAction::Reset => state.out_dir.clear(),
+        PathAction::None => {},
+      };
     });
 
   requests

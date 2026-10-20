@@ -1,7 +1,6 @@
 //! ③ 内存转储子页视图：ui侧只负责画widget、登记下一帧logic侧要处理的request。
 
-use egui::{Checkbox, ComboBox, Grid, Label, RichText, TextEdit, Ui, Widget};
-use rfd::FileDialog;
+use egui::{Checkbox, ComboBox, Grid, Label, RichText, Ui, Widget};
 
 use crate::{
   core::enums::{GameRegion, PasswordGrade, PasswordVersion},
@@ -9,7 +8,10 @@ use crate::{
   logic::password_export::from_dump::{FromDumpRequest, FromDumpState},
   logic::sources::PasswordSources,
   ui::page::{AppRequest, FrameCtx},
-  widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
+  widgets::{
+    buttons::pwd_info_btn,
+    rows::{PathAction, dir_row, file_row},
+  },
 };
 
 const DESC_C1S3: &str = r"“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。
@@ -39,33 +41,25 @@ pub fn show(
     .striped(true)
     .show(ui, |ui| {
       // 第1行
-      Label::new("输入文件路径")
-        .selectable(false)
-        .ui(ui)
-        .on_hover_text("黄金太阳的密码内存转储文件");
-      ui.horizontal(|ui| {
-        if ui.add(select_file_btn(svg_icon_size)).clicked() {
-          if let Some(file) = FileDialog::new().pick_file() {
-            // 登记读取密码内存转储文件并解析的请求，由下一帧的`logic()`实际进行处理
-            state.request(FromDumpRequest::Load(file));
-          }
+      match file_row(
+        ui,
+        "输入文件路径",
+        "黄金太阳的密码内存转储文件",
+        "内存转储文件路径",
+        &mut state.input_file_path,
+        svg_icon_size,
+      ) {
+        PathAction::Picked(file) => {
+          // 登记读取密码内存转储文件并解析的请求，由下一帧的`logic()`实际进行处理
+          state.request(FromDumpRequest::Load(file));
         }
-        if state.input_file_path.is_empty() {
-          ui.add_enabled(false, reset_btn(svg_icon_size));
-        } else if ui.add(reset_btn(svg_icon_size)).clicked() {
+        PathAction::Reset => {
           state.reset(sources);
-
           // `内存转储`的【重置】要联动`注入密码`的密码源，因此发送重置`注入密码`中密码源选择为`内存转储`的请求，由下一帧的`App::logic()`实际进行处理
           requests.push(AppRequest::ResetPasswordSources(SubCommandEnum::Third));
         }
-        ui.add(
-          TextEdit::singleline(&mut state.input_file_path)
-            .interactive(false)
-            .hint_text("内存转储文件路径")
-            .desired_width(f32::INFINITY),
-        );
-      });
-      ui.end_row();
+        PathAction::None => {}
+      }
       // 第2行
       if let Some(source_grade) = sources.dmp_grade() {
         Label::new("密码级别").selectable(false).ui(ui).on_hover_text("目标密码级别（仅用于降级），指定级别不可高于输入文件的级别。若两者级别相同则忽略；若可降级则生成降级后的密码文本文件（及相关文件）；若留空，则目标级别同输入文件。");
@@ -162,26 +156,18 @@ pub fn show(
       }
       ui.end_row();
       // 第6行
-      Label::new("指定输出文件保存目录").selectable(false).ui(ui).on_hover_text("自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。");
-      ui.horizontal(|ui| {
-        if ui.add(select_dir_btn(svg_icon_size)).clicked() {
-          if let Some(dir) = FileDialog::new().pick_folder() {
-            state.out_dir = dir.to_string_lossy().into_owned();
-          }
-        }
-        if state.out_dir.is_empty() {
-          ui.add_enabled(false, reset_btn(svg_icon_size));
-        } else if ui.add(reset_btn(svg_icon_size)).clicked() {
-          state.out_dir.clear();
-        }
-        ui.add(
-          TextEdit::singleline(&mut state.out_dir)
-            .interactive(false)
-            .hint_text("若留空，则输出目录与输入的内存转储文件所在目录相同")
-            .desired_width(f32::INFINITY),
-        );
-      });
-      ui.end_row();
+      match dir_row(
+        ui,
+        "指定输出文件保存目录",
+        "自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。",
+        "若留空，则输出目录与输入的内存转储文件所在目录相同",
+        &mut state.out_dir,
+        svg_icon_size,
+      ) {
+        PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
+        PathAction::Reset => state.out_dir.clear(),
+        PathAction::None => {},
+      };
     });
 
   requests
