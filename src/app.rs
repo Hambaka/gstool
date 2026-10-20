@@ -61,37 +61,43 @@ impl App {
     // 1. 设置道具图标图片
     // 加载道具图标图片
     let image_bytes = include_bytes!("../assets/item_icon_img/all_items.png");
-    let image = image::load_from_memory_with_format(image_bytes, image::ImageFormat::Png).unwrap();
-    let mut handles = Vec::new();
+    let handles = {
+      let mut handle_vec = Vec::new();
 
-    let icon_size = 16;
-    let columns = 10;
+      let image =
+        image::load_from_memory_with_format(image_bytes, image::ImageFormat::Png).unwrap();
 
-    for id in 0..362 {
-      // 当前图标所在列
-      let col = id % columns;
-      // 当前图标所在行
-      let row = id / columns;
+      let icon_size = 16;
+      let columns = 10;
 
-      // 起始像素坐标
-      let x = (col * icon_size) as u32;
-      let y = (row * icon_size) as u32;
+      for id in 0..362 {
+        // 当前图标所在列
+        let col = id % columns;
+        // 当前图标所在行
+        let row = id / columns;
 
-      // 从完整大图中获取该图标的 16x16 的图像
-      let sub_image = image.view(x, y, icon_size as u32, icon_size as u32);
-      // 开始转换为egui的TextureHandle
-      let rgba_image = sub_image.to_image();
-      let pixels = rgba_image.into_raw();
-      let color_image = egui::ColorImage::from_rgba_unmultiplied([icon_size, icon_size], &pixels);
+        // 起始像素坐标
+        let x = (col * icon_size) as u32;
+        let y = (row * icon_size) as u32;
 
-      let handle = cc.egui_ctx.load_texture(
-        format!("item_icon_{}", id),
-        color_image,
-        TextureOptions::NEAREST,
-      );
+        // 从完整大图中获取该图标的 16x16 的图像
+        let sub_image = image.view(x, y, icon_size as u32, icon_size as u32);
+        // 开始转换为egui的TextureHandle
+        let rgba_image = sub_image.to_image();
+        let pixels = rgba_image.into_raw();
+        let color_image = egui::ColorImage::from_rgba_unmultiplied([icon_size, icon_size], &pixels);
 
-      handles.push(handle);
-    }
+        let handle = cc.egui_ctx.load_texture(
+          format!("item_icon_{}", id),
+          color_image,
+          TextureOptions::NEAREST,
+        );
+
+        handle_vec.push(handle);
+      }
+
+      handle_vec
+    };
 
     Self {
       preview: PwdInfoState::default(),
