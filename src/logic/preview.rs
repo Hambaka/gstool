@@ -146,7 +146,12 @@ impl Default for PwdInfoState {
 
 impl PwdInfoState {
   /// 从密码来源加载预览数据
-  pub fn load_from(&mut self, sources: &PasswordSources, sub: SubCommandEnum) {
+  pub fn load_from(
+    &mut self,
+    sources: &PasswordSources,
+    sub: SubCommandEnum,
+    slot: Option<SaveSlotEnum>,
+  ) {
     match sub {
       SubCommandEnum::First => {
         self.data = [None, None, None];
@@ -158,7 +163,9 @@ impl PwdInfoState {
           }
         }
 
-        self.slot = sources.first_available_slot().unwrap();
+        self.slot = slot.map_or(sources.first_available_slot().unwrap(), |selected_slot| {
+          selected_slot
+        });
         self.page = PreviewPageEnum::Character;
         // 显示角色的全部属性
         self.char_mode = PreviewModeEnum::Main;

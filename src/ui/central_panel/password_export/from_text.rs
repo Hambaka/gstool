@@ -144,7 +144,7 @@ pub fn show(
         ui.add_enabled(sources.has_text(), Checkbox::without_text(&mut state.export_data_text));
         if ui.add_enabled(sources.has_text(), pwd_info_btn(svg_icon_size)).clicked() {
           // 登记打开密码信息预览窗口的请求（以`密码文本`为数据源）
-          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Second));
+          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Second, None));
         }
       });
       ui.end_row();

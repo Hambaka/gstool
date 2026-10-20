@@ -129,7 +129,7 @@ pub fn show(
         ui.add_enabled(sources.has_dump(), Checkbox::without_text(&mut state.export_data_text));
         if ui.add_enabled(sources.has_dump(), pwd_info_btn(svg_icon_size)).clicked() {
           // 发送打开密码信息预览窗口的请求（以`内存转储`为数据源）
-          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Third));
+          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Third, None));
         }
       });
       ui.end_row();

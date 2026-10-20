@@ -165,7 +165,7 @@ pub fn show(
               if ui.add(pwd_info_btn(svg_icon_size))
                 .clicked()
               {
-                requests.push(AppRequest::OpenPasswordPreview(source_choice.kind));
+                requests.push(AppRequest::OpenPasswordPreview(source_choice.kind, source_choice.slot));
               }
             }
           });

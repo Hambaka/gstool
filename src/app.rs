@@ -203,7 +203,9 @@ impl eframe::App for App {
     for request in requests {
       match request {
         AppRequest::Run(command) => self.run_command(command),
-        AppRequest::OpenPasswordPreview(sub) => self.preview.load_from(&self.sources, sub),
+        AppRequest::OpenPasswordPreview(sub, slot) => {
+          self.preview.load_from(&self.sources, sub, slot)
+        }
         AppRequest::ResetPasswordSources(sub) => self.c5.clear_source(sub),
       }
     }

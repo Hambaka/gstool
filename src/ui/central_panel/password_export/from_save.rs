@@ -154,7 +154,7 @@ pub fn show(
           .clicked()
         {
           // 登记打开密码信息预览窗口的请求（以`存档文件`为数据源）
-          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::First));
+          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::First, None));
         }
       });
       ui.end_row();
