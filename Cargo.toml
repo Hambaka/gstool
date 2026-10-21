@@ -9,8 +9,8 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-egui = { git = "https://github.com/emilk/egui", rev = "8f6d3d6ed99cb24d2e14c43951803d2868db40b1", default-features = false }
-eframe = { git = "https://github.com/emilk/egui", rev = "8f6d3d6ed99cb24d2e14c43951803d2868db40b1", default-features = false, features = [
+egui = { version = "0.37", default-features = false }
+eframe = { version = "0.37", default-features = false, features = [
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "wayland",       # To support Linux (and CI)
     "x11",           # To support older Linux distributions (restores one of the default features)
@@ -18,25 +18,21 @@ eframe = { git = "https://github.com/emilk/egui", rev = "8f6d3d6ed99cb24d2e14c43
     "links",
     "clipboard",
 ] }
-egui_extras = { version = "0.36", default-features = false, features = ["image", "svg"] }
+egui_extras = { version = "0.37", default-features = false, features = ["image", "svg"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
-egui-notify = "0.23"
+egui-notify = { git = "https://github.com/Hambaka/egui-notify.git", rev = "c4ebf32935a0d5f0bcb7c97680aa3a78528c996a" }
 phf = { version = "0.14", features = ["macros"] }
 rfd = "0.17"
 # zstd = "0.14"
-ruzstd = "0.9.0"
+ruzstd = "0.9"
 crc32fast = "1.5"
 chardetng = "1.0"
 encoding_rs = "0.8"
-arboard = { version = "3.6", default-features = false }
-
-[patch.crates-io]
-# 临时同步"egui-notify"所依赖的"egui"版本
-egui = { git = "https://github.com/emilk/egui", rev = "8f6d3d6ed99cb24d2e14c43951803d2868db40b1" }
+arboard = { version = "3.7", default-features = false }
 
 [build-dependencies]
 serde_json = "1.0"
-structured-zstd = "0.0.59"
+structured-zstd = "0.2"
 # zstd = "0.14"
 
 # https://github.com/johnthagen/min-sized-rust
