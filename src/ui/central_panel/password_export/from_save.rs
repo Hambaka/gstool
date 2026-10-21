@@ -26,13 +26,11 @@ pub fn show(
   ui: &mut Ui,
   state: &mut FromSaveState,
   sources: &mut PasswordSources,
-  ctx: FrameCtx,
+  f_ctx: FrameCtx,
 ) -> Vec<AppRequest> {
   let mut requests = Vec::new();
-  let svg_icon_size = ctx.svg_icon_size;
 
   Label::new(DESC_C1S1).selectable(false).ui(ui);
-
   ui.add_space(16.0);
 
   Grid::new("ID_GRID_C1S1")
@@ -63,7 +61,7 @@ pub fn show(
         "《黄金太阳 开启的封印》的存档文件。",
         "存档文件路径",
         &mut state.input_file_path,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         // 登记读取存档文件并解析的请求，由下一帧的`logic()`实际进行处理
         PathAction::Picked(file) => state.request(FromSaveRequest::Load(file)),
@@ -150,7 +148,7 @@ pub fn show(
           Checkbox::without_text(&mut state.export_data_text),
         );
         if ui
-          .add_enabled(sources.has_save(), pwd_info_btn(svg_icon_size))
+          .add_enabled(sources.has_save(), pwd_info_btn(f_ctx.svg_icon_size))
           .clicked()
         {
           // 登记打开密码信息预览窗口的请求（以`存档文件`为数据源）
@@ -166,7 +164,7 @@ pub fn show(
         "自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。",
         "若留空，则输出目录与输入的存档文件所在目录相同",
         &mut state.out_dir,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(dir) => {
           state.out_dir = dir.to_string_lossy().into_owned();

@@ -19,9 +19,7 @@ const DESC_C4: &str = r"使用该功能可为日版的《黄金太阳 开启的�
 ///
 /// 因为这一页只有自己状态的请求而没有跨功能的请求，
 /// 所以返回值是空的Vec。
-pub fn show(ui: &mut Ui, state: &mut PatchRomState, ctx: FrameCtx) -> Vec<AppRequest> {
-  let svg_icon_size = ctx.svg_icon_size;
-
+pub fn show(ui: &mut Ui, state: &mut PatchRomState, f_ctx: FrameCtx) -> Vec<AppRequest> {
   Label::new(DESC_C4).selectable(false).ui(ui);
   ui.add_space(16.0);
 
@@ -37,7 +35,7 @@ pub fn show(ui: &mut Ui, state: &mut PatchRomState, ctx: FrameCtx) -> Vec<AppReq
         "《黄金太阳 开启的封印》的ROM文件",
         "ROM文件路径",
         &mut state.display_path,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(file) => state.request(PatchRomRequest::Load(file)),
         PathAction::Reset => state.reset(),
@@ -52,7 +50,7 @@ pub fn show(ui: &mut Ui, state: &mut PatchRomState, ctx: FrameCtx) -> Vec<AppReq
         "自定义输出的汉化版ROM文件路径（推荐留空），若留空则将转换后的ROM文件保存到输入文件的同目录下。",
         "最新版汉化ROM输出路径",
         &mut state.out_dir,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

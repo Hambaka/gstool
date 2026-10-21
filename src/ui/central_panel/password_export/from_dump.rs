@@ -26,13 +26,11 @@ pub fn show(
   ui: &mut Ui,
   state: &mut FromDumpState,
   sources: &mut PasswordSources,
-  ctx: FrameCtx,
+  f_ctx: FrameCtx,
 ) -> Vec<AppRequest> {
   let mut requests = Vec::new();
-  let svg_icon_size = ctx.svg_icon_size;
 
   Label::new(DESC_C1S3).selectable(false).ui(ui);
-
   ui.add_space(16.0);
 
   Grid::new("ID_GRID_C1S3")
@@ -47,7 +45,7 @@ pub fn show(
         "黄金太阳的密码内存转储文件",
         "内存转储文件路径",
         &mut state.input_file_path,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(file) => {
           // 登记读取密码内存转储文件并解析的请求，由下一帧的`logic()`实际进行处理
@@ -127,7 +125,7 @@ pub fn show(
       );
       ui.horizontal(|ui| {
         ui.add_enabled(sources.has_dump(), Checkbox::without_text(&mut state.export_data_text));
-        if ui.add_enabled(sources.has_dump(), pwd_info_btn(svg_icon_size)).clicked() {
+        if ui.add_enabled(sources.has_dump(), pwd_info_btn(f_ctx.svg_icon_size)).clicked() {
           // 发送打开密码信息预览窗口的请求（以`内存转储`为数据源）
           requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Third, None));
         }
@@ -140,7 +138,7 @@ pub fn show(
         "自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。",
         "若留空，则输出目录与输入的内存转储文件所在目录相同",
         &mut state.out_dir,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

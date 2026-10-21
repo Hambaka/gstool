@@ -32,11 +32,11 @@ pub mod ui {
     mod save_convert;
   }
   pub mod window {
-    mod about;
+    pub mod about;
     pub mod pwd_info;
   }
   mod error_modal;
   pub mod page;
-  mod top_panel;
+  pub mod top_panel;
 }
 pub use app::App;

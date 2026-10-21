@@ -3,10 +3,16 @@ use egui_notify::{Anchor, Toasts};
 use image::GenericImageView;
 
 use crate::{
-  logic::command::CommandEnum, logic::custom_name::CustomNameState,
-  logic::inject_pwd::InjectPwdState, logic::password_export::PasswordExportState,
-  logic::patch_rom::PatchRomState, logic::preview::PwdInfoState,
-  logic::save_convert::SaveConvertState, logic::sources::PasswordSources, ui::page::AppRequest,
+  logic::{
+    command::CommandEnum, custom_name::CustomNameState, inject_pwd::InjectPwdState,
+    password_export::PasswordExportState, patch_rom::PatchRomState, preview::PwdInfoState,
+    save_convert::SaveConvertState, sources::PasswordSources,
+  },
+  ui::{
+    page::{AppRequest, FrameCtx},
+    top_panel::show_top_panel,
+    window::about::{AboutState, show_about_window},
+  },
 };
 
 #[derive(Debug, Clone)]
@@ -28,7 +34,7 @@ pub struct App {
   pub preview: PwdInfoState,
   pub item_icon_img: Vec<TextureHandle>,
 
-  pub about_window_open: bool,
+  pub about: AboutState,
   pub toasts: Toasts,
   pub command: CommandEnum,
   /// 跨功能的请求队列：先在ui侧发送请求进行登记，再到下一帧由`App::logic()`消费（约定见`ui/page.rs`）
@@ -103,7 +109,7 @@ impl App {
       preview: PwdInfoState::default(),
       item_icon_img: handles,
 
-      about_window_open: false,
+      about: AboutState { window_open: false },
       toasts: Toasts::default()
         .with_anchor(Anchor::BottomRight)
         .with_shadow(Shadow {
@@ -193,6 +199,9 @@ impl eframe::App for App {
   fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     // Ctrl+Enter 快捷键
     if self.can_run()
+      && !self.err_modal_open
+      && !self.about.window_open
+      && !self.preview.window_open
       && ctx.input_mut(|input| {
         input.consume_shortcut(&egui::KeyboardShortcut::new(
           egui::Modifiers::COMMAND,
@@ -235,23 +244,27 @@ impl eframe::App for App {
   }
 
   fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-    let svg_icon_size = ui.text_style_height(&TextStyle::Body);
-    let is_dark = ui.visuals().dark_mode;
+    let f_ctx = {
+      let svg_icon_size = ui.text_style_height(&TextStyle::Body);
+      let is_dark = ui.visuals().dark_mode;
+
+      FrameCtx::new(svg_icon_size, is_dark)
+    };
 
     // ui.set_visuals(egui::Visuals::dark());
 
     // “关于”窗口
-    self.show_about_window(ui, svg_icon_size, is_dark);
+    show_about_window(ui, &mut self.about, f_ctx);
     // 密码信息窗口
-    self.show_pwd_info_window(ui, svg_icon_size, is_dark);
+    self.show_pwd_info_window(ui, f_ctx);
     // 错误信息显示模态窗口
     if self.err_modal_open {
       self.show_error_modal(ui);
     }
     // 顶部面板，主要用于菜单栏。
-    self.show_top_panel(ui, svg_icon_size, is_dark);
+    show_top_panel(ui, &mut self.about.window_open, f_ctx);
     // 主面板，核心功能区。
-    self.show_main_panel(ui, svg_icon_size, is_dark);
+    self.show_main_panel(ui, f_ctx);
     self.toasts.show(ui);
   }
 }

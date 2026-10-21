@@ -29,13 +29,11 @@ pub fn show(
   ui: &mut Ui,
   state: &mut FromTextState,
   sources: &mut PasswordSources,
-  ctx: FrameCtx,
+  f_ctx: FrameCtx,
 ) -> Vec<AppRequest> {
   let mut requests = Vec::new();
-  let svg_icon_size = ctx.svg_icon_size;
 
   Label::new(DESC_C1S2).selectable(false).ui(ui);
-
   ui.add_space(16.0);
 
   Grid::new("ID_GRID_C1S2")
@@ -49,12 +47,12 @@ pub fn show(
         .ui(ui)
         .on_hover_text("《黄金太阳》的密码文本的输入来源。");
       ui.horizontal(|ui| {
-        if ui.add(clipboard_btn(svg_icon_size)).clicked() {
+        if ui.add(clipboard_btn(f_ctx.svg_icon_size)).clicked() {
           // 登记从剪贴板读取密码文本并解析的请求，由下一帧的`logic()`实际进行处理
           state.request(FromTextRequest::LoadClipboard);
         }
 
-        if ui.add(select_file_btn(svg_icon_size)).clicked() {
+        if ui.add(select_file_btn(f_ctx.svg_icon_size)).clicked() {
           if let Some(file) = FileDialog::new().pick_file() {
             // 登记读取密码文本文件并解析的请求，由下一帧的`logic()`实际进行处理
             state.request(FromTextRequest::LoadFile(file));
@@ -62,8 +60,8 @@ pub fn show(
         }
 
         if sources.from_text.is_none() {
-          ui.add_enabled(false, reset_btn(svg_icon_size));
-        } else if ui.add(reset_btn(svg_icon_size)).clicked() {
+          ui.add_enabled(false, reset_btn(f_ctx.svg_icon_size));
+        } else if ui.add(reset_btn(f_ctx.svg_icon_size)).clicked() {
           state.reset(sources);
 
           // `密码文本`的【重置】要联动`注入密码`的密码源，因此发送重置`注入密码`中密码源选择为`密码文本`的请求，由下一帧的`App::logic()`实际进行处理
@@ -142,7 +140,7 @@ pub fn show(
       );
       ui.horizontal(|ui| {
         ui.add_enabled(sources.has_text(), Checkbox::without_text(&mut state.export_data_text));
-        if ui.add_enabled(sources.has_text(), pwd_info_btn(svg_icon_size)).clicked() {
+        if ui.add_enabled(sources.has_text(), pwd_info_btn(f_ctx.svg_icon_size)).clicked() {
           // 登记打开密码信息预览窗口的请求（以`密码文本`为数据源）
           requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Second, None));
         }
@@ -155,7 +153,7 @@ pub fn show(
         "自定义输出文件夹（推荐留空），若留空则在输入文件的同目录下创建文件夹保存生成的所有文件。",
         "若留空，则输出目录与输入的密码文本文件所在目录相同",
         &mut state.out_dir,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

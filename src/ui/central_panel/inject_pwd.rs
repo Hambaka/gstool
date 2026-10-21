@@ -40,10 +40,8 @@ pub fn show(
   ui: &mut Ui,
   state: &mut InjectPwdState,
   sources: &PasswordSources,
-  ctx: FrameCtx,
+  f_ctx: FrameCtx,
 ) -> Vec<AppRequest> {
-  let svg_icon_size = ctx.svg_icon_size;
-  let is_dark = ctx.is_dark;
   let mut requests = Vec::new();
 
   Label::new(DESC_C5).selectable(false).ui(ui);
@@ -61,7 +59,7 @@ pub fn show(
         "《黄金太阳 失落的时代》的ROM文件",
         "ROM文件路径",
         &mut state.input_file_path,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(file) => state.request(InjectPwdRequest::Load(file)),
         PathAction::Reset => state.reset(),
@@ -90,7 +88,7 @@ pub fn show(
               .width(100.0)
               .selected_text({
                 match &state.source[i] {
-                  Some(choice) => AtomsEnum::ImageAndText(sub_command_atoms(choice.kind, svg_icon_size, is_dark)),
+                  Some(choice) => AtomsEnum::ImageAndText(sub_command_atoms(choice.kind, f_ctx)),
                   None => AtomsEnum::Text("无"),
                 }
               })
@@ -103,7 +101,7 @@ pub fn show(
                   ui.selectable_value(
                     &mut state.source[i],
                     Some(SourceChoice { kind: SubCommandEnum::First, slot: sources.first_available_slot() }),
-                    sub_command_atoms(SubCommandEnum::First, svg_icon_size, is_dark)
+                    sub_command_atoms(SubCommandEnum::First, f_ctx)
                     );
                 });
 
@@ -117,7 +115,7 @@ pub fn show(
                   ui.selectable_value(
                     &mut state.source[i],
                     Some(SourceChoice { kind: SubCommandEnum::Second, slot: None }),
-                    sub_command_atoms(SubCommandEnum::Second, svg_icon_size, is_dark)
+                    sub_command_atoms(SubCommandEnum::Second, f_ctx)
                     );
                 });
 
@@ -131,7 +129,7 @@ pub fn show(
                   ui.selectable_value(
                     &mut state.source[i],
                     Some(SourceChoice { kind: SubCommandEnum::Third, slot: None }),
-                    sub_command_atoms(SubCommandEnum::Third, svg_icon_size, is_dark)
+                    sub_command_atoms(SubCommandEnum::Third, f_ctx)
                   );
                 });
               });
@@ -142,7 +140,7 @@ pub fn show(
                 .width(100.0)
                 .selected_text(match &state.source[i] {
                   Some(choice) => match choice.slot {
-                    Some(save_slot) => AtomsEnum::ImageAndText(save_slot_atoms(save_slot, svg_icon_size, is_dark, false)),
+                    Some(save_slot) => AtomsEnum::ImageAndText(save_slot_atoms(save_slot, f_ctx, false)),
                     None => AtomsEnum::Text("无"),
                   },
                   None => AtomsEnum::Text("无"),
@@ -153,7 +151,7 @@ pub fn show(
                       ui.selectable_value(
                         &mut state.source[i].as_mut().unwrap().slot,
                         Some(SaveSlotEnum::ALL[j]),
-                        save_slot_atoms(SaveSlotEnum::ALL[j], svg_icon_size, is_dark, false),
+                        save_slot_atoms(SaveSlotEnum::ALL[j], f_ctx, false),
                       );
                     });
                   }
@@ -162,7 +160,7 @@ pub fn show(
 
             // 预览按钮（选择来源后启用）
             if let Some(source_choice)  = state.source[i] {
-              if ui.add(pwd_info_btn(svg_icon_size))
+              if ui.add(pwd_info_btn(f_ctx.svg_icon_size))
                 .clicked()
               {
                 requests.push(AppRequest::OpenPasswordPreview(source_choice.kind, source_choice.slot));
@@ -181,7 +179,7 @@ pub fn show(
         "自定义输出的注入密码版ROM文件路径（推荐留空），若留空则将转换后的ROM文件保存到输入文件的同目录下。",
         "最新版注入密码ROM输出路径",
         &mut state.out_dir,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

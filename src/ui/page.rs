@@ -5,9 +5,14 @@
 //! 一帧内 `logic()` 先于 `ui()`，所以本帧登记的请求一定由**下一帧**的 `logic()` 消费。
 //! 而纯内存改动（勾选、切页签、清空字段）直接在 `ui()` 里改。
 
-use crate::logic::{
-  command::{CommandEnum, SubCommandEnum},
-  save_slot::SaveSlotEnum,
+use egui::Color32;
+
+use crate::{
+  logic::{
+    command::{CommandEnum, SubCommandEnum},
+    save_slot::SaveSlotEnum,
+  },
+  widgets::colors::{get_default_svg_color, get_default_text_color},
 };
 
 /// 一帧内不变的、来自 egui 的上下文
@@ -15,7 +20,24 @@ use crate::logic::{
 #[derive(Debug, Clone, Copy)]
 pub struct FrameCtx {
   pub svg_icon_size: f32,
-  pub is_dark: bool,
+  is_dark: bool,
+}
+
+impl FrameCtx {
+  pub fn new(svg_icon_size: f32, is_dark: bool) -> Self {
+    Self {
+      svg_icon_size,
+      is_dark,
+    }
+  }
+
+  pub fn svg_color(self) -> Color32 {
+    get_default_svg_color(self.is_dark)
+  }
+
+  pub fn text_color(self) -> Color32 {
+    get_default_text_color(self.is_dark)
+  }
 }
 
 /// 页面绘制时产生的、需要 `App` 处理的**跨功能**请求（入队，下一帧 `App::logic()` 消费）

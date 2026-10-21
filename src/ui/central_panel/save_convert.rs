@@ -24,10 +24,7 @@ const DESC_C2: &str = r"使用该功能可转换《黄金太阳 开启的封印�
 ///
 /// 因为这一页只有自己状态的请求而没有跨功能的请求，
 /// 所以返回值是空的Vec。
-pub fn show(ui: &mut Ui, state: &mut SaveConvertState, ctx: FrameCtx) -> Vec<AppRequest> {
-  let svg_icon_size = ctx.svg_icon_size;
-  let enabled = state.source.is_some();
-
+pub fn show(ui: &mut Ui, state: &mut SaveConvertState, f_ctx: FrameCtx) -> Vec<AppRequest> {
   // 说明文本
   Label::new(DESC_C2).selectable(false).ui(ui);
   ui.add_space(16.0);
@@ -37,6 +34,8 @@ pub fn show(ui: &mut Ui, state: &mut SaveConvertState, ctx: FrameCtx) -> Vec<App
     .spacing([40.0, 4.0])
     .striped(true)
     .show(ui, |ui| {
+      let enabled = state.source.is_some();
+
       // 第1行 -> 输入文件路径
       match file_row(
         ui,
@@ -44,7 +43,7 @@ pub fn show(ui: &mut Ui, state: &mut SaveConvertState, ctx: FrameCtx) -> Vec<App
         "《黄金太阳 开启的封印》或《黄金太阳 失落的时代》的存档文件",
         "存档文件路径",
         &mut state.input_file_path,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(file) => state.request(SaveConvertRequest::Load(file)),
         // 因为是纯内存改动，直接ui侧动就行
@@ -120,7 +119,7 @@ pub fn show(ui: &mut Ui, state: &mut SaveConvertState, ctx: FrameCtx) -> Vec<App
         "自定义输出的存档文件路径（推荐留空），若留空则将转换后的存档文件保存到输入文件的同目录下。",
         "存档文件输出路径",
         &mut state.out_dir,
-        svg_icon_size,
+        f_ctx.svg_icon_size,
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

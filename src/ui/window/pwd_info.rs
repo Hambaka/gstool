@@ -16,9 +16,10 @@ use crate::{
     preview::{PreviewModeEnum, PreviewPageEnum},
     save_slot::SaveSlotEnum,
   },
+  ui::page::FrameCtx,
   widgets::{
     buttons::save_slot_atoms,
-    colors::{DANGER, SUCCESS, get_default_svg_color},
+    colors::{DANGER, SUCCESS},
     icons::{
       CHECK_MARK, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL, NUMBER_3_SQUARE_FILL,
       NUMBER_4_SQUARE_FILL, X_MARK,
@@ -40,9 +41,7 @@ const PSYNERGY_ITEM_GAMEPLAY_ORDER: [usize; 8] = [7, 0, 1, 2, 3, 4, 5, 6];
 
 /// 显示“密码数据预览”窗口
 impl App {
-  pub fn show_pwd_info_window(&mut self, ui: &mut egui::Ui, svg_icon_size: f32, is_dark: bool) {
-    let color = get_default_svg_color(is_dark);
-
+  pub fn show_pwd_info_window(&mut self, ui: &mut egui::Ui, f_ctx: FrameCtx) {
     egui::Window::new("密码数据预览")
       .open(&mut self.preview.window_open)
       .resizable(false)
@@ -55,14 +54,14 @@ impl App {
               col.selectable_value(
                 &mut self.preview.slot,
                 slot,
-                save_slot_atoms(slot, svg_icon_size, is_dark, true),
+                save_slot_atoms(slot, f_ctx, true),
               );
             } else {
               col.add_enabled(
                 false,
                 Button::selectable(
                   self.preview.slot == slot,
-                  save_slot_atoms(slot, svg_icon_size, is_dark, true),
+                  save_slot_atoms(slot, f_ctx, true),
                 ),
               );
             }
@@ -87,7 +86,9 @@ impl App {
               &mut self.preview.page,
               PreviewPageEnum::ALL[i],
               (
-                Image::new(img).tint(color).max_height(svg_icon_size),
+                Image::new(img)
+                  .tint(f_ctx.svg_color())
+                  .max_height(f_ctx.svg_icon_size),
                 PreviewPageEnum::ALL[i].name(),
               ),
             );
@@ -243,7 +244,7 @@ impl App {
                           ui.add(
                             Image::new(CHECK_MARK)
                               .tint(SUCCESS)
-                              .max_height(svg_icon_size),
+                              .max_height(f_ctx.svg_icon_size),
                           );
                           ui.add(
                             egui::Image::new(
@@ -260,7 +261,11 @@ impl App {
                         });
                       } else {
                         ui.horizontal(|ui| {
-                          ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
+                          ui.add(
+                            Image::new(X_MARK)
+                              .tint(DANGER)
+                              .max_height(f_ctx.svg_icon_size),
+                          );
                           ui.add(
                             egui::Image::new(
                               &self.item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
@@ -321,7 +326,7 @@ impl App {
                           ui.add(
                             Image::new(CHECK_MARK)
                               .tint(SUCCESS)
-                              .max_height(svg_icon_size),
+                              .max_height(f_ctx.svg_icon_size),
                           );
                           Label::new(ALL_DJINN_NAMES[j][i].name(self.preview.djinn_lang))
                             .selectable(false)
@@ -329,7 +334,11 @@ impl App {
                         });
                       } else {
                         ui.horizontal(|ui| {
-                          ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
+                          ui.add(
+                            Image::new(X_MARK)
+                              .tint(DANGER)
+                              .max_height(f_ctx.svg_icon_size),
+                          );
                           Label::new(
                             RichText::new(ALL_DJINN_NAMES[j][i].name(self.preview.djinn_lang))
                               .weak()
@@ -365,13 +374,17 @@ impl App {
                     ui.add(
                       Image::new(CHECK_MARK)
                         .tint(SUCCESS)
-                        .max_height(svg_icon_size),
+                        .max_height(f_ctx.svg_icon_size),
                     );
                     Label::new(EVENT_STR[i]).selectable(false).ui(ui);
                   });
                 } else {
                   ui.horizontal(|ui| {
-                    ui.add(Image::new(X_MARK).tint(DANGER).max_height(svg_icon_size));
+                    ui.add(
+                      Image::new(X_MARK)
+                        .tint(DANGER)
+                        .max_height(f_ctx.svg_icon_size),
+                    );
                     Label::new(RichText::new(EVENT_STR[i]).weak().strikethrough())
                       .selectable(false)
                       .ui(ui);

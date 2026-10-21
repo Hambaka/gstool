@@ -30,7 +30,7 @@ pub fn show(
   ui: &mut Ui,
   state: &mut PasswordExportState,
   sources: &mut PasswordSources,
-  ctx: FrameCtx,
+  f_ctx: FrameCtx,
 ) -> Vec<AppRequest> {
   Label::new(DESC_C1).selectable(false).ui(ui);
   ui.separator();
@@ -39,15 +39,15 @@ pub fn show(
       columns[i].selectable_value(
         &mut state.subcommand,
         SubCommandEnum::ALL[i],
-        sub_command_atoms(SubCommandEnum::ALL[i], ctx.svg_icon_size, ctx.is_dark),
+        sub_command_atoms(SubCommandEnum::ALL[i], f_ctx),
       );
     }
   });
 
   match state.subcommand {
-    SubCommandEnum::First => from_save::show(ui, &mut state.from_save, sources, ctx),
-    SubCommandEnum::Second => from_text::show(ui, &mut state.from_text, sources, ctx),
-    SubCommandEnum::Third => from_dump::show(ui, &mut state.from_dump, sources, ctx),
+    SubCommandEnum::First => from_save::show(ui, &mut state.from_save, sources, f_ctx),
+    SubCommandEnum::Second => from_text::show(ui, &mut state.from_text, sources, f_ctx),
+    SubCommandEnum::Third => from_dump::show(ui, &mut state.from_dump, sources, f_ctx),
   }
 }
 

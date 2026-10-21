@@ -7,23 +7,15 @@ use egui::Image;
 
 use crate::{
   logic::command::{CommandEnum, SubCommandEnum},
-  widgets::{
-    colors::get_default_svg_color,
-    icons::{
-      ARROW_DOWN, ARROW_LEFT_RIGHT, ARROW_UP, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL,
-      NUMBER_3_SQUARE_FILL, PENCIL, TOOLS,
-    },
+  ui::page::FrameCtx,
+  widgets::icons::{
+    ARROW_DOWN, ARROW_LEFT_RIGHT, ARROW_UP, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL,
+    NUMBER_3_SQUARE_FILL, PENCIL, TOOLS,
   },
 };
 
 /// 功能（命令）可选项的渲染
-pub fn command_atoms(
-  command: CommandEnum,
-  svg_icon_size: f32,
-  is_dark: bool,
-) -> (Image<'static>, &'static str) {
-  let color = get_default_svg_color(is_dark);
-
+pub fn command_atoms(command: CommandEnum, f_ctx: FrameCtx) -> (Image<'static>, &'static str) {
   (
     Image::new(match command {
       CommandEnum::First => ARROW_UP,
@@ -32,8 +24,8 @@ pub fn command_atoms(
       CommandEnum::Fourth => TOOLS,
       CommandEnum::Fifth => ARROW_DOWN,
     })
-    .tint(color)
-    .max_height(svg_icon_size),
+    .tint(f_ctx.svg_color())
+    .max_height(f_ctx.svg_icon_size),
     command.name(),
   )
 }
@@ -41,19 +33,16 @@ pub fn command_atoms(
 /// 子命令（子页）可选项的渲染
 pub fn sub_command_atoms(
   sub_command: SubCommandEnum,
-  svg_icon_size: f32,
-  is_dark: bool,
+  f_ctx: FrameCtx,
 ) -> (Image<'static>, &'static str) {
-  let color = get_default_svg_color(is_dark);
-
   (
     Image::new(match sub_command {
       SubCommandEnum::First => NUMBER_1_SQUARE_FILL,
       SubCommandEnum::Second => NUMBER_2_SQUARE_FILL,
       SubCommandEnum::Third => NUMBER_3_SQUARE_FILL,
     })
-    .tint(color)
-    .max_height(svg_icon_size),
+    .tint(f_ctx.svg_color())
+    .max_height(f_ctx.svg_icon_size),
     sub_command.name(),
   )
 }

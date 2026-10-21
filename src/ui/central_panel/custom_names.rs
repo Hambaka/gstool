@@ -29,7 +29,7 @@ pub fn show(
   ui: &mut Ui,
   state: &mut crate::logic::custom_name::CustomNameState,
   // 目前无用，暂时保留先
-  _ctx: FrameCtx,
+  _f_ctx: FrameCtx,
 ) -> Vec<AppRequest> {
   Label::new(DESC_C3).selectable(false).ui(ui);
 
