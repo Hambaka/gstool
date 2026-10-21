@@ -1,4 +1,4 @@
-use std::{fmt, io::Read, sync::OnceLock};
+use std::{fmt, sync::OnceLock};
 
 include!(concat!(env!("OUT_DIR"), "/codegen_bps.rs"));
 
@@ -116,16 +116,13 @@ fn all_patches() -> &'static [u8] {
 
   PATCHES.get_or_init(|| {
     let compressed = include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice();
-    let mut decoder = ruzstd::decoding::StreamingDecoder::new(compressed).unwrap();
-    let mut decompressed = Vec::new();
-    decoder.read_to_end(&mut decompressed).unwrap();
-    decompressed
+    zrip_decode::decompress(compressed).unwrap()
     /*
-    zstd库其一：
+    zstd库其一：zstd
     zstd::decode_all(include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice())
       .unwrap()
 
-    zstd库其二：
+    zstd库其二：structured-zstd
     let mut compressed_data =
       include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice();
     let mut decoder =
@@ -133,6 +130,13 @@ fn all_patches() -> &'static [u8] {
     let mut decompreessed_data = Vec::new();
     decoder.read_to_end(&mut decompreessed_data).unwrap();
     decompreessed_data
+
+    zstd库其三：ruzstd
+    let compressed = include_bytes!(concat!(env!("OUT_DIR"), "/all_bps.zst")).as_slice();
+    let mut decoder = ruzstd::decoding::StreamingDecoder::new(compressed).unwrap();
+    let mut decompressed = Vec::new();
+    decoder.read_to_end(&mut decompressed).unwrap();
+    decompressed
     */
   })
 }

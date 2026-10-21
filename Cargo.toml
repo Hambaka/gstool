@@ -24,7 +24,8 @@ egui-notify = { git = "https://github.com/Hambaka/egui-notify.git", rev = "c4ebf
 phf = { version = "0.14", features = ["macros"] }
 rfd = "0.17"
 # zstd = "0.14"
-ruzstd = "0.9"
+# ruzstd = "0.9"
+zrip-decode = "0.8"
 crc32fast = "1.5"
 chardetng = "1.0"
 encoding_rs = "0.8"
