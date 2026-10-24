@@ -9,9 +9,10 @@ use crate::{
     save_convert::SaveConvertState, sources::PasswordSources,
   },
   ui::{
+    error_modal::show_error_modal,
     page::{AppRequest, FrameCtx},
     top_panel::show_top_panel,
-    window::about::{AboutState, show_about_window},
+    window::{about::{AboutState, show_about_window}, pwd_info::show_pwd_info_window},
   },
 };
 
@@ -186,6 +187,12 @@ impl App {
       }
     }
   }
+
+  /// 设置错误信息并打开错误Modal窗口。
+  pub fn fail(&mut self, err_msg: String) {
+    self.err_msg = err_msg;
+    self.err_modal_open = true;
+  }
 }
 
 impl eframe::App for App {
@@ -256,10 +263,10 @@ impl eframe::App for App {
     // “关于”窗口
     show_about_window(ui, &mut self.about, f_ctx);
     // 密码信息窗口
-    self.show_pwd_info_window(ui, f_ctx);
+    show_pwd_info_window(ui, &mut self.preview, &self.item_icon_img, f_ctx);
     // 错误信息显示模态窗口
     if self.err_modal_open {
-      self.show_error_modal(ui);
+      show_error_modal(ui, &mut self.err_modal_open, &self.err_msg);
     }
     // 顶部面板，主要用于菜单栏。
     show_top_panel(ui, &mut self.about.window_open, f_ctx);

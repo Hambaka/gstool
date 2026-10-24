@@ -1,7 +1,6 @@
 use egui::{Button, ComboBox, Image, Label, RichText, Widget};
 
 use crate::{
-  App,
   core::{
     data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, icon_id},
     enums::PasswordGrade,
@@ -13,7 +12,7 @@ use crate::{
   },
   logic::{
     custom_name::PC_NAMES,
-    preview::{PreviewModeEnum, PreviewPageEnum},
+    preview::{PreviewModeEnum, PreviewPageEnum, PwdInfoState},
     save_slot::SaveSlotEnum,
   },
   ui::page::FrameCtx,
@@ -39,20 +38,24 @@ const EVENT_STR: [&str; 6] = [
 const EVENT_GAMEPLAY_ORDER: [usize; 6] = [2, 5, 4, 1, 0, 3];
 const PSYNERGY_ITEM_GAMEPLAY_ORDER: [usize; 8] = [7, 0, 1, 2, 3, 4, 5, 6];
 
-/// 显示“密码数据预览”窗口
-impl App {
-  pub fn show_pwd_info_window(&mut self, ui: &mut egui::Ui, f_ctx: FrameCtx) {
+/// 显示“密码数据预览”窗口。
+pub fn show_pwd_info_window(
+  ui: &mut egui::Ui,
+  preview: &mut PwdInfoState,
+  item_icon_img: &[egui::TextureHandle],
+  f_ctx: FrameCtx,
+) {
     egui::Window::new("密码数据预览")
-      .open(&mut self.preview.window_open)
+      .open(&mut preview.window_open)
       .resizable(false)
       .default_width(450.0)
       .show(ui, |ui| {
         // 槽位选择
         ui.columns_const(|[col_1, col_2, col_3]| {
           for (col, slot) in [col_1, col_2, col_3].iter_mut().zip(SaveSlotEnum::ALL) {
-            if self.preview.data[slot.index()].is_some() {
+            if preview.data[slot.index()].is_some() {
               col.selectable_value(
-                &mut self.preview.slot,
+                &mut preview.slot,
                 slot,
                 save_slot_atoms(slot, f_ctx, true),
               );
@@ -60,7 +63,7 @@ impl App {
               col.add_enabled(
                 false,
                 Button::selectable(
-                  self.preview.slot == slot,
+                  preview.slot == slot,
                   save_slot_atoms(slot, f_ctx, true),
                 ),
               );
@@ -83,7 +86,7 @@ impl App {
             .enumerate()
           {
             col.selectable_value(
-              &mut self.preview.page,
+              &mut preview.page,
               PreviewPageEnum::ALL[i],
               (
                 Image::new(img)
@@ -96,18 +99,18 @@ impl App {
         });
 
         // 按页签渲染
-        if let Some(data) = self.preview.data[self.preview.slot.index()].as_ref() {
-          match self.preview.page {
+        if let Some(data) = preview.data[preview.slot.index()].as_ref() {
+          match preview.page {
             // 角色
             PreviewPageEnum::Character => {
               ui.horizontal(|ui| {
                 ui.radio_value(
-                  &mut self.preview.stats_mode,
+                  &mut preview.stats_mode,
                   PreviewModeEnum::Main,
                   "基础能力状态属性",
                 );
                 ui.radio_value(
-                  &mut self.preview.stats_mode,
+                  &mut preview.stats_mode,
                   PreviewModeEnum::Alt,
                   "能力状态属性",
                 );
@@ -140,13 +143,13 @@ impl App {
                       .ui(ui);
                   }
                   ui.end_row();
-                  if self.preview.char_mode == PreviewModeEnum::Main {
+                  if preview.char_mode == PreviewModeEnum::Main {
                     for i in 0..6 {
                       Label::new(RichText::new(CHAR_STATS_STR[i]).strong())
                         .selectable(false)
                         .ui(ui);
                       for j in 0..4 {
-                        let stats_string = match self.preview.stats_mode {
+                        let stats_string = match preview.stats_mode {
                           PreviewModeEnum::Main => {
                             let value = data.base_stats(i, j);
                             if value > MAX_BASE_STATS[i] {
@@ -177,15 +180,15 @@ impl App {
                   .on_hover_text("默认值为“1代汉化”");
                 ComboBox::from_id_salt("物品名语言版本")
                   .width(100.0)
-                  .selected_text(self.preview.item_lang.name())
+                  .selected_text(preview.item_lang.name())
                   .show_ui(ui, |ui| {
                     for lang in Language::LANGUAGES {
-                      ui.selectable_value(&mut self.preview.item_lang, lang, lang.name());
+                      ui.selectable_value(&mut preview.item_lang, lang, lang.name());
                     }
                   });
               });
               ui.add_space(8.0);
-              match self.preview.item_mode {
+              match preview.item_mode {
                 // 物品 → 全物品
                 PreviewModeEnum::Main => {
                   ui.columns_const(|[c1, c2, c3, c4]| {
@@ -214,17 +217,17 @@ impl App {
                           } else {
                             ui.horizontal(|ui| {
                               ui.add(
-                                egui::Image::new(&self.item_icon_img[icon_id(id - 1)])
+                                egui::Image::new(&item_icon_img[icon_id(id - 1)])
                                   .fit_to_exact_size(egui::vec2(16.0, 16.0)),
                               );
                               let item_str = if STACKABLE_ITEMS.contains(&id) {
                                 format!(
                                   "{}×{amount}",
-                                  ITEM_NAMES[id as usize - 1].name(self.preview.item_lang)
+                                  ITEM_NAMES[id as usize - 1].name(preview.item_lang)
                                 )
                               } else {
                                 ITEM_NAMES[id as usize - 1]
-                                  .name(self.preview.item_lang)
+                                  .name(preview.item_lang)
                                   .to_string()
                               };
                               Label::new(item_str).selectable(false).ui(ui);
@@ -248,13 +251,13 @@ impl App {
                           );
                           ui.add(
                             egui::Image::new(
-                              &self.item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
+                              &item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
                             )
                             .fit_to_exact_size(egui::vec2(16.0, 16.0)),
                           );
                           Label::new(
                             ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
-                              .name(self.preview.item_lang),
+                              .name(preview.item_lang),
                           )
                           .selectable(false)
                           .ui(ui);
@@ -268,14 +271,14 @@ impl App {
                           );
                           ui.add(
                             egui::Image::new(
-                              &self.item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
+                              &item_icon_img[icon_id(i as u16 + PSYNERGY_ITEMS[0] - 1)],
                             )
                             .fit_to_exact_size(egui::vec2(16.0, 16.0)),
                           );
                           Label::new(
                             RichText::new(
                               ITEM_NAMES[i + PSYNERGY_ITEMS[0] as usize - 1]
-                                .name(self.preview.item_lang),
+                                .name(preview.item_lang),
                             )
                             .weak()
                             .strikethrough(),
@@ -298,10 +301,10 @@ impl App {
                   .on_hover_text("默认值为“1代汉化”");
                 ComboBox::from_id_salt("精灵名语言版本")
                   .width(100.0)
-                  .selected_text(self.preview.djinn_lang.name())
+                  .selected_text(preview.djinn_lang.name())
                   .show_ui(ui, |ui| {
                     for ele in Language::LANGUAGES {
-                      ui.selectable_value(&mut self.preview.djinn_lang, ele, ele.name());
+                      ui.selectable_value(&mut preview.djinn_lang, ele, ele.name());
                     }
                   });
               });
@@ -328,7 +331,7 @@ impl App {
                               .tint(SUCCESS)
                               .max_height(f_ctx.svg_icon_size),
                           );
-                          Label::new(ALL_DJINN_NAMES[j][i].name(self.preview.djinn_lang))
+                          Label::new(ALL_DJINN_NAMES[j][i].name(preview.djinn_lang))
                             .selectable(false)
                             .ui(ui);
                         });
@@ -340,7 +343,7 @@ impl App {
                               .max_height(f_ctx.svg_icon_size),
                           );
                           Label::new(
-                            RichText::new(ALL_DJINN_NAMES[j][i].name(self.preview.djinn_lang))
+                            RichText::new(ALL_DJINN_NAMES[j][i].name(preview.djinn_lang))
                               .weak()
                               .strikethrough(),
                           )
@@ -396,4 +399,3 @@ impl App {
         }
       });
   }
-}

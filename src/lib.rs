@@ -35,7 +35,7 @@ pub mod ui {
     pub mod about;
     pub mod pwd_info;
   }
-  mod error_modal;
+  pub mod error_modal;
   pub mod page;
   pub mod top_panel;
 }
