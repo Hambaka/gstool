@@ -7,10 +7,12 @@ use egui::Image;
 
 use crate::{
   logic::command::{CommandEnum, SubCommandEnum},
-  ui::page::FrameCtx,
-  widgets::icons::{
-    ARROW_DOWN, ARROW_LEFT_RIGHT, ARROW_UP, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL,
-    NUMBER_3_SQUARE_FILL, PENCIL, TOOLS,
+  ui::{
+    page::FrameCtx,
+    widgets::icons::{
+      ARROW_DOWN, ARROW_LEFT_RIGHT, ARROW_UP, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL,
+      NUMBER_3_SQUARE_FILL, PENCIL, TOOLS,
+    },
   },
 };
 

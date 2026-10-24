@@ -10,8 +10,10 @@ use crate::{
   app::KeyboardCache,
   core::save::pc_name::{MAX_NAME_CHARS, base_character_code},
   logic::custom_name::{CustomNameState, PC_NAMES},
-  ui::page::{AppRequest, FrameCtx},
-  widgets::colors::{DARK, INFO},
+  ui::{
+    page::{AppRequest, FrameCtx},
+    widgets::colors::{DARK, INFO},
+  },
 };
 
 const DESC_C3: &str = r"该功能仅支持《黄金太阳 开启的封印》新汉化版，主要面向自定义中文名（但也支持中日英混合）。

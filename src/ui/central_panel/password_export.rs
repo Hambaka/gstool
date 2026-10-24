@@ -9,11 +9,13 @@ mod from_text;
 use egui::{Label, Ui, Widget};
 
 use crate::{
-  logic::command::SubCommandEnum,
-  logic::password_export::PasswordExportState,
-  logic::sources::PasswordSources,
-  ui::page::{AppRequest, FrameCtx},
-  widgets::atoms::sub_command_atoms,
+  logic::{
+    command::SubCommandEnum, password_export::PasswordExportState, sources::PasswordSources,
+  },
+  ui::{
+    page::{AppRequest, FrameCtx},
+    widgets::atoms::sub_command_atoms,
+  },
 };
 
 const DESC_C1: &str = r"使用该功能可导出密码，可导出以下几类文件：

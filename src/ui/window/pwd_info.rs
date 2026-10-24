@@ -15,13 +15,15 @@ use crate::{
     preview::{PreviewModeEnum, PreviewPageEnum, PwdInfoState},
     save_slot::SaveSlotEnum,
   },
-  ui::page::FrameCtx,
-  widgets::{
-    buttons::save_slot_atoms,
-    colors::{DANGER, SUCCESS},
-    icons::{
-      CHECK_MARK, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL, NUMBER_3_SQUARE_FILL,
-      NUMBER_4_SQUARE_FILL, X_MARK,
+  ui::{
+    page::FrameCtx,
+    widgets::{
+      buttons::save_slot_atoms,
+      colors::{DANGER, SUCCESS},
+      icons::{
+        CHECK_MARK, NUMBER_1_SQUARE_FILL, NUMBER_2_SQUARE_FILL, NUMBER_3_SQUARE_FILL,
+        NUMBER_4_SQUARE_FILL, X_MARK,
+      },
     },
   },
 };

@@ -2,12 +2,14 @@ use egui::{Button, Image, RichText};
 
 use crate::{
   logic::save_slot::SaveSlotEnum,
-  ui::page::FrameCtx,
-  widgets::{
-    colors::{DANGER, DARK, LIGHT, PRIMARY, SECONDARY, SUCCESS, WARNING},
-    icons::{
-      BAN, CLIPBOARD, COPY, FILE, FOLDER, GLASS, NUMBER_1_CIRCLE_FILL, NUMBER_2_CIRCLE_FILL,
-      NUMBER_3_CIRCLE_FILL, RESET, RUN,
+  ui::{
+    page::FrameCtx,
+    widgets::{
+      colors::{DANGER, DARK, LIGHT, PRIMARY, SECONDARY, SUCCESS, WARNING},
+      icons::{
+        BAN, CLIPBOARD, COPY, FILE, FOLDER, GLASS, NUMBER_1_CIRCLE_FILL, NUMBER_2_CIRCLE_FILL,
+        NUMBER_3_CIRCLE_FILL, RESET, RUN,
+      },
     },
   },
 };

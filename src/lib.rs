@@ -1,13 +1,6 @@
 #![warn(clippy::pedantic)]
 
 mod app;
-mod widgets {
-  pub mod atoms;
-  pub mod buttons;
-  pub mod colors;
-  pub mod icons;
-  pub mod rows;
-}
 mod core {
   pub mod bits;
   pub mod data;
@@ -38,5 +31,12 @@ pub mod ui {
   pub mod error_modal;
   pub mod page;
   pub mod top_panel;
+  pub mod widgets {
+    pub mod atoms;
+    pub mod buttons;
+    pub mod colors;
+    pub mod icons;
+    pub mod rows;
+  }
 }
 pub use app::App;

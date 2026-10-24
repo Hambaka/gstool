@@ -9,9 +9,11 @@ use crate::{
     password_export::from_save::{FromSaveRequest, FromSaveState},
     sources::PasswordSources,
   },
-  ui::page::{AppRequest, FrameCtx},
-  widgets::rows::{
-    PathAction, checkbox_row, combo_row, dir_row, file_row, pwd_info_checkbox_row, row_label,
+  ui::{
+    page::{AppRequest, FrameCtx},
+    widgets::rows::{
+      PathAction, checkbox_row, combo_row, dir_row, file_row, pwd_info_checkbox_row, row_label,
+    },
   },
 };
 

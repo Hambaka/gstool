@@ -1,4 +1,4 @@
-//! 视图调用约定：一帧内不变的上下文、页面产生的跨功能请求。
+﻿//! 视图调用约定：一帧内不变的上下文、页面产生的跨功能请求。
 //!
 //! 页面想处理的跨功能动作（运行 / 预览 / 重置联动）登记成 `AppRequest`；
 //! 入队（`App::requests`） -> 消费（`App::logic()`）。
@@ -13,7 +13,7 @@ use crate::{
     command::{CommandEnum, SubCommandEnum},
     save_slot::SaveSlotEnum,
   },
-  widgets::colors::{get_default_svg_color, get_default_text_color},
+  ui::widgets::colors::{get_default_svg_color, get_default_text_color},
 };
 
 /// 一帧内不变的、来自 egui 的上下文

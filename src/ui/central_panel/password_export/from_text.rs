@@ -10,10 +10,12 @@ use crate::{
     password_export::from_text::{FromTextRequest, FromTextState},
     sources::PasswordSources,
   },
-  ui::page::{AppRequest, FrameCtx},
-  widgets::{
-    buttons::{clipboard_btn, reset_btn, select_file_btn},
-    rows::{PathAction, checkbox_row, combo_row, dir_row, pwd_info_checkbox_row},
+  ui::{
+    page::{AppRequest, FrameCtx},
+    widgets::{
+      buttons::{clipboard_btn, reset_btn, select_file_btn},
+      rows::{PathAction, checkbox_row, combo_row, dir_row, pwd_info_checkbox_row},
+    },
   },
 };
 

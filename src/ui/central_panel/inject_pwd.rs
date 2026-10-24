@@ -9,11 +9,13 @@ use crate::{
     save_slot::SaveSlotEnum,
     sources::PasswordSources,
   },
-  ui::page::{AppRequest, FrameCtx},
-  widgets::{
-    atoms::sub_command_atoms,
-    buttons::{pwd_info_btn, save_slot_atoms},
-    rows::{PathAction, dir_row, file_row},
+  ui::{
+    page::{AppRequest, FrameCtx},
+    widgets::{
+      atoms::sub_command_atoms,
+      buttons::{pwd_info_btn, save_slot_atoms},
+      rows::{PathAction, dir_row, file_row},
+    },
   },
 };
 

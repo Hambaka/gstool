@@ -2,8 +2,10 @@ use egui::{Label, Ui, Widget};
 
 use crate::{
   logic::patch_rom::{PatchRomRequest, PatchRomState},
-  ui::page::{AppRequest, FrameCtx},
-  widgets::rows::{PathAction, dir_row, file_row},
+  ui::{
+    page::{AppRequest, FrameCtx},
+    widgets::rows::{PathAction, dir_row, file_row},
+  },
 };
 
 const DESC_C4: &str = r"使用该功能可为日版的《黄金太阳 开启的封印》应用最新版的汉化补丁。

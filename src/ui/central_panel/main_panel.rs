@@ -6,9 +6,11 @@ use crate::{
   ui::{
     central_panel::{custom_names, inject_pwd, password_export, patch_rom, save_convert},
     page::{AppRequest, FrameCtx},
+    widgets::{
+      atoms::command_atoms,
+      buttons::{copy_btn, run_btn_available, run_btn_unavailable},
+    },
   },
-  widgets::atoms::command_atoms,
-  widgets::buttons::{copy_btn, run_btn_available, run_btn_unavailable},
 };
 
 const CUSTOM_ORDER_COMMANDS: [CommandEnum; CommandEnum::ALL.len()] = [

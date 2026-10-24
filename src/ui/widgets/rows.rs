@@ -13,8 +13,10 @@ use rfd::FileDialog;
 
 use crate::{
   logic::command::SubCommandEnum,
-  ui::page::{AppRequest, FrameCtx},
-  widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
+  ui::{
+    page::{AppRequest, FrameCtx},
+    widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
+  },
 };
 
 /// 用户对`路径选择行`（文件、目录选择）做的动作

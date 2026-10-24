@@ -7,8 +7,10 @@ use egui::{Label, Ui, Widget};
 use crate::{
   core::enums::{GameRegion, GameTitle, NameType},
   logic::save_convert::{SaveConvertRequest, SaveConvertState},
-  ui::page::{AppRequest, FrameCtx},
-  widgets::rows::{PathAction, combo_row, dir_row, file_row},
+  ui::{
+    page::{AppRequest, FrameCtx},
+    widgets::rows::{PathAction, combo_row, dir_row, file_row},
+  },
 };
 
 const DESC_C2: &str = r"使用该功能可转换《黄金太阳 开启的封印》或《黄金太阳 失落的时代》存档的版本：

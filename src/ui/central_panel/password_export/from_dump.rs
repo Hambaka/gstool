@@ -9,8 +9,10 @@ use crate::{
     password_export::from_dump::{FromDumpRequest, FromDumpState},
     sources::PasswordSources,
   },
-  ui::page::{AppRequest, FrameCtx},
-  widgets::rows::{PathAction, combo_row, dir_row, file_row, pwd_info_checkbox_row},
+  ui::{
+    page::{AppRequest, FrameCtx},
+    widgets::rows::{PathAction, combo_row, dir_row, file_row, pwd_info_checkbox_row},
+  },
 };
 
 const DESC_C1S3: &str = r"“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。

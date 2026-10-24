@@ -4,8 +4,8 @@
 
 use egui::{Align2, Image};
 
-use crate::{
-  ui::page::FrameCtx,
+use crate::ui::{
+  page::FrameCtx,
   widgets::{
     colors::DANGER,
     icons::{C_CIRCLE, HEART},

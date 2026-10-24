@@ -2,8 +2,8 @@
 
 use egui::{Image, ThemePreference, Widget};
 
-use crate::{
-  ui::page::FrameCtx,
+use crate::ui::{
+  page::FrameCtx,
   widgets::icons::{DISPLAY, DOOR, INFO, LIST, MOON, SUN},
 };
 
@@ -58,7 +58,7 @@ pub fn show_top_panel(ui: &mut egui::Ui, about_open: &mut bool, f_ctx: FrameCtx)
 
       ui.separator();
 
-      // egui::widgets::global_theme_preference_buttons(ui);
+      // egui::crate::ui::widgets::global_theme_preference_buttons(ui);
       let mut theme_preference = ui.options(|opt| opt.theme_preference);
       ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 2.0;
