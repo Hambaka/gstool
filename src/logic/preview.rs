@@ -164,7 +164,9 @@ impl PwdInfoState {
         }
 
         // 理论上.unwrap_or应该是不会触发的……
-        self.slot = slot.or_else(|| sources.first_available_slot()).unwrap_or(SaveSlotEnum::First);
+        self.slot = slot
+          .or_else(|| sources.first_available_slot())
+          .unwrap_or(SaveSlotEnum::First);
         self.page = PreviewPageEnum::Character;
         // 显示角色的全部属性
         self.char_mode = PreviewModeEnum::Main;

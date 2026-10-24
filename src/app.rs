@@ -12,7 +12,10 @@ use crate::{
     error_modal::show_error_modal,
     page::{AppRequest, FrameCtx},
     top_panel::show_top_panel,
-    window::{about::{AboutState, show_about_window}, pwd_info::show_pwd_info_window},
+    window::{
+      about::{AboutState, show_about_window},
+      pwd_info::show_pwd_info_window,
+    },
   },
 };
 

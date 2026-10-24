@@ -1,14 +1,14 @@
+use std::io::Cursor;
+
 use egui::{
   Button, ColorImage, Image, Label, RichText, TextureHandle, TextureOptions, Ui, Vec2, Widget,
   load::SizedTexture,
 };
-use image::ImageReader;
-
-use std::io::Cursor;
+use image::{ImageFormat, ImageReader};
 
 use crate::{
   core::save::pc_name::{MAX_NAME_CHARS, base_character_code},
-  logic::custom_name::PC_NAMES,
+  logic::custom_name::{CustomNameState, PC_NAMES},
   ui::page::{AppRequest, FrameCtx},
   widgets::colors::{DARK, INFO},
 };
@@ -27,7 +27,7 @@ const DESC_C3: &str = r"该功能仅支持《黄金太阳 开启的封印》新�
 /// 所以返回值是空的Vec。
 pub fn show(
   ui: &mut Ui,
-  state: &mut crate::logic::custom_name::CustomNameState,
+  state: &mut CustomNameState,
   // 目前无用，暂时保留先
   _f_ctx: FrameCtx,
 ) -> Vec<AppRequest> {
@@ -63,27 +63,37 @@ pub fn show(
 ///
 /// 因为要把字符变成会显示对应键位图的按钮，所以需要解析原本存储的日志文本，
 /// 格式与`io::render::name_encode_log`的格式关联，因此改动时必须同步检查。
-pub fn show_log(ui: &mut Ui, state: &crate::logic::custom_name::CustomNameState) {
-  let log_vec: Vec<&str> = state.log().split('\n').collect();
-  for single_line in log_vec {
+pub fn show_log(ui: &mut Ui, state: &mut CustomNameState) {
+  let log_text = state.log().to_string();
+  for single_line in log_text.split('\n') {
     if single_line.contains("：")
       && (single_line.chars().count() == 4 || single_line.chars().count() == 3)
     {
-      let char_vec: Vec<&str> = single_line.split('：').collect();
+      let parts = single_line.split('：').collect::<Vec<_>>();
+      let label = parts.first().unwrap().to_string();
+      let chars = parts
+        .get(1)
+        .map(|s| {
+          s.chars()
+            .filter_map(|c| base_character_code(c).map(|idx| (c, idx)))
+            .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+      let mut key_handles = Vec::new();
+      for &(c, idx) in &chars {
+        key_handles.push((c, state.get_name_keyboard_img(ui, idx)));
+      }
+
       ui.horizontal(|ui| {
-        Label::new(format!("{}：", char_vec.first().unwrap()))
-          .selectable(false)
-          .ui(ui);
-        for char_btn in char_vec.get(1).unwrap().chars() {
-          ui.add(Button::new(RichText::new(char_btn).color(DARK)).fill(INFO))
+        Label::new(format!("{label}：")).selectable(false).ui(ui);
+        for (char_btn, (tex, size)) in &key_handles {
+          ui.add(Button::new(RichText::new(*char_btn).color(DARK)).fill(INFO))
             .on_hover_ui(|ui| {
-              if let Some(char_index) = base_character_code(char_btn) {
-                let (tex, size) = get_name_keyboard_img(ui, char_index);
-                let width = size[0] * 2.0;
-                let height = size[1] * 2.0;
-                let a = SizedTexture::new(tex.id(), Vec2::new(width, height));
-                ui.add(Image::new(a).max_height(208.0));
-              }
+              let width = size[0] * 2.0;
+              let height = size[1] * 2.0;
+              let s_tex = SizedTexture::new(tex.id(), Vec2::new(width, height));
+              ui.add(Image::new(s_tex).max_height(208.0));
             });
         }
       });
@@ -96,22 +106,33 @@ pub fn show_log(ui: &mut Ui, state: &crate::logic::custom_name::CustomNameState)
 // 游戏中起名界面的键盘按键图（由构建脚本生成，见"build.rs"中的"gen_name"）
 include!(concat!(env!("OUT_DIR"), "/codegen_name_kbd.rs"));
 
-fn get_name_keyboard_img(ui: &egui::Ui, char_index: u8) -> (TextureHandle, [f32; 2]) {
-  let raw_data = *KEYBOARD_IMG_MAP.get(&char_index).unwrap();
-  let mut reader = ImageReader::new(Cursor::new(raw_data));
-  reader.set_format(image::ImageFormat::Png);
-  let image = reader.decode().unwrap();
-  let size = [image.width() as _, image.height() as _];
-  let image_buffer = image.to_rgba8();
-  let pixels = image_buffer.as_flat_samples();
+impl CustomNameState {
+  /// 从缓存取键盘图，若没有则创建并缓存
+  fn get_name_keyboard_img(&mut self, ui: &egui::Ui, char_index: u8) -> (TextureHandle, [f32; 2]) {
+    if let Some((handle, size)) = self.keyboard_cache.get(&char_index) {
+      return (handle.clone(), *size);
+    }
 
-  let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
-  (
-    ui.load_texture(
+    let raw_data = *KEYBOARD_IMG_MAP.get(&char_index).unwrap();
+    let mut reader = ImageReader::new(Cursor::new(raw_data));
+    reader.set_format(ImageFormat::Png);
+    let image = reader.decode().unwrap();
+    let size = [image.width() as _, image.height() as _];
+    let image_buffer = image.to_rgba8();
+    let pixels = image_buffer.as_flat_samples();
+
+    let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+    let handle = ui.load_texture(
       format!("name_kbd_{char_index:02X}"),
       color_image,
       TextureOptions::NEAREST,
-    ),
-    [size[0] as f32, size[1] as f32],
-  )
+    );
+
+    self.keyboard_cache.insert(
+      char_index,
+      (handle.clone(), [size[0] as f32, size[1] as f32]),
+    );
+
+    (handle, [size[0] as f32, size[1] as f32])
+  }
 }
