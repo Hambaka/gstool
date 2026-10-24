@@ -34,8 +34,8 @@ const PWD_SRC_DESC: [&str; 3] = [
 
 /// 画“注入密码”功能页（说明+视图）；
 ///
-/// 因为这一页只有自己状态的请求而没有跨功能的请求，
-/// 所以返回值是空的Vec。
+/// 跨功能请求来自“查看信息”预览按钮（OpenPasswordPreview），
+/// 其他纯内存请求就地处理，返回值仅含预览请求。
 pub fn show(
   ui: &mut Ui,
   state: &mut InjectPwdState,
