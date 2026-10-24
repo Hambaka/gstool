@@ -135,27 +135,19 @@ pub fn show(
               });
 
             // 密码数据源为存档时，显示存档槽位下拉框（即 kind == First 时显示）
-            if state.source[i].map_or(false, |c| c.kind == SubCommandEnum::First) {
-              ComboBox::from_id_salt(format!("ID_CB_C5_{}_2", PWD_SRC_LABEL[i]))
-                .width(100.0)
-                .selected_text(match &state.source[i] {
-                  Some(choice) => match choice.slot {
-                    Some(save_slot) => AtomsEnum::ImageAndText(save_slot_atoms(save_slot, f_ctx, false)),
-                    None => AtomsEnum::Text("无"),
-                  },
-                  None => AtomsEnum::Text("无"),
-                })
-                .show_ui(ui, |ui| {
-                  for j in 0..3 {
-                    ui.add_enabled_ui(sources.from_save.slots[j].is_some(), |ui| {
-                      ui.selectable_value(
-                        &mut state.source[i].as_mut().unwrap().slot,
-                        Some(SaveSlotEnum::ALL[j]),
-                        save_slot_atoms(SaveSlotEnum::ALL[j], f_ctx, false),
-                      );
-                    });
-                  }
-                });
+            if let Some(SourceChoice { kind: SubCommandEnum::First, .. }) = state.source[i] {
+              if let Some(slot_ref) = state.source[i].as_mut().and_then(|c| c.slot.as_mut()) {
+                ComboBox::from_id_salt(format!("ID_CB_C5_{}_2", PWD_SRC_LABEL[i]))
+                  .width(100.0)
+                  .selected_text(save_slot_atoms(*slot_ref, f_ctx, false))
+                  .show_ui(ui, |ui| {
+                    for j in 0..3 {
+                      ui.add_enabled_ui(sources.from_save.slots[j].is_some(), |ui| {
+                        ui.selectable_value(slot_ref, SaveSlotEnum::ALL[j], save_slot_atoms(SaveSlotEnum::ALL[j], f_ctx, false));
+                      });
+                    }
+                  });
+              }
             }
 
             // 预览按钮（选择来源后启用）
