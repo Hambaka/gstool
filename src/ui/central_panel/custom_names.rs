@@ -7,6 +7,7 @@ use egui::{
 use image::{ImageFormat, ImageReader};
 
 use crate::{
+  app::KeyboardCache,
   core::save::pc_name::{MAX_NAME_CHARS, base_character_code},
   logic::custom_name::{CustomNameState, PC_NAMES},
   ui::page::{AppRequest, FrameCtx},
@@ -63,7 +64,7 @@ pub fn show(
 ///
 /// 因为要把字符变成会显示对应键位图的按钮，所以需要解析原本存储的日志文本，
 /// 格式与`io::render::name_encode_log`的格式关联，因此改动时必须同步检查。
-pub fn show_log(ui: &mut Ui, state: &mut CustomNameState) {
+pub fn show_log(ui: &mut Ui, state: &CustomNameState, cache: &mut KeyboardCache) {
   let log_text = state.log().to_string();
   for single_line in log_text.split('\n') {
     if single_line.contains("：")
@@ -82,7 +83,7 @@ pub fn show_log(ui: &mut Ui, state: &mut CustomNameState) {
 
       let mut key_handles = Vec::new();
       for &(c, idx) in &chars {
-        key_handles.push((c, state.get_name_keyboard_img(ui, idx)));
+        key_handles.push((c, get_name_keyboard_img(ui, idx, cache)));
       }
 
       ui.horizontal(|ui| {
@@ -106,33 +107,35 @@ pub fn show_log(ui: &mut Ui, state: &mut CustomNameState) {
 // 游戏中起名界面的键盘按键图（由构建脚本生成，见"build.rs"中的"gen_name"）
 include!(concat!(env!("OUT_DIR"), "/codegen_name_kbd.rs"));
 
-impl CustomNameState {
-  /// 从缓存取键盘图，若没有则创建并缓存
-  fn get_name_keyboard_img(&mut self, ui: &egui::Ui, char_index: u8) -> (TextureHandle, [f32; 2]) {
-    if let Some((handle, size)) = self.keyboard_cache.get(&char_index) {
-      return (handle.clone(), *size);
-    }
-
-    let raw_data = *KEYBOARD_IMG_MAP.get(&char_index).unwrap();
-    let mut reader = ImageReader::new(Cursor::new(raw_data));
-    reader.set_format(ImageFormat::Png);
-    let image = reader.decode().unwrap();
-    let size = [image.width() as _, image.height() as _];
-    let image_buffer = image.to_rgba8();
-    let pixels = image_buffer.as_flat_samples();
-
-    let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
-    let handle = ui.load_texture(
-      format!("name_kbd_{char_index:02X}"),
-      color_image,
-      TextureOptions::NEAREST,
-    );
-
-    self.keyboard_cache.insert(
-      char_index,
-      (handle.clone(), [size[0] as f32, size[1] as f32]),
-    );
-
-    (handle, [size[0] as f32, size[1] as f32])
+/// 从缓存取键盘图，若没有则创建并缓存
+fn get_name_keyboard_img(
+  ui: &egui::Ui,
+  char_index: u8,
+  cache: &mut KeyboardCache,
+) -> (TextureHandle, [f32; 2]) {
+  if let Some((handle, size)) = cache.0.get(&char_index) {
+    return (handle.clone(), *size);
   }
+
+  let raw_data = *KEYBOARD_IMG_MAP.get(&char_index).unwrap();
+  let mut reader = ImageReader::new(Cursor::new(raw_data));
+  reader.set_format(ImageFormat::Png);
+  let image = reader.decode().unwrap();
+  let size = [image.width() as _, image.height() as _];
+  let image_buffer = image.to_rgba8();
+  let pixels = image_buffer.as_flat_samples();
+
+  let color_image = ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+  let handle = ui.load_texture(
+    format!("name_kbd_{char_index:02X}"),
+    color_image,
+    TextureOptions::NEAREST,
+  );
+
+  cache.0.insert(
+    char_index,
+    (handle.clone(), [size[0] as f32, size[1] as f32]),
+  );
+
+  (handle, [size[0] as f32, size[1] as f32])
 }

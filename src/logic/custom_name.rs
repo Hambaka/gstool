@@ -3,7 +3,6 @@
 //!
 //! 所以规则依旧是ui侧只能经`request()`追加待办的request；
 //! 唯一进行IO操作的地方是`logic()`与`run()`。
-use std::collections::HashMap;
 
 use crate::{
   core::enums::GameTitle, core::save::pc_name::encode_pc_name, io::render::name_encode_log,
@@ -22,6 +21,7 @@ pub const PC_NAMES: [&str; 7] = [
 ];
 
 /// “自定义角色名”功能状态
+#[derive(Debug)]
 pub struct CustomNameState {
   /// 7个输入框的自定义名字内容
   pub names: Vec<String>,
@@ -30,19 +30,6 @@ pub struct CustomNameState {
   /// 本页待办request（私有：ui侧使用`request()`追加）
   /// 不过目前会一直为空，只是为将来可能会做的"写进存档"预留
   pending: Vec<CustomNameRequest>,
-  /// 键盘图缓存：首次解码后存句柄+尺寸，后续 hover 直接复用
-  pub keyboard_cache: HashMap<u8, (egui::TextureHandle, [f32; 2])>,
-}
-
-/// 由于`egui::TextureHandle`的关系，手动实现一下
-impl std::fmt::Debug for CustomNameState {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("CustomNameState")
-      .field("names", &self.names)
-      .field("log", &self.log)
-      .field("pending", &self.pending)
-      .finish()
-  }
 }
 
 /// 本页的待办request；
@@ -123,7 +110,6 @@ impl Default for CustomNameState {
       names: vec![String::new(); 7],
       log: String::new(),
       pending: Vec::new(),
-      keyboard_cache: HashMap::new(),
     }
   }
 }

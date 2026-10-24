@@ -1,10 +1,8 @@
+use std::collections::HashMap;
+
 use egui::{ColorImage, Image, Shadow, TextStyle, TextureHandle, TextureOptions};
 use egui_notify::{Anchor, Toasts};
 use image::GenericImageView;
-
-const ITEM_ICON_COUNT: usize = 362;
-const ITEM_ICON_SIZE: u32 = 16;
-const ITEM_ICON_COLS: usize = 10;
 
 use crate::{
   logic::{
@@ -22,6 +20,18 @@ use crate::{
     },
   },
 };
+
+const ITEM_ICON_COUNT: usize = 362;
+const ITEM_ICON_SIZE: u32 = 16;
+const ITEM_ICON_COLS: usize = 10;
+
+pub struct KeyboardCache(pub HashMap<u8, (TextureHandle, [f32; 2])>);
+
+impl Default for KeyboardCache {
+  fn default() -> Self {
+    Self(HashMap::new())
+  }
+}
 
 #[derive(Debug, Clone)]
 pub enum AtomsEnum {
@@ -58,6 +68,8 @@ pub struct App {
   pub c2: SaveConvertState,
   /// 3. `自定义角色名`功能的状态
   pub c3: CustomNameState,
+  /// 自定义角色名功能页的键盘按键图缓存
+  pub kb_cache: KeyboardCache,
   /// 4. `应用汉化补丁`功能的状态
   pub c4: PatchRomState,
   /// 5. `注入密码`功能的状态
@@ -140,6 +152,7 @@ impl App {
       c2: SaveConvertState::default(),
       // 3. 自定义角色名部分
       c3: CustomNameState::default(),
+      kb_cache: KeyboardCache::default(),
       // 4. 打汉化补丁功能部分
       c4: PatchRomState::default(),
       // 5. 注入密码功能部分

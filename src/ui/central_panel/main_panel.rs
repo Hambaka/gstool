@@ -108,7 +108,7 @@ impl App {
           match self.command {
             CommandEnum::First => password_export::show_log(ui, &self.c1),
             CommandEnum::Second => save_convert::show_log(ui, &self.c2),
-            CommandEnum::Third => custom_names::show_log(ui, &mut self.c3),
+            CommandEnum::Third => custom_names::show_log(ui, &self.c3, &mut self.kb_cache),
             CommandEnum::Fourth => patch_rom::show_log(ui, &self.c4),
             CommandEnum::Fifth => inject_pwd::show_log(ui, &self.c5),
           }
