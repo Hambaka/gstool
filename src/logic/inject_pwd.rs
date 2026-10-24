@@ -78,8 +78,6 @@ impl InjectPwdState {
     self.input_file_path.clear();
     self.source = [None, None, None];
     self.out_dir.clear();
-
-    // self.log.clear();
   }
 
   /// 处理`AppRequest::ResetPasswordSources`的请求

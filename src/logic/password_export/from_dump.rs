@@ -216,13 +216,7 @@ fn execute(job: &DumpJob) -> Result<(), String> {
     }
   }
 
-  let options = ExportOptions {
-    grade: job.target_grade.unwrap_or(job.src_grade),
-    text_version: job.text_version,
-    export_dump: false,
-    cheat_region: job.cheat.map(|(_, region)| region),
-    export_data_text: job.data_sheet.is_some(),
-  };
+  let options = export_options_dump(&job);
 
   write_outputs(
     &job.password_bytes,
@@ -277,13 +271,8 @@ fn render_log(job: &DumpJob) -> String {
   }
 
   // 金手指 / 数据文本两条说明（转储与文本两条在上方，另外本子页转储文件的展示顺序在文本之前）
-  let options = ExportOptions {
-    grade: job.target_grade.unwrap_or(job.src_grade),
-    text_version: None,
-    export_dump: false,
-    cheat_region: job.cheat.map(|(_, region)| region),
-    export_data_text: job.data_sheet.is_some(),
-  };
+  let options = export_options_dump(job);
+
   for note in output_notes(
     &options,
     Subject::SourceOrDowngrade {
@@ -310,5 +299,16 @@ impl Default for FromDumpState {
       log: String::new(),
       pending: Vec::new(),
     }
+  }
+}
+
+/// 从`DumpJob`提取`ExportOptions`
+fn export_options_dump(job: &DumpJob) -> ExportOptions {
+  ExportOptions {
+    grade: job.target_grade.unwrap_or(job.src_grade),
+    text_version: job.text_version,
+    export_dump: false,
+    cheat_region: job.cheat.map(|(_, region)| region),
+    export_data_text: job.data_sheet.is_some(),
   }
 }

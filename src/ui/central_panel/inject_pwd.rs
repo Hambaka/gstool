@@ -82,7 +82,10 @@ pub fn show(
               .show_ui(ui, |_ui| {});
           });
         } else {
-          Label::new(PWD_SRC_LABEL[i]).selectable(false).ui(ui).on_hover_text(PWD_SRC_DESC[i]);
+          Label::new(PWD_SRC_LABEL[i])
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text(PWD_SRC_DESC[i]);
           ui.horizontal(|ui| {
             ComboBox::from_id_salt(format!("ID_CB_C5_{}_1", PWD_SRC_LABEL[i]))
               .width(100.0)

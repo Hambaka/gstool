@@ -1,6 +1,10 @@
-use egui::{Image, Shadow, TextStyle, TextureHandle, TextureOptions};
+use egui::{ColorImage, Image, Shadow, TextStyle, TextureHandle, TextureOptions};
 use egui_notify::{Anchor, Toasts};
 use image::GenericImageView;
+
+const ITEM_ICON_COUNT: usize = 362;
+const ITEM_ICON_SIZE: u32 = 16;
+const ITEM_ICON_COLS: usize = 10;
 
 use crate::{
   logic::{
@@ -77,25 +81,28 @@ impl App {
       let image =
         image::load_from_memory_with_format(image_bytes, image::ImageFormat::Png).unwrap();
 
-      let icon_size = 16;
-      let columns = 10;
+      let icon_size = ITEM_ICON_SIZE;
+      let columns = ITEM_ICON_COLS;
 
-      for id in 0..362 {
+      for id in 0..ITEM_ICON_COUNT {
         // 当前图标所在列
         let col = id % columns;
         // 当前图标所在行
         let row = id / columns;
 
         // 起始像素坐标
-        let x = (col * icon_size) as u32;
-        let y = (row * icon_size) as u32;
+        let x = (col as u32) * icon_size;
+        let y = (row as u32) * icon_size;
 
         // 从完整大图中获取该图标的 16x16 的图像
-        let sub_image = image.view(x, y, icon_size as u32, icon_size as u32);
+        let sub_image = image.view(x, y, icon_size, icon_size);
         // 开始转换为egui的TextureHandle
         let rgba_image = sub_image.to_image();
         let pixels = rgba_image.into_raw();
-        let color_image = egui::ColorImage::from_rgba_unmultiplied([icon_size, icon_size], &pixels);
+        let color_image = {
+          let icon_size = ITEM_ICON_SIZE as usize;
+          ColorImage::from_rgba_unmultiplied([icon_size, icon_size], &pixels)
+        };
 
         let handle = cc.egui_ctx.load_texture(
           format!("item_icon_{}", id),

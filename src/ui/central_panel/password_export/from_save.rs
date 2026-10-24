@@ -1,16 +1,17 @@
 //! ① 游戏存档子页视图：ui侧只负责画widget、登记下一帧logic侧要处理的request。
 
-use egui::{Checkbox, Grid, Label, Ui, Widget};
+use egui::{Grid, Label, Ui, Widget};
 
 use crate::{
   core::enums::{GameRegion, PasswordGrade, PasswordVersion},
-  logic::command::SubCommandEnum,
-  logic::password_export::from_save::{FromSaveRequest, FromSaveState},
-  logic::sources::PasswordSources,
+  logic::{
+    command::SubCommandEnum,
+    password_export::from_save::{FromSaveRequest, FromSaveState},
+    sources::PasswordSources,
+  },
   ui::page::{AppRequest, FrameCtx},
-  widgets::{
-    buttons::pwd_info_btn,
-    rows::{PathAction, checkbox_row, combo_row, dir_row, file_row, row_label},
+  widgets::rows::{
+    PathAction, checkbox_row, combo_row, dir_row, file_row, pwd_info_checkbox_row, row_label,
   },
 };
 
@@ -136,26 +137,16 @@ pub fn show(
       );
 
       // 第7行（复选框与预览按钮同处一行，未用 checkbox_row）
-      row_label(
+      pwd_info_checkbox_row(
         ui,
         "导出密码数据至文本文件",
         "若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。",
         sources.has_save(),
+        &mut state.export_data_text,
+        SubCommandEnum::First,
+        f_ctx,
+        &mut requests,
       );
-      ui.horizontal(|ui| {
-        ui.add_enabled(
-          sources.has_save(),
-          Checkbox::without_text(&mut state.export_data_text),
-        );
-        if ui
-          .add_enabled(sources.has_save(), pwd_info_btn(f_ctx.svg_icon_size))
-          .clicked()
-        {
-          // 登记打开密码信息预览窗口的请求（以`存档文件`为数据源）
-          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::First, None));
-        }
-      });
-      ui.end_row();
 
       // 第8行
       match dir_row(

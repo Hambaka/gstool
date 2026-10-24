@@ -294,13 +294,8 @@ fn execute(job: &TextJob) -> Result<(), String> {
     }
   }
 
-  let options = ExportOptions {
-    grade: job.target_grade.unwrap_or(job.src_grade),
-    text_version: None,
-    export_dump: job.export_dump,
-    cheat_region: job.cheat.map(|(_, region)| region),
-    export_data_text: job.data_sheet.is_some(),
-  };
+  let options = export_options_text(&job);
+
   write_outputs(
     &job.password_bytes,
     &options,
@@ -368,13 +363,8 @@ fn render_log(job: &TextJob) -> String {
   }
 
   // 转储 / 金手指 / 数据文本三条说明（文本文件那条在上方，由 4 分支单独处理）
-  let options = ExportOptions {
-    grade: job.target_grade.unwrap_or(job.src_grade),
-    text_version: None,
-    export_dump: job.export_dump,
-    cheat_region: job.cheat.map(|(_, region)| region),
-    export_data_text: job.data_sheet.is_some(),
-  };
+  let options = export_options_text(&job);
+
   for note in output_notes(
     &options,
     Subject::SourceOrDowngrade {
@@ -402,5 +392,16 @@ impl Default for FromTextState {
       log: String::new(),
       pending: Vec::new(),
     }
+  }
+}
+
+/// 从`TextJob`提取`ExportOptions`
+fn export_options_text(job: &TextJob) -> ExportOptions {
+  ExportOptions {
+    grade: job.target_grade.unwrap_or(job.src_grade),
+    text_version: None,
+    export_dump: job.export_dump,
+    cheat_region: job.cheat.map(|(_, region)| region),
+    export_data_text: job.data_sheet.is_some(),
   }
 }

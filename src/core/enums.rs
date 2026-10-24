@@ -16,7 +16,7 @@ impl From<usize> for PasswordGrade {
 }
 
 impl PasswordGrade {
-  pub const ALL: [PasswordGrade; 3] = [Self::Gold, Self::Silver, Self::Bronze];
+  pub const ALL: [Self; 3] = [Self::Gold, Self::Silver, Self::Bronze];
 
   /// From password char/byte count
   pub fn from_size(size: usize) -> Option<Self> {
@@ -78,7 +78,7 @@ impl From<GameRegion> for PasswordVersion {
 }
 
 impl PasswordVersion {
-  pub const ALL: [PasswordVersion; 2] = [Self::Japanese, Self::English];
+  pub const ALL: [Self; 2] = [Self::Japanese, Self::English];
 
   pub fn opposite(self) -> Self {
     match self {
@@ -106,7 +106,7 @@ pub enum GameRegion {
 }
 
 impl GameRegion {
-  pub const ALL: [GameRegion; 6] = [
+  pub const ALL: [Self; 6] = [
     Self::Japan,
     Self::USA,
     Self::Germany,
@@ -175,13 +175,24 @@ pub enum NameType {
   Spanish = 3,
   French = 4,
   Italian = 5,
-  // 仅限黄太2
-  ChineseFanTranslationMobileTeam = 6,
   // 仅限黄太1
-  ChineseFanTranslation2023Team = 7,
+  ChineseFanTranslation2023Team = 6,
+  // 仅限黄太2
+  ChineseFanTranslationMobileTeam = 7,
 }
 
 impl NameType {
+  pub const ALL: [Self; 8] = [
+    Self::Japanese,
+    Self::English,
+    Self::German,
+    Self::Spanish,
+    Self::French,
+    Self::Italian,
+    Self::ChineseFanTranslation2023Team,
+    Self::ChineseFanTranslationMobileTeam,
+  ];
+
   pub fn index(self) -> usize {
     self as usize
   }
@@ -194,8 +205,8 @@ impl NameType {
       Self::Spanish => "西班牙文",
       Self::French => "法文",
       Self::Italian => "意大利文",
-      Self::ChineseFanTranslationMobileTeam => "2代汉化",
       Self::ChineseFanTranslation2023Team => "1代新汉化",
+      Self::ChineseFanTranslationMobileTeam => "2代汉化",
     }
   }
 }

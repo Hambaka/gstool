@@ -1,17 +1,16 @@
 //! ③ 内存转储子页视图：ui侧只负责画widget、登记下一帧logic侧要处理的request。
 
-use egui::{Checkbox, Grid, Label, Ui, Widget};
+use egui::{Grid, Label, Ui, Widget};
 
 use crate::{
   core::enums::{GameRegion, PasswordGrade, PasswordVersion},
-  logic::command::SubCommandEnum,
-  logic::password_export::from_dump::{FromDumpRequest, FromDumpState},
-  logic::sources::PasswordSources,
-  ui::page::{AppRequest, FrameCtx},
-  widgets::{
-    buttons::pwd_info_btn,
-    rows::{PathAction, combo_row, dir_row, file_row, row_label},
+  logic::{
+    command::SubCommandEnum,
+    password_export::from_dump::{FromDumpRequest, FromDumpState},
+    sources::PasswordSources,
   },
+  ui::page::{AppRequest, FrameCtx},
+  widgets::rows::{PathAction, combo_row, dir_row, file_row, pwd_info_checkbox_row},
 };
 
 const DESC_C1S3: &str = r"“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。
@@ -117,20 +116,16 @@ pub fn show(
         },
       );
       // 第5行
-      row_label(
+      pwd_info_checkbox_row(
         ui,
         "导出密码数据至文本文件",
         "若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件。",
         sources.has_dump(),
+        &mut state.export_data_text,
+        SubCommandEnum::Third,
+        f_ctx,
+        &mut requests
       );
-      ui.horizontal(|ui| {
-        ui.add_enabled(sources.has_dump(), Checkbox::without_text(&mut state.export_data_text));
-        if ui.add_enabled(sources.has_dump(), pwd_info_btn(f_ctx.svg_icon_size)).clicked() {
-          // 发送打开密码信息预览窗口的请求（以`内存转储`为数据源）
-          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Third, None));
-        }
-      });
-      ui.end_row();
       // 第6行
       match dir_row(
         ui,

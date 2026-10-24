@@ -14,7 +14,7 @@ pub enum CommandEnum {
 }
 
 impl CommandEnum {
-  pub const ALL: [CommandEnum; 5] = [
+  pub const ALL: [Self; 5] = [
     Self::First,
     Self::Second,
     Self::Third,
@@ -29,7 +29,7 @@ impl CommandEnum {
       // ⇆
       Self::Second => "存档转换功能",
       // 📝、🖊
-      Self::Third => " 自定义角色名",
+      Self::Third => "自定义角色名",
       // 🌐、🔨、🛠
       Self::Fourth => "应用汉化补丁",
       // ⤵、⤓、⮋、⬇
@@ -49,7 +49,7 @@ pub enum SubCommandEnum {
 }
 
 impl SubCommandEnum {
-  pub const ALL: [SubCommandEnum; 3] = [Self::First, Self::Second, Self::Third];
+  pub const ALL: [Self; 3] = [Self::First, Self::Second, Self::Third];
 
   pub fn name(&self) -> &'static str {
     match self {

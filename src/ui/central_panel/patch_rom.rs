@@ -42,7 +42,6 @@ pub fn show(ui: &mut Ui, state: &mut PatchRomState, f_ctx: FrameCtx) -> Vec<AppR
         PathAction::None => {},
       };
 
-
       // 第2行 -> 指定输出文件保存目录
       match dir_row(
         ui,

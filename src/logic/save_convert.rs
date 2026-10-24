@@ -3,8 +3,10 @@
 //! ui侧只能经`request()`追加待办的request；
 //! 唯一进行IO操作的地方是`logic()`与`run()`。
 
-use std::path::PathBuf;
-use std::{fmt::Write as _, path::Path};
+use std::{
+  fmt::Write as _,
+  path::{Path, PathBuf},
+};
 
 use crate::{
   core::{

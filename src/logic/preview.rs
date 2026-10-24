@@ -93,7 +93,7 @@ pub enum PreviewPageEnum {
 }
 
 impl PreviewPageEnum {
-  pub const ALL: [PreviewPageEnum; 4] = [Self::Character, Self::Item, Self::Djinn, Self::Misc];
+  pub const ALL: [Self; 4] = [Self::Character, Self::Item, Self::Djinn, Self::Misc];
 
   pub fn name(&self) -> &'static str {
     match self {

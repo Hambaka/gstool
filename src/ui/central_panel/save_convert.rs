@@ -64,27 +64,27 @@ pub fn show(ui: &mut Ui, state: &mut SaveConvertState, f_ctx: FrameCtx) -> Vec<A
         },
         |ui| {
           ui.selectable_value(&mut state.default_name_ver, None, "无");
-          ui.selectable_value(&mut state.default_name_ver, Some(NameType::Japanese), NameType::Japanese.name());
-          ui.selectable_value(&mut state.default_name_ver, Some(NameType::English), NameType::English.name());
-          ui.selectable_value(&mut state.default_name_ver, Some(NameType::German), NameType::German.name());
-          ui.selectable_value(&mut state.default_name_ver, Some(NameType::Spanish), NameType::Spanish.name());
-          ui.selectable_value(&mut state.default_name_ver, Some(NameType::French), NameType::French.name());
-          ui.selectable_value(&mut state.default_name_ver, Some(NameType::Italian), NameType::Italian.name());
-          if let Some(game_info) = &state.source {
-            ui.add_enabled_ui(matches!(game_info.title, GameTitle::TheBrokenSeal), |ui| {
-              ui.selectable_value(
-                &mut state.default_name_ver,
-                Some(NameType::ChineseFanTranslation2023Team),
-                NameType::ChineseFanTranslation2023Team.name(),
-              );
-            });
-            ui.add_enabled_ui(matches!(game_info.title, GameTitle::TheLostAge), |ui| {
-              ui.selectable_value(
-                &mut state.default_name_ver,
-                Some(NameType::ChineseFanTranslationMobileTeam),
-                NameType::ChineseFanTranslationMobileTeam.name(),
-              );
-            });
+
+          for ele in NameType::ALL {
+            match ele {
+              NameType::ChineseFanTranslation2023Team => {
+                if let Some(game_info) = &state.source {
+                  ui.add_enabled_ui(matches!(game_info.title, GameTitle::TheBrokenSeal), |ui| {
+                    ui.selectable_value(&mut state.default_name_ver, Some(ele), ele.name());
+                  });
+                }
+              },
+              NameType::ChineseFanTranslationMobileTeam => {
+                if let Some(game_info) = &state.source {
+                  ui.add_enabled_ui(matches!(game_info.title, GameTitle::TheLostAge), |ui| {
+                    ui.selectable_value(&mut state.default_name_ver, Some(ele), ele.name());
+                  });
+                }
+              },
+              _ => {
+                ui.selectable_value(&mut state.default_name_ver, Some(ele), ele.name());
+              },
+            }
           }
         },
       );

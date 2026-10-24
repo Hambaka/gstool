@@ -38,7 +38,7 @@ pub fn show_about_window(ui: &mut egui::Ui, state: &mut AboutState, f_ctx: Frame
 
         ui.add_space(16.0);
 
-        egui::Grid::new("ID_GRID_C2")
+        egui::Grid::new("ID_GRID_ABOUT")
           .num_columns(3)
           .spacing([40.0, 4.0])
           .striped(false)

@@ -4,6 +4,7 @@
 //! 入队（`App::requests`） -> 消费（`App::logic()`）。
 //! 一帧内 `logic()` 先于 `ui()`，所以本帧登记的请求一定由**下一帧**的 `logic()` 消费。
 //! 而纯内存改动（勾选、切页签、清空字段）直接在 `ui()` 里改。
+//! 例外：`ui.copy_text`是egui框架的命令，不视为违规IO。
 
 use egui::Color32;
 

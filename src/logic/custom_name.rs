@@ -82,8 +82,6 @@ impl CustomNameState {
     for name in &mut self.names {
       name.clear();
     }
-
-    // self.log.clear();
   }
 
   /// 逻辑侧，处理上一帧ui侧提交的本功能的待办请求

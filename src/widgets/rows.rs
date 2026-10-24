@@ -8,10 +8,14 @@
 
 use std::path::PathBuf;
 
-use egui::{ComboBox, Label, RichText, TextEdit, Ui, Widget};
+use egui::{Checkbox, ComboBox, Label, RichText, TextEdit, Ui, Widget};
 use rfd::FileDialog;
 
-use crate::widgets::buttons::{reset_btn, select_dir_btn, select_file_btn};
+use crate::{
+  logic::command::SubCommandEnum,
+  ui::page::{AppRequest, FrameCtx},
+  widgets::buttons::{pwd_info_btn, reset_btn, select_dir_btn, select_file_btn},
+};
 
 /// 用户对`路径选择行`（文件、目录选择）做的动作
 #[derive(Debug, Clone, PartialEq)]
@@ -108,7 +112,33 @@ pub fn dir_row(
 /// 行末 -> 复选框：`标签`+`复选框`（自动 `end_row()`）
 pub fn checkbox_row(ui: &mut Ui, label: &str, hint: &str, enabled: bool, checked: &mut bool) {
   row_label(ui, label, hint, enabled);
-  ui.add_enabled(enabled, egui::Checkbox::without_text(checked));
+  ui.add_enabled(enabled, Checkbox::without_text(checked));
+  ui.end_row();
+}
+
+/// 复选框 + 密码信息预览按钮同行（用于密码导出的三个子页的"导出数据至文本"选项）。
+///
+/// 比`checkbox_row`多一个密码数据信息预览按钮：点击后将一个`OpenPasswordPreview`的请求push到`requests`中。
+pub fn pwd_info_checkbox_row(
+  ui: &mut Ui,
+  label: &str,
+  hint: &str,
+  enabled: bool,
+  checked: &mut bool,
+  preview_cmd: SubCommandEnum,
+  f_ctx: FrameCtx,
+  requests: &mut Vec<AppRequest>,
+) {
+  row_label(ui, label, hint, enabled);
+  ui.horizontal(|ui| {
+    ui.add_enabled(enabled, Checkbox::without_text(checked));
+    if ui
+      .add_enabled(enabled, pwd_info_btn(f_ctx.svg_icon_size))
+      .clicked()
+    {
+      requests.push(AppRequest::OpenPasswordPreview(preview_cmd, None));
+    }
+  });
   ui.end_row();
 }
 

@@ -1,6 +1,6 @@
 //! ② 密码文本子页视图：ui侧只负责画widget、登记下一帧logic侧要处理的request。
 
-use egui::{Checkbox, Grid, Label, TextEdit, Ui, Widget};
+use egui::{Grid, Label, TextEdit, Ui, Widget};
 use rfd::FileDialog;
 
 use crate::{
@@ -12,8 +12,8 @@ use crate::{
   },
   ui::page::{AppRequest, FrameCtx},
   widgets::{
-    buttons::{clipboard_btn, pwd_info_btn, reset_btn, select_file_btn},
-    rows::{PathAction, checkbox_row, combo_row, dir_row, row_label},
+    buttons::{clipboard_btn, reset_btn, select_file_btn},
+    rows::{PathAction, checkbox_row, combo_row, dir_row, pwd_info_checkbox_row},
   },
 };
 
@@ -132,20 +132,16 @@ pub fn show(
         },
       );
       // 第6行
-      row_label(
+      pwd_info_checkbox_row(
         ui,
         "导出密码数据至文本文件",
         "若勾选，则导出适用于 Dyrati 的“Golden Sun Password Generator”表格的密码数据文本文件",
         sources.has_text(),
+        &mut state.export_data_text,
+        SubCommandEnum::Second,
+        f_ctx,
+        &mut requests
       );
-      ui.horizontal(|ui| {
-        ui.add_enabled(sources.has_text(), Checkbox::without_text(&mut state.export_data_text));
-        if ui.add_enabled(sources.has_text(), pwd_info_btn(f_ctx.svg_icon_size)).clicked() {
-          // 登记打开密码信息预览窗口的请求（以`密码文本`为数据源）
-          requests.push(AppRequest::OpenPasswordPreview(SubCommandEnum::Second, None));
-        }
-      });
-      ui.end_row();
       // 第7行
       match dir_row(
         ui,

@@ -20,9 +20,9 @@ pub enum Element {
 }
 
 impl Element {
-  pub const ALL: [Element; 4] = [Self::Venus, Self::Mercury, Self::Mars, Self::Jupiter];
+  pub const ALL: [Self; 4] = [Self::Venus, Self::Mercury, Self::Mars, Self::Jupiter];
   /// 游戏内展示顺序（地/火/风/水），用于 PasswordView（密码预览窗口）与Dyrati数据文本。
-  pub const GAMEPLAY_ORDER: [Element; 4] = [Self::Venus, Self::Mars, Self::Jupiter, Self::Mercury];
+  pub const GAMEPLAY_ORDER: [Self; 4] = [Self::Venus, Self::Mars, Self::Jupiter, Self::Mercury];
 
   pub fn index(self) -> usize {
     self as usize
