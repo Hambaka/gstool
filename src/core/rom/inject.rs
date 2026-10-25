@@ -160,13 +160,13 @@ pub fn analyze(rom: &[u8]) -> Result<TlaRomAnalysis, RomInjectError> {
 
 /// 靠软件标题 + ROM 内构建日期判定《失落的时代》的语言版本
 fn identify_tla_region(rom: &[u8]) -> Result<GameRegion, RomInjectError> {
-  let title = read_ascii(rom, SOFTWARE_TITLE_OFFSET, SOFTWARE_TITLE_LEN);
+  let title = read_ascii(rom, SOFTWARE_TITLE_OFFSET, SOFTWARE_TITLE_LEN)?;
   if title == SOFTWARE_TITLE_TLA_JAPAN {
     // 仅有日版（或基于日版修改的版本）的标题会是 `OUGONTAIYO_B`
     Ok(GameRegion::Japan)
   } else if title == SOFTWARE_TITLE_TLA_WORLD {
     // 其余版本标题都是 `GOLDEN_SUN_B`，改用ROM内的构建日期区分
-    let build_date = read_ascii(rom, ROM_BUILD_DATE_OFFSET, ROM_BUILD_DATE_LEN);
+    let build_date = read_ascii(rom, ROM_BUILD_DATE_OFFSET, ROM_BUILD_DATE_LEN)?;
     GameRegion::from_rom_build_date(&build_date).ok_or(RomInjectError::UnknownRegion)
   } else {
     Err(RomInjectError::NotTlaRom)
@@ -237,7 +237,7 @@ fn find_injection_offset(
     let mut new_inject_offset = start_index;
     for i in (0..start_index).step_by(INJECT_ALIGNMENT).rev() {
       for j in 0..INJECT_ALIGNMENT {
-        if rom[i - j] != blank_byte {
+        if rom[i.saturating_sub(j)] != blank_byte {
           inject_offset_found = true;
           break;
         }
@@ -285,7 +285,7 @@ fn read_existing_injection(
   // 若不能匹配，则证明游戏ROM已经被注入自动输入密码的程序，直接使用ROM已经记录的信息，无需二次计算
   let inject_offset =
     target_address as usize - 1 - INJECT_BLOCK_HEADER_SIZE - ROM_MEMORY_MAPPING as usize;
-  let header = read_ascii(rom, inject_offset, 4);
+  let header = read_ascii(rom, inject_offset, 4)?;
   if header.as_bytes() != &INJECT_HEADER {
     return Err(RomInjectError::InjectionUnknown);
   }
@@ -395,12 +395,17 @@ pub fn inject(
   Ok(rom)
 }
 
-fn read_ascii(rom: &[u8], pos: usize, size: usize) -> String {
-  String::from_utf8_lossy(&rom[pos..pos + size]).into_owned()
+fn read_ascii(rom: &[u8], pos: usize, size: usize) -> Result<String, RomInjectError> {
+  let bytes = rom
+    .get(pos..pos + size)
+    .ok_or(RomInjectError::UnableToRead)?;
+  Ok(String::from_utf8_lossy(bytes).into_owned())
 }
 
 fn read_u32(rom: &[u8], pos: usize) -> Result<u32, RomInjectError> {
-  let bytes = rom[pos..(pos + 4)]
+  let bytes = rom
+    .get(pos..pos + 4)
+    .ok_or(RomInjectError::UnableToRead)?
     .try_into()
     .map_err(|_| RomInjectError::UnableToRead)?;
   Ok(u32::from_le_bytes(bytes))

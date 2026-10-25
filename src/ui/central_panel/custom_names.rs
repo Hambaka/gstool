@@ -48,7 +48,7 @@ pub fn show(
           .selectable(false)
           .ui(ui)
           .on_hover_text(format!("{ele}的自定义角色名。"));
-        let name_ref: &mut String = state.names.get_mut(i).unwrap();
+        let name_ref = &mut state.names[i];
         ui.add(
           egui::TextEdit::singleline(name_ref)
             .char_limit(MAX_NAME_CHARS)

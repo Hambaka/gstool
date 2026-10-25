@@ -210,11 +210,7 @@ fn has_camelot_header(raw: &[u8], slot_index: usize) -> bool {
     return false;
   };
 
-  if header_string.eq(HEADER_CAMELOT_ASCII_STRING) {
-    true
-  } else {
-    false
-  }
+  header_string.eq(HEADER_CAMELOT_ASCII_STRING)
 }
 
 /// 主要用于解析《开启的封印》的存档

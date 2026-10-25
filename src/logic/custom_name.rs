@@ -24,7 +24,7 @@ pub const PC_NAMES: [&str; 7] = [
 #[derive(Debug)]
 pub struct CustomNameState {
   /// 7个输入框的自定义名字内容
-  pub names: Vec<String>,
+  pub names: [String; 7],
   /// 最近一次运行的日志（空 = 尚未运行）
   log: String,
   /// 本页待办request（私有：ui侧使用`request()`追加）
@@ -107,7 +107,15 @@ impl CustomNameState {
 impl Default for CustomNameState {
   fn default() -> Self {
     Self {
-      names: vec![String::new(); 7],
+      names: [
+        String::new(),
+        String::new(),
+        String::new(),
+        String::new(),
+        String::new(),
+        String::new(),
+        String::new(),
+      ],
       log: String::new(),
       pending: Vec::new(),
     }

@@ -144,7 +144,7 @@ pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
     let mut flags = 0;
     for items_per_person in &data.items {
       for item in items_per_person {
-        let id = item & 0x1FF;
+        let id = item_id(*item);
         for (j, psynergy_item) in PSYNERGY_ITEMS.iter().enumerate() {
           if id == *psynergy_item {
             flags |= u32::pow(2, u32::try_from(j).unwrap());
@@ -179,7 +179,7 @@ pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
     let mut counter = 0;
     for items_per_person in &data.items {
       for item in items_per_person {
-        let id = item & 0x1FF;
+        let id = item_id(*item);
         bits.push_bits(u32::from(id), 9);
         counter += 1;
         // Append a 0 bit every 7 items.
@@ -195,7 +195,7 @@ pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
       for stackable_item in &STACKABLE_ITEMS {
         let mut quantity = 0;
         for item in items_per_person {
-          let id = item & 0x1FF;
+          let id = item_id(*item);
           if id == *stackable_item {
             quantity = item >> 11;
           }
@@ -269,6 +269,10 @@ pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
   }
 
   password_bytes
+}
+
+fn item_id(value: u16) -> u16 {
+  value & 0x1FF
 }
 
 pub fn from_raw_save(raw_save: &[u8], grade: PasswordGrade) -> Vec<u8> {

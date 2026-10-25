@@ -121,7 +121,10 @@ pub const PC_NAME_OFFSET: [usize; 2] = [0x510, 0x530];
 /// 存档中游戏构建日期的三处记录位置
 /// - 《开启的封印》：`0x36到0x37`、`0x250到0x251`、`0x508到0x509`
 /// - 《失落的时代》：`0x36到0x37`、`0x250到0x251`、`0x528到0x529`
-pub const BUILD_DATE_OFFSET: [[usize; 3]; 2] = [[0x36, 0x250, 0x508], [0x36, 0x250, 0x528]];
+pub const BUILD_DATE_OFFSET: [[usize; 3]; 2] = [
+  [FIRST_BUILD_DATE_OFFSET, 0x250, 0x508],
+  [FIRST_BUILD_DATE_OFFSET, 0x250, 0x528],
+];
 /// 每个槽位存档的头大小：0x10
 pub const SLOT_HEADER_SIZE: usize = 0x10;
 /// GBA 上存档数据的内存基址
