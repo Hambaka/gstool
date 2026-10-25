@@ -9,6 +9,7 @@ use crate::core::{
   },
 };
 
+#[derive(Debug)]
 pub enum SaveFileError {
   BadFileSize(u64),
   NoSaveData,

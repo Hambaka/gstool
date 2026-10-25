@@ -60,6 +60,7 @@ const VALID_PASSWORD_CHARS_EN: [char; 64] = [
   '='
 ];
 
+#[derive(Debug)]
 pub enum PasswordTextError {
   Empty,
   BadLength(usize),
