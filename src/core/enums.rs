@@ -210,3 +210,30 @@ impl NameType {
     }
   }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Element {
+  Venus = 0,
+  Mercury = 1,
+  Mars = 2,
+  Jupiter = 3,
+}
+
+impl Element {
+  pub const ALL: [Self; 4] = [Self::Venus, Self::Mercury, Self::Mars, Self::Jupiter];
+  /// 游戏内展示顺序（地/火/风/水），用于 PasswordView（密码预览窗口）与Dyrati数据文本。
+  pub const GAMEPLAY_ORDER: [Self; 4] = [Self::Venus, Self::Mars, Self::Jupiter, Self::Mercury];
+
+  pub fn index(self) -> usize {
+    self as usize
+  }
+
+  pub fn name(self) -> &'static str {
+    match self {
+      Self::Venus => "维纳斯",
+      Self::Mercury => "墨丘利",
+      Self::Mars => "玛尔斯",
+      Self::Jupiter => "朱庇特",
+    }
+  }
+}

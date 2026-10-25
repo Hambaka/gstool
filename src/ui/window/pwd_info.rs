@@ -3,11 +3,10 @@ use egui::{Button, ComboBox, Image, Label, RichText, Widget};
 use crate::{
   core::{
     data::{ALL_DJINN_NAMES, ITEM_NAMES, Language, icon_id},
-    enums::PasswordGrade,
+    enums::{Element, PasswordGrade},
     password::{
       items::{PSYNERGY_ITEMS, STACKABLE_ITEMS},
       stats::MAX_BASE_STATS,
-      view::Element,
     },
   },
   logic::{
