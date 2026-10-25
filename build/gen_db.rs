@@ -54,7 +54,7 @@ impl PreviewObject {{
   )
   .unwrap();
 
-  writeln!(file, "").unwrap();
+  writeln!(file).unwrap();
 }
 
 fn gen_item_db(file: &mut BufWriter<File>) {

@@ -123,7 +123,7 @@ pub fn run() {
         0x72 => silver_u8_option = Some(index),
         0x73 => bronze_u8_option = Some(index),
         0x74 => other_u8_vec.push(index),
-        0x91 | 0x92 | 0x93 => {
+        0x91..=0x93 => {
           u32_vec.push(index);
           index += 4;
           continue;
@@ -227,7 +227,7 @@ pub fn run() {
 
 fn get_diff_u8_gsb_str(index: usize, vec: &Vec<[Option<usize>; 3]>) -> String {
   let mut result = String::new();
-  result.push_str("[");
+  result.push('[');
 
   let temp = vec[index];
   if let Some(gold) = temp[0] {
@@ -246,7 +246,7 @@ fn get_diff_u8_gsb_str(index: usize, vec: &Vec<[Option<usize>; 3]>) -> String {
     result.push_str("None");
   }
 
-  result.push_str("]");
+  result.push(']');
   result
 }
 
@@ -264,7 +264,7 @@ fn get_diff_u8_other_str(index: usize, vec: &Vec<Vec<usize>>) -> String {
     }
   }
 
-  result.push_str("]");
+  result.push(']');
   result
 }
 
@@ -283,13 +283,13 @@ fn get_diff_u32_str(index: usize, vec: &Vec<Vec<usize>>) -> String {
     }
   }
 
-  result.push_str("]");
+  result.push(']');
   result
 }
 
 fn get_pwd_pos_str(index: usize, vec: &Vec<[Option<usize>; 3]>) -> String {
   let mut result = String::new();
-  result.push_str("[");
+  result.push('[');
 
   let temp = vec[index];
   let len = temp.len();
@@ -309,6 +309,6 @@ fn get_pwd_pos_str(index: usize, vec: &Vec<[Option<usize>; 3]>) -> String {
     }
   }
 
-  result.push_str("]");
+  result.push(']');
   result
 }

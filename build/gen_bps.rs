@@ -30,48 +30,48 @@ pub fn run(level: i32) {
       let sub_dir = read_dir(sub_dir_path).unwrap();
       for ele in sub_dir {
         let bps_path = ele.unwrap().path();
-        if bps_path.is_file() {
-          if let Some(os_str) = bps_path.extension() {
-            match os_str.to_str().unwrap() {
-              "bps" => {
-                // File name...
-                let file_name = bps_path.file_stem().unwrap().to_str().unwrap();
-                all_file_name.push(file_name.to_owned());
-                // Load bps file.
-                let mut bps_file = File::open(bps_path).unwrap();
-                let metadata = bps_file.metadata().unwrap();
+        if bps_path.is_file()
+          && let Some(os_str) = bps_path.extension()
+        {
+          match os_str.to_str().unwrap() {
+            "bps" => {
+              // File name...
+              let file_name = bps_path.file_stem().unwrap().to_str().unwrap();
+              all_file_name.push(file_name.to_owned());
+              // Load bps file.
+              let mut bps_file = File::open(bps_path).unwrap();
+              let metadata = bps_file.metadata().unwrap();
 
-                // Start reading Checksum
-                bps_file.seek(SeekFrom::End(-12)).unwrap();
+              // Start reading Checksum
+              bps_file.seek(SeekFrom::End(-12)).unwrap();
 
-                let mut footer_checksum = [0u8; 4];
-                bps_file.read_exact(&mut footer_checksum).unwrap();
-                if u32::from_le_bytes(footer_checksum) == JPN_ROM_CRC32 {
-                  latest_chinese_patch_index = file_count;
-                }
-                all_source_crc32.push(u32::from_le_bytes(footer_checksum));
-
-                bps_file.read_exact(&mut footer_checksum).unwrap();
-                all_target_crc32.push(u32::from_le_bytes(footer_checksum));
-
-                bps_file.read_exact(&mut footer_checksum).unwrap();
-                all_patch_crc32.push(u32::from_le_bytes(footer_checksum));
-
-                // Start index
-                start_index.push(file_start_index);
-                // File size
-                let file_size = metadata.len();
-                all_file_size.push(file_size);
-                // Update index
-                file_start_index += file_size;
-                // Append bytes
-                bps_file.seek(SeekFrom::Start(0)).unwrap();
-                bps_file.read_to_end(&mut all_bps).unwrap();
-
-                file_count += 1;
+              let mut footer_checksum = [0u8; 4];
+              bps_file.read_exact(&mut footer_checksum).unwrap();
+              if u32::from_le_bytes(footer_checksum) == JPN_ROM_CRC32 {
+                latest_chinese_patch_index = file_count;
               }
-              _ => continue,
+              all_source_crc32.push(u32::from_le_bytes(footer_checksum));
+
+              bps_file.read_exact(&mut footer_checksum).unwrap();
+              all_target_crc32.push(u32::from_le_bytes(footer_checksum));
+
+              bps_file.read_exact(&mut footer_checksum).unwrap();
+              all_patch_crc32.push(u32::from_le_bytes(footer_checksum));
+
+              // Start index
+              start_index.push(file_start_index);
+              // File size
+              let file_size = metadata.len();
+              all_file_size.push(file_size);
+              // Update index
+              file_start_index += file_size;
+              // Append bytes
+              bps_file.seek(SeekFrom::Start(0)).unwrap();
+              bps_file.read_to_end(&mut all_bps).unwrap();
+
+              file_count += 1;
             }
+            _ => continue,
           }
         }
       }
