@@ -122,7 +122,7 @@ HP, EP, 攻击, 防御, 敏捷, 幸运
       if dyrati_base_stats[j][i] > MAX_IN_GAME_STATS[i] {
         dyrati_base_stats[j][i] = MAX_IN_GAME_STATS[i];
         dyrati_stats[j][i] =
-          (MAX_IN_GAME_STATS[i] as f64 * DEFAULT_CLASS_MULTIPLIERS[j][i]).floor() as u16;
+          (f64::from(MAX_IN_GAME_STATS[i]) * DEFAULT_CLASS_MULTIPLIERS[j][i]).floor() as u16;
       }
     }
   }

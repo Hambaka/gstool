@@ -139,7 +139,7 @@ pub fn analyze(rom: &[u8]) -> Result<TlaRomAnalysis, RomInjectError> {
       final_rom_len: file_size,
       blank_byte: *blank_byte,
       base_region: *base_region,
-      rom_name: *rom_name,
+      rom_name,
     });
   }
 
@@ -201,13 +201,12 @@ fn find_injection_offset(
         already_injected: None,
         inject_offset: file_size + padding_size,
         final_rom_len: file_size + padding_size + INJECT_BLOCK_MAX_SIZE,
-        blank_byte: blank_byte,
+        blank_byte,
         base_region: region,
-        rom_name: rom_name,
+        rom_name,
       });
-    } else {
-      return Err(RomInjectError::NotEnoughSpace);
     }
+    return Err(RomInjectError::NotEnoughSpace);
   }
 
   // 若最后一个字节是空白字节（0xFF或0x00），那么需要从文件末尾往前查找空白字节的位置
@@ -246,10 +245,9 @@ fn find_injection_offset(
       if inject_offset_found {
         new_pos = new_inject_offset;
         break;
-      } else {
-        new_inject_offset -= INJECT_ALIGNMENT;
-        counter += 1;
       }
+      new_inject_offset -= INJECT_ALIGNMENT;
+      counter += 1;
     }
   }
 
@@ -258,7 +256,7 @@ fn find_injection_offset(
   }
 
   if MAX_ROM_SIZE as usize - file_size - (counter * INJECT_ALIGNMENT) >= INJECT_BLOCK_MAX_SIZE {
-    return Ok(TlaRomAnalysis {
+    Ok(TlaRomAnalysis {
       is_known_rom: false,
       already_injected: None,
       inject_offset: new_pos,
@@ -267,12 +265,12 @@ fn find_injection_offset(
       } else {
         file_size
       },
-      blank_byte: blank_byte,
+      blank_byte,
       base_region: region,
-      rom_name: rom_name,
-    });
+      rom_name,
+    })
   } else {
-    return Err(RomInjectError::NotEnoughSpace);
+    Err(RomInjectError::NotEnoughSpace)
   }
 }
 
@@ -286,7 +284,7 @@ fn read_existing_injection(
   let inject_offset =
     target_address as usize - 1 - INJECT_BLOCK_HEADER_SIZE - ROM_MEMORY_MAPPING as usize;
   let header = read_ascii(rom, inject_offset, 4)?;
-  if header.as_bytes() != &INJECT_HEADER {
+  if header.as_bytes() != INJECT_HEADER {
     return Err(RomInjectError::InjectionUnknown);
   }
 
@@ -307,11 +305,11 @@ fn read_existing_injection(
   Ok(TlaRomAnalysis {
     is_known_rom: false,
     already_injected: inject_option,
-    inject_offset: inject_offset,
+    inject_offset,
     final_rom_len: size,
-    blank_byte: blank_byte,
+    blank_byte,
     base_region: region,
-    rom_name: rom_name,
+    rom_name,
   })
 }
 

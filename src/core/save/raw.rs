@@ -120,12 +120,11 @@ pub fn identify_game(raw_save_file: &[u8]) -> Option<GameInfo> {
       let game_version = game_version_option.unwrap();
       if GS_BUILD_DATE[0].contains(&build_date) {
         return Some(GameInfo::new(GameTitle::TheBrokenSeal, game_version, i));
-      } else {
-        // 存档文件是64KB，而初代每个槽位是4KB，2代每个槽位是12KB。
-        // 最初的检测时，每次遍历都是以4KB为单位/步长，这样初代和2代都通用。
-        // 之后的实际转换存档时每次遍历使用各自的步长大小了，所以对于2代的下标要进行特殊处理（即除以3）。
-        return Some(GameInfo::new(GameTitle::TheLostAge, game_version, i / 3));
       }
+      // 存档文件是64KB，而初代每个槽位是4KB，2代每个槽位是12KB。
+      // 最初的检测时，每次遍历都是以4KB为单位/步长，这样初代和2代都通用。
+      // 之后的实际转换存档时每次遍历使用各自的步长大小了，所以对于2代的下标要进行特殊处理（即除以3）。
+      return Some(GameInfo::new(GameTitle::TheLostAge, game_version, i / 3));
     }
   }
 
@@ -163,13 +162,14 @@ pub fn collect_slots(
 
   // Get all valid save data.
   for (j, header) in all_possible_headers.iter().enumerate() {
-    if j > 0 && save_data_map.contains_key(&header.slot_number) {
-      if let Some(existed_save_data) = save_data_map.get(&header.slot_number) {
-        if header.priority > existed_save_data.priority {
-          save_data_map.remove(&header.slot_number);
-        } else {
-          continue;
-        }
+    if j > 0
+      && save_data_map.contains_key(&header.slot_number)
+      && let Some(existed_save_data) = save_data_map.get(&header.slot_number)
+    {
+      if header.priority > existed_save_data.priority {
+        save_data_map.remove(&header.slot_number);
+      } else {
+        continue;
       }
     }
     /*

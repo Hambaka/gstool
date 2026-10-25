@@ -148,7 +148,7 @@ pub fn show_pwd_info_window(
                           let value = data.base_stats(j, i);
                           if value > MAX_BASE_STATS[i] {
                             let real_value = match i {
-                              2 | 3 | 4 => value & MAX_BASE_STATS[i],
+                              2..=4 => value & MAX_BASE_STATS[i],
                               _ => MAX_BASE_STATS[i],
                             };
                             format!("{value} ({real_value})")

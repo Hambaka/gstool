@@ -1,5 +1,5 @@
 //! 移植自Dyrati的`Golden-Sun-Password-Transfer`中的lua脚本，该脚本适用于`vba-rr`和`Bizhawk`模拟器\
-//! https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/40ef45e4a77b2cf17a0e325f9f0f41817ef21140/password.lua\
+//! <https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/40ef45e4a77b2cf17a0e325f9f0f41817ef21140/password.lua>\
 //! 即15行到32行之间的所有内容
 use std::ops::{Deref, DerefMut};
 

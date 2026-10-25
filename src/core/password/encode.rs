@@ -243,15 +243,14 @@ pub fn encode(data: &PasswordData, grade: PasswordGrade) -> Vec<u8> {
 
   for i in (0..max_size).step_by(6) {
     let mut max = i + 5;
-    let entry;
 
-    if max <= bits.len() {
-      entry = bits.sub_bits_u8(i, max);
+    let entry = if max <= bits.len() {
+      bits.sub_bits_u8(i, max)
     } else {
       let last_left_shift = max - max_size + 1;
       max = bits.len() - 1;
-      entry = bits.sub_bits_u8(i, max) << last_left_shift;
-    }
+      bits.sub_bits_u8(i, max) << last_left_shift
+    };
 
     password_bytes.push(entry);
     acc += u32::from(entry);

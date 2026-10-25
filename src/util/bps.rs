@@ -70,7 +70,7 @@ impl Bps {
 const BPS_HEADER: [u8; 4] = [0x42, 0x50, 0x53, 0x31];
 
 pub fn apply_bps_patch(source: &[u8], beat: &[u8]) -> Result<(Vec<u8>, u32), BpsError> {
-  let mut bps = Bps::new(&beat);
+  let mut bps = Bps::new(beat);
 
   for ele in BPS_HEADER {
     if bps.read() != ele {

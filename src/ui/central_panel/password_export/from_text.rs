@@ -54,12 +54,11 @@ pub fn show(
           state.request(FromTextRequest::LoadClipboard);
         }
 
-        if ui.add(select_file_btn(f_ctx.svg_icon_size)).clicked() {
-          if let Some(file) = FileDialog::new().pick_file() {
+        if ui.add(select_file_btn(f_ctx.svg_icon_size)).clicked()
+          && let Some(file) = FileDialog::new().pick_file() {
             // 登记读取密码文本文件并解析的请求，由下一帧的`logic()`实际进行处理
             state.request(FromTextRequest::LoadFile(file));
           }
-        }
 
         if sources.from_text.is_none() {
           ui.add_enabled(false, reset_btn(f_ctx.svg_icon_size));
@@ -156,7 +155,7 @@ pub fn show(
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),
         PathAction::None => {},
-      };
+      }
     });
 
   requests

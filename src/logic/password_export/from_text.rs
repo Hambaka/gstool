@@ -33,7 +33,7 @@ use crate::{
 };
 
 /// ② 密码文本子页状态
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FromTextState {
   /// 密码文本文件路径（来源为剪贴板时为空）
   pub input_file_path: String,
@@ -164,7 +164,7 @@ impl FromTextState {
 
 /// 一次运行的计划：输出目录 + 每个输出文件预先算好的内容/参数
 struct TextJob {
-  /// 输出目录（用户指定 / 与输入文件同级 / 剪贴板来源时为程序目录下的「剪贴板_输出」）
+  /// 输出目录（用户指定 / 与输入文件同级 / `剪贴板来源时为程序目录下的「剪贴板_输出`」）
   output_dir: PathBuf,
   /// 来源密码的级别与版本（日志措辞用）
   src_grade: PasswordGrade,
@@ -251,7 +251,7 @@ fn build_job(state: &FromTextState, sources: &PasswordSources) -> Result<TextJob
   // 金手指文件：级别是降级目标（未降级则为来源级别）
   let cheat = state
     .cheat_region
-    .map(|region| (state.grade.unwrap_or_else(|| src.grade), region));
+    .map(|region| (state.grade.unwrap_or(src.grade), region));
 
   // 数据文本
   let data_sheet = if state.export_data_text {
@@ -283,13 +283,13 @@ fn build_job(state: &FromTextState, sources: &PasswordSources) -> Result<TextJob
 fn execute(job: &TextJob) -> Result<(), String> {
   let dir = &job.output_dir;
 
-  if let Some((text, version)) = &job.text_output {
-    if let Err(e) = write_converted_password_text(text, *version, dir) {
-      return Err(e.to_string());
-    }
+  if let Some((text, version)) = &job.text_output
+    && let Err(e) = write_converted_password_text(text, *version, dir)
+  {
+    return Err(e.to_string());
   }
 
-  let options = export_options_text(&job);
+  let options = export_options_text(job);
 
   write_outputs(
     &job.password_bytes,
@@ -358,12 +358,12 @@ fn render_log(job: &TextJob) -> String {
   }
 
   // 转储 / 金手指 / 数据文本三条说明（文本文件那条在上方，由 4 分支单独处理）
-  let options = export_options_text(&job);
+  let options = export_options_text(job);
 
   for note in output_notes(
     &options,
     Subject::SourceOrDowngrade {
-      source_grade: &source_password_grade_cn,
+      source_grade: source_password_grade_cn,
       target_grade: downgrade_str_option,
     },
   ) {
@@ -372,22 +372,6 @@ fn render_log(job: &TextJob) -> String {
   }
 
   log
-}
-
-impl Default for FromTextState {
-  fn default() -> Self {
-    Self {
-      input_file_path: String::new(),
-      grade: None,
-      to_convert: false,
-      export_dump: false,
-      cheat_region: None,
-      export_data_text: false,
-      out_dir: String::new(),
-      log: String::new(),
-      pending: Vec::new(),
-    }
-  }
 }
 
 /// 从`TextJob`提取`ExportOptions`

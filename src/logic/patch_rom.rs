@@ -28,7 +28,7 @@ pub struct RomInput {
 }
 
 /// “应用汉化补丁”功能状态
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct PatchRomState {
   /// 输入 ROM（None = 未选择）
   pub input: Option<RomInput>,
@@ -135,18 +135,6 @@ impl PatchRomState {
   }
 }
 
-impl Default for PatchRomState {
-  fn default() -> Self {
-    Self {
-      input: None,
-      display_path: String::new(),
-      out_dir: String::new(),
-      log: String::new(),
-      pending: Vec::new(),
-    }
-  }
-}
-
 /// 生成运行概况日志。
 fn render_log(input_crc32: u32, source_crc32: u32, out_file: &Path) -> String {
   let mut log = String::new();
@@ -157,7 +145,7 @@ fn render_log(input_crc32: u32, source_crc32: u32, out_file: &Path) -> String {
 
   if input_crc32 != source_crc32 {
     result_index += 1;
-    let _ = writeln!(
+    let () = writeln!(
       log,
       "{result_index}. 输入的源文件（\"{}\"）和运行前提供的源文件（\"{}\"）不一致！",
       rom_display_name(input_crc32).unwrap(),

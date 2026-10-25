@@ -56,11 +56,11 @@ pub fn write_named_bytes(dir: &Path, file_name: &str, bytes: &[u8]) -> Result<()
   let file_path = dir.join(file_name);
 
   let mut file =
-    File::create(&file_path).map_err(|_| OutputError::CreateFileFailed(file_path.to_path_buf()))?;
+    File::create(&file_path).map_err(|_| OutputError::CreateFileFailed(file_path.clone()))?;
 
   file
     .write_all(bytes)
-    .map_err(|_| OutputError::WriteFailed(file_path.to_path_buf()))?;
+    .map_err(|_| OutputError::WriteFailed(file_path.clone()))?;
 
   Ok(())
 }

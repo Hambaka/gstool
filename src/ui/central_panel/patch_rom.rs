@@ -42,7 +42,7 @@ pub fn show(ui: &mut Ui, state: &mut PatchRomState, f_ctx: FrameCtx) -> Vec<AppR
         PathAction::Picked(file) => state.request(PatchRomRequest::Load(file)),
         PathAction::Reset => state.reset(),
         PathAction::None => {},
-      };
+      }
 
       // 第2行 -> 指定输出文件保存目录
       match dir_row(
@@ -56,7 +56,7 @@ pub fn show(ui: &mut Ui, state: &mut PatchRomState, f_ctx: FrameCtx) -> Vec<AppR
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),
         PathAction::None => {},
-      };
+      }
     });
 
   // 因为无跨功能请求，所以是空的Vec

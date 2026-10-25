@@ -25,13 +25,8 @@ const ITEM_ICON_COUNT: usize = 362;
 const ITEM_ICON_SIZE: u32 = 16;
 const ITEM_ICON_COLS: usize = 10;
 
+#[derive(Default)]
 pub struct KeyboardCache(pub HashMap<u8, (TextureHandle, [f32; 2])>);
-
-impl Default for KeyboardCache {
-  fn default() -> Self {
-    Self(HashMap::new())
-  }
-}
 
 #[derive(Debug, Clone)]
 pub enum AtomsEnum {
@@ -77,12 +72,14 @@ pub struct App {
 }
 
 impl App {
+  #[must_use]
   pub fn name() -> String {
     // env!("CARGO_PKG_VERSION")
     // env!("CARGO_PKG_NAME")
     format!("GSTool - {}", env!("CARGO_PKG_VERSION"))
   }
 
+  #[must_use]
   pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
     // 1. 设置道具图标图片
     // 加载道具图标图片
@@ -117,7 +114,7 @@ impl App {
         };
 
         let handle = cc.egui_ctx.load_texture(
-          format!("item_icon_{}", id),
+          format!("item_icon_{id}"),
           color_image,
           TextureOptions::NEAREST,
         );
@@ -163,6 +160,7 @@ impl App {
 
 impl App {
   /// 当前功能是否可以运行（【运行】按钮与Ctrl+Enter快捷键共用）
+  #[must_use]
   pub fn can_run(&self) -> bool {
     match self.command {
       // 1. 密码导出功能部分
@@ -249,7 +247,7 @@ impl eframe::App for App {
       match request {
         AppRequest::Run(command) => self.run_command(command),
         AppRequest::OpenPasswordPreview(sub, slot) => {
-          self.preview.load_from(&self.sources, sub, slot)
+          self.preview.load_from(&self.sources, sub, slot);
         }
         AppRequest::ResetPasswordSources(sub) => self.c5.clear_source(sub),
       }

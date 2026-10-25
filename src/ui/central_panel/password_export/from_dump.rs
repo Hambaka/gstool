@@ -140,7 +140,7 @@ pub fn show(
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),
         PathAction::None => {},
-      };
+      }
     });
 
   requests

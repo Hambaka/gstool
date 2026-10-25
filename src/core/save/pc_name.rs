@@ -83,7 +83,7 @@ impl EncodedName {
 /// 把玩家输入的角色名编码成游戏内字符字节。。
 ///
 /// 返回结构体而不是 `Result`：界面需要**逐个字符**的说明（包括失败的字符），
-/// “名字整体能不能用”由调用方看查看is_valid方法。
+/// `“名字整体能不能用”由调用方看查看is_valid方法`。
 pub fn encode_pc_name(name: &str) -> EncodedName {
   let mut bytes = [0u8; MAX_NAME_BYTES];
   let mut notes: Vec<NameNote> = Vec::new();

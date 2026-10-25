@@ -140,8 +140,8 @@ pub fn show(
               });
 
             // 密码数据源为存档时，显示存档槽位下拉框（即 kind == First 时显示）
-            if let Some(SourceChoice { kind: SubCommandEnum::First, .. }) = state.source[i] {
-              if let Some(slot_ref) = state.source[i].as_mut().and_then(|c| c.slot.as_mut()) {
+            if let Some(SourceChoice { kind: SubCommandEnum::First, .. }) = state.source[i]
+              && let Some(slot_ref) = state.source[i].as_mut().and_then(|c| c.slot.as_mut()) {
                 ComboBox::from_id_salt(format!("ID_CB_C5_{}_2", PWD_SRC_LABEL[i]))
                   .width(100.0)
                   .selected_text(save_slot_atoms(*slot_ref, f_ctx, false))
@@ -153,16 +153,14 @@ pub fn show(
                     }
                   });
               }
-            }
 
             // 预览按钮（选择来源后启用）
-            if let Some(source_choice)  = state.source[i] {
-              if ui.add(pwd_info_btn(f_ctx.svg_icon_size))
+            if let Some(source_choice)  = state.source[i]
+              && ui.add(pwd_info_btn(f_ctx.svg_icon_size))
                 .clicked()
               {
                 requests.push(AppRequest::OpenPasswordPreview(source_choice.kind, source_choice.slot));
               }
-            }
           });
         }
 
@@ -181,7 +179,7 @@ pub fn show(
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),
         PathAction::None => {},
-      };
+      }
     });
 
   // 跨功能请求由“查看信息”按钮提供

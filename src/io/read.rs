@@ -49,13 +49,13 @@ pub fn read_bytes(path: &Path, max_size: Option<u64>) -> Result<Vec<u8>, InputEr
     return Err(InputError::Empty(path.to_path_buf()));
   }
 
-  if let Some(max) = max_size {
-    if size > max {
-      return Err(InputError::TooLarge {
-        file_path: path.to_path_buf(),
-        max,
-      });
-    }
+  if let Some(max) = max_size
+    && size > max
+  {
+    return Err(InputError::TooLarge {
+      file_path: path.to_path_buf(),
+      max,
+    });
   }
 
   let mut bytes = Vec::with_capacity(size as usize);

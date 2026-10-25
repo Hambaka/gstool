@@ -108,7 +108,7 @@ pub fn cheat_code_text(
         u16::from_le_bytes([password_bytes[i + 4], password_bytes[i + 5]])
       );
 
-      if size % 2 != 0 {
+      if !size.is_multiple_of(2) {
         let _ = writeln!(text, "{:08X}:{:02X}", address + 2, password_bytes[i + 6]);
       }
       break;

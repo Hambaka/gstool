@@ -48,28 +48,28 @@ pub fn write_outputs(
   data_sheet: Option<&str>,
   dir: &Path,
 ) -> Result<(), String> {
-  if let Some(password_version) = options.text_version {
-    if let Err(e) = write_password_text(bytes, password_version, dir) {
-      return Err(e.to_string());
-    }
+  if let Some(password_version) = options.text_version
+    && let Err(e) = write_password_text(bytes, password_version, dir)
+  {
+    return Err(e.to_string());
   }
 
-  if options.export_dump {
-    if let Err(e) = write_memory_dump(bytes, dir) {
-      return Err(e.to_string());
-    }
+  if options.export_dump
+    && let Err(e) = write_memory_dump(bytes, dir)
+  {
+    return Err(e.to_string());
   }
 
-  if let Some(region) = options.cheat_region {
-    if let Err(e) = write_cheat_code(bytes, options.grade, region, dir) {
-      return Err(e.to_string());
-    }
+  if let Some(region) = options.cheat_region
+    && let Err(e) = write_cheat_code(bytes, options.grade, region, dir)
+  {
+    return Err(e.to_string());
   }
 
-  if let Some(sheet) = data_sheet {
-    if let Err(e) = write_password_data_text(sheet, dir) {
-      return Err(e.to_string());
-    }
+  if let Some(sheet) = data_sheet
+    && let Err(e) = write_password_data_text(sheet, dir)
+  {
+    return Err(e.to_string());
   }
 
   Ok(())

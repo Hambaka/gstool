@@ -21,7 +21,7 @@ pub const PC_NAMES: [&str; 7] = [
 ];
 
 /// “自定义角色名”功能状态
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct CustomNameState {
   /// 7个输入框的自定义名字内容
   pub names: [String; 7],
@@ -101,23 +101,5 @@ impl CustomNameState {
     self.log = name_encode_log(&entries);
 
     Ok(())
-  }
-}
-
-impl Default for CustomNameState {
-  fn default() -> Self {
-    Self {
-      names: [
-        String::new(),
-        String::new(),
-        String::new(),
-        String::new(),
-        String::new(),
-        String::new(),
-        String::new(),
-      ],
-      log: String::new(),
-      pending: Vec::new(),
-    }
   }
 }

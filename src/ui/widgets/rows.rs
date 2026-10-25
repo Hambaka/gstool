@@ -52,10 +52,10 @@ pub fn file_row(
   let mut action = PathAction::None;
 
   ui.horizontal(|ui| {
-    if ui.add(select_file_btn(svg_icon_size)).clicked() {
-      if let Some(file) = FileDialog::new().pick_file() {
-        action = PathAction::Picked(file);
-      }
+    if ui.add(select_file_btn(svg_icon_size)).clicked()
+      && let Some(file) = FileDialog::new().pick_file()
+    {
+      action = PathAction::Picked(file);
     }
     if path.is_empty() {
       ui.add_enabled(false, reset_btn(svg_icon_size));
@@ -89,10 +89,10 @@ pub fn dir_row(
   let mut action = PathAction::None;
 
   ui.horizontal(|ui| {
-    if ui.add(select_dir_btn(svg_icon_size)).clicked() {
-      if let Some(dir) = FileDialog::new().pick_folder() {
-        action = PathAction::Picked(dir);
-      }
+    if ui.add(select_dir_btn(svg_icon_size)).clicked()
+      && let Some(dir) = FileDialog::new().pick_folder()
+    {
+      action = PathAction::Picked(dir);
     }
     if path.is_empty() {
       ui.add_enabled(false, reset_btn(svg_icon_size));

@@ -31,7 +31,7 @@ use crate::{
 };
 
 /// ③ 内存转储子页状态
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FromDumpState {
   /// 内存转储文件路径
   pub input_file_path: String,
@@ -181,7 +181,7 @@ fn build_job(state: &FromDumpState, sources: &PasswordSources) -> Result<DumpJob
   // 金手指文件：级别是降级目标（未降级则为来源级别）
   let cheat = state
     .cheat_region
-    .map(|region| (state.grade.unwrap_or_else(|| src.grade), region));
+    .map(|region| (state.grade.unwrap_or(src.grade), region));
 
   // 数据文本
   let data_sheet = if state.export_data_text {
@@ -210,13 +210,13 @@ fn build_job(state: &FromDumpState, sources: &PasswordSources) -> Result<DumpJob
 fn execute(job: &DumpJob) -> Result<(), String> {
   let dir = &job.output_dir;
 
-  if job.target_grade.is_some() {
-    if let Err(e) = write_memory_dump(&job.password_bytes, dir) {
-      return Err(e.to_string());
-    }
+  if job.target_grade.is_some()
+    && let Err(e) = write_memory_dump(&job.password_bytes, dir)
+  {
+    return Err(e.to_string());
   }
 
-  let options = export_options_dump(&job);
+  let options = export_options_dump(job);
 
   write_outputs(
     &job.password_bytes,
@@ -276,7 +276,7 @@ fn render_log(job: &DumpJob) -> String {
   for note in output_notes(
     &options,
     Subject::SourceOrDowngrade {
-      source_grade: &source_password_grade_cn,
+      source_grade: source_password_grade_cn,
       target_grade: downgrade_str_option,
     },
   ) {
@@ -285,21 +285,6 @@ fn render_log(job: &DumpJob) -> String {
   }
 
   log
-}
-
-impl Default for FromDumpState {
-  fn default() -> Self {
-    Self {
-      input_file_path: String::new(),
-      grade: None,
-      text_version: None,
-      cheat_region: None,
-      export_data_text: false,
-      out_dir: String::new(),
-      log: String::new(),
-      pending: Vec::new(),
-    }
-  }
 }
 
 /// 从`DumpJob`提取`ExportOptions`

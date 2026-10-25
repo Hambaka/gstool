@@ -62,7 +62,7 @@ pub fn in_game_stats(base_stats: [[u16; 6]; 4]) -> [[u16; 6]; 4] {
       let max_in_game_stats = MAX_IN_GAME_STATS[i];
       let max_base_stats_pwd = MAX_BASE_STATS[i];
 
-      let input_stats_f64 = if value > max_base_stats_pwd {
+      let input_stats_f64 = f64::from(if value > max_base_stats_pwd {
         if max_base_stats_pwd == MAX_BASE_STATS_SPECIAL_CASE {
           value & max_base_stats_pwd
         } else {
@@ -70,7 +70,7 @@ pub fn in_game_stats(base_stats: [[u16; 6]; 4]) -> [[u16; 6]; 4] {
         }
       } else {
         value
-      } as f64;
+      });
 
       let result = ((input_stats_f64 * class_multiplier).floor()) as u16;
 

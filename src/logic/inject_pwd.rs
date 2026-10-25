@@ -31,7 +31,7 @@ pub struct SourceChoice {
 }
 
 /// “注入密码”的状态
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct InjectPwdState {
   /// 输入ROM的路径（空 = 未选择）
   pub input_file_path: String,
@@ -84,10 +84,10 @@ impl InjectPwdState {
   /// 把 `source[i].kind == kind` 的项设为 `None`
   pub fn clear_source(&mut self, kind: SubCommandEnum) {
     for i in 0..3 {
-      if let Some(choice) = &self.source[i] {
-        if choice.kind == kind {
-          self.source[i] = None;
-        }
+      if let Some(choice) = &self.source[i]
+        && choice.kind == kind
+      {
+        self.source[i] = None;
       }
     }
   }
@@ -117,7 +117,7 @@ impl InjectPwdState {
   pub fn run(&mut self, sources: &PasswordSources) -> Result<(), String> {
     // 1. 读输入 ROM + 分析
     let path = std::path::Path::new(&self.input_file_path);
-    let (rom_bytes, analysis) = analyze_rom_file(path).map_err(|e| e.to_string())?;
+    let (rom_bytes, analysis) = analyze_rom_file(path).map_err(|e| e.clone())?;
 
     // 2. 获得注入类型
     let flags = [
@@ -184,18 +184,6 @@ impl InjectPwdState {
           encode(&read_from_bits(&src.bits, src.grade), target)
         })
       }
-    }
-  }
-}
-
-impl Default for InjectPwdState {
-  fn default() -> Self {
-    Self {
-      input_file_path: String::new(),
-      source: [None, None, None],
-      out_dir: String::new(),
-      log: String::new(),
-      pending: Vec::new(),
     }
   }
 }

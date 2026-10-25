@@ -20,7 +20,7 @@ use crate::{
 };
 
 /// “存档转换”功能状态
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SaveConvertState {
   /// 输入存档路径
   pub input_file_path: String,
@@ -99,7 +99,7 @@ impl SaveConvertState {
       match request {
         SaveConvertRequest::Load(path) => {
           // 验证存档文件
-          let (save_vec, game_info) = Self::load_input(&path).map_err(|e| e)?;
+          let (save_vec, game_info) = Self::load_input(&path)?;
           self.input_file_path = path.to_string_lossy().to_string();
           self.save_bytes = save_vec;
           self.source = Some(game_info);
@@ -199,19 +199,4 @@ fn render_log(
   }
 
   log
-}
-
-impl Default for SaveConvertState {
-  fn default() -> Self {
-    Self {
-      input_file_path: String::new(),
-      save_bytes: Vec::new(),
-      source: None,
-      default_name_ver: None,
-      build_date_ver: None,
-      out_dir: String::new(),
-      log: String::new(),
-      pending: Vec::new(),
-    }
-  }
 }

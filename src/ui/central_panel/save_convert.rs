@@ -126,7 +126,7 @@ pub fn show(ui: &mut Ui, state: &mut SaveConvertState, f_ctx: FrameCtx) -> Vec<A
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),
         PathAction::None => {},
-      };
+      }
     });
 
   // 因为无跨功能请求，所以是空的Vec
