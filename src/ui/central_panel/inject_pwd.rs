@@ -72,18 +72,7 @@ pub fn show(
       for i in 0..3 {
         let data_is_available = sources.has_save() || sources.has_text() || sources.has_dump();
 
-        if !data_is_available {
-          Label::new(RichText::new(PWD_SRC_LABEL[i]).weak())
-            .selectable(false)
-            .ui(ui)
-            .on_hover_text(PWD_SRC_DESC[i]);
-          ui.add_enabled_ui(false, |ui| {
-            ComboBox::from_id_salt(format!("ID_CB_C5_{}_1（不可用）", PWD_SRC_LABEL[i]))
-              .width(100.0)
-              .selected_text("无")
-              .show_ui(ui, |_ui| {});
-          });
-        } else {
+        if data_is_available {
           Label::new(PWD_SRC_LABEL[i])
             .selectable(false)
             .ui(ui)
@@ -161,6 +150,17 @@ pub fn show(
               {
                 requests.push(AppRequest::OpenPasswordPreview(source_choice.kind, source_choice.slot));
               }
+          });
+        } else {
+          Label::new(RichText::new(PWD_SRC_LABEL[i]).weak())
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text(PWD_SRC_DESC[i]);
+          ui.add_enabled_ui(false, |ui| {
+            ComboBox::from_id_salt(format!("ID_CB_C5_{}_1（不可用）", PWD_SRC_LABEL[i]))
+              .width(100.0)
+              .selected_text("无")
+              .show_ui(ui, |_ui| {});
           });
         }
 
