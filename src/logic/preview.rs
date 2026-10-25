@@ -30,38 +30,38 @@ impl PreviewData {
   }
 
   /// 角色等级
-  pub fn levels(&self, i: usize) -> u8 {
-    self.view.levels[i]
+  pub fn levels(&self, character_idx: usize) -> u8 {
+    self.view.levels[character_idx]
   }
 
   /// 精灵状态
-  pub fn djinn(&self, i: usize, j: usize) -> bool {
-    self.view.djinn[j][i]
+  pub fn djinn(&self, element_idx: usize, djinn_idx: usize) -> bool {
+    self.view.djinn[element_idx][djinn_idx]
   }
 
   /// 事件状态
-  pub fn events(&self, i: usize) -> bool {
-    self.view.events[i]
+  pub fn events(&self, event_idx: usize) -> bool {
+    self.view.events[event_idx]
   }
 
   /// 基础能力状态（金、银）
-  pub fn base_stats(&self, i: usize, j: usize) -> u16 {
-    self.view.base_stats[j][i]
+  pub fn base_stats(&self, character_idx: usize, stat_idx: usize) -> u16 {
+    self.view.base_stats[character_idx][stat_idx]
   }
 
   /// 能力状态（金、银）
-  pub fn stats(&self, i: usize, j: usize) -> u16 {
-    self.view.stats[j][i]
+  pub fn stats(&self, character_idx: usize, stat_idx: usize) -> u16 {
+    self.view.stats[character_idx][stat_idx]
   }
 
   /// 精神力道具（银、铜）
-  pub fn psy_items(&self, i: usize) -> bool {
-    self.view.psy_items[i]
+  pub fn psy_items(&self, psy_item_idx: usize) -> bool {
+    self.view.psy_items[psy_item_idx]
   }
 
   /// 物品（仅金密码有）
-  pub fn items(&self, i: usize, j: usize) -> (u16, u8) {
-    self.view.items[j][i]
+  pub fn items(&self, character_idx: usize, inventory_idx: usize) -> (u16, u8) {
+    self.view.items[character_idx][inventory_idx]
   }
 
   /// 金币数（仅金密码有）

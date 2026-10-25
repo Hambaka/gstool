@@ -146,7 +146,7 @@ pub fn show_pwd_info_window(
                     for j in 0..4 {
                       let stats_string = match preview.stats_mode {
                         PreviewModeEnum::Main => {
-                          let value = data.base_stats(i, j);
+                          let value = data.base_stats(j, i);
                           if value > MAX_BASE_STATS[i] {
                             let real_value = match i {
                               2 | 3 | 4 => value & MAX_BASE_STATS[i],
@@ -157,7 +157,7 @@ pub fn show_pwd_info_window(
                             format!("{value}")
                           }
                         }
-                        PreviewModeEnum::Alt => format!("{}", data.stats(i, j)),
+                        PreviewModeEnum::Alt => format!("{}", data.stats(j, i)),
                       };
                       Label::new(stats_string).selectable(false).ui(ui);
                     }
@@ -206,7 +206,7 @@ pub fn show_pwd_info_window(
                   .show(ui, |ui| {
                     for i in 0..15 {
                       for j in 0..4 {
-                        let (id, amount) = data.items(i, j);
+                        let (id, amount) = data.items(j, i);
                         if id == 0 {
                           Label::new("").selectable(false).ui(ui);
                         } else {
@@ -317,7 +317,7 @@ pub fn show_pwd_info_window(
               .show(ui, |ui| {
                 for i in 0..7 {
                   for j in 0..4 {
-                    if data.djinn(i, j) {
+                    if data.djinn(j, i) {
                       ui.horizontal(|ui| {
                         ui.add(
                           Image::new(CHECK_MARK)
