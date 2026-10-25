@@ -13,8 +13,6 @@ use std::{
   path::{Path, PathBuf},
 };
 
-use arboard::Clipboard;
-
 use crate::{
   core::{
     enums::{GameRegion, PasswordGrade, PasswordVersion},
@@ -25,8 +23,8 @@ use crate::{
     },
   },
   io::{
-    derived_output_dir, read_text, sheet_from_password_bytes, sheet_from_password_data,
-    write_converted_password_text,
+    clipboard_get_text, derived_output_dir, read_text, sheet_from_password_bytes,
+    sheet_from_password_data, write_converted_password_text,
   },
   logic::{
     password_export::shared::{ExportOptions, Subject, output_notes, write_outputs},
@@ -131,10 +129,7 @@ impl FromTextState {
           self.reset_options();
         }
         FromTextRequest::LoadClipboard => {
-          let mut clipboard = Clipboard::new().map_err(|_| "访问剪贴板时出现错误！".to_string())?;
-          let text = clipboard
-            .get_text()
-            .map_err(|_| "获取剪贴板的文本时出现错误！".to_string())?;
+          let text = clipboard_get_text()?;
           let parsed_password = parse_password_text(&text).map_err(|e| e.to_string())?;
 
           // 剪贴板来源没有输入文件，路径清空

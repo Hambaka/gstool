@@ -1,8 +1,11 @@
+mod clipboard;
 mod dyrati;
 mod path;
 mod read;
 pub mod render;
 mod write;
+
+pub use clipboard::clipboard_get_text;
 
 pub use path::{
   derived_output_dir, patched_rom_file_name, resolve_output_dir, slot_dir_name, suffixed_file_name,
