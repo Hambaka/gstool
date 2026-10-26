@@ -29,17 +29,11 @@ impl PasswordGrade {
   }
 
   pub fn include_psy_items(self) -> bool {
-    match self {
-      Self::Silver | Self::Bronze => true,
-      _ => false,
-    }
+    matches!(self, Self::Silver | Self::Bronze)
   }
 
   pub fn include_stats(self) -> bool {
-    match self {
-      Self::Gold | Self::Silver => true,
-      _ => false,
-    }
+    matches!(self, Self::Gold | Self::Silver)
   }
 
   pub fn include_items_and_coins(self) -> bool {

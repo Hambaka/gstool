@@ -88,7 +88,7 @@ pub fn run() {
   // VALID_PASSWORD_CHARS_JP_EN_MAP
   writeln!(
     &mut file,
-    "static VALID_PASSWORD_CHARS_JP_EN_MAP: phf::Map<char, char> = phf_map! {{"
+    "pub static VALID_PASSWORD_CHARS_JP_EN_MAP: phf::Map<char, char> = phf_map! {{"
   )
   .unwrap();
   for (key, value) in VALID_PASSWORD_CHARS_JP_EN {
@@ -99,7 +99,7 @@ pub fn run() {
   // VALID_PASSWORD_CHARS_EN_JP_MAP
   writeln!(
     &mut file,
-    "static VALID_PASSWORD_CHARS_EN_JP_MAP: phf::Map<char, char> = phf_map! {{"
+    "pub static VALID_PASSWORD_CHARS_EN_JP_MAP: phf::Map<char, char> = phf_map! {{"
   )
   .unwrap();
   for (key, value) in VALID_PASSWORD_CHARS_EN_JP {
@@ -110,7 +110,7 @@ pub fn run() {
   // VALID_PASSWORD_CHARS_JP_BYTE_MAP
   writeln!(
     &mut file,
-    "static VALID_PASSWORD_CHARS_JP_BYTE_MAP: phf::Map<char, u8> = phf_map! {{"
+    "pub static VALID_PASSWORD_CHARS_JP_BYTE_MAP: phf::Map<char, u8> = phf_map! {{"
   )
   .unwrap();
   for (key, value) in VALID_PASSWORD_CHARS_JP_BYTE {
@@ -121,7 +121,7 @@ pub fn run() {
   // VALID_PASSWORD_CHARS_EN_BYTE_MAP
   writeln!(
     &mut file,
-    "static VALID_PASSWORD_CHARS_EN_BYTE_MAP: phf::Map<char, u8> = phf_map! {{"
+    "pub static VALID_PASSWORD_CHARS_EN_BYTE_MAP: phf::Map<char, u8> = phf_map! {{"
   )
   .unwrap();
   for (key, value) in VALID_PASSWORD_CHARS_EN_BYTE {

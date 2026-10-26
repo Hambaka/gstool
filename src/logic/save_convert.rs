@@ -92,7 +92,7 @@ impl SaveConvertState {
   /// 逻辑侧，处理上一帧ui侧提交的本功能的待办请求
   ///
   /// 读文件 → 解析 → 记录输入文件路径 → 写入到存档来源`save_bytes` → 复位选项。
-  /// 失败以`Err`将信息交由`App::logic()`中的`fail()进行。
+  /// 失败以`Err`将信息交由`App::logic()`中的`fail()`进行。
   pub fn logic(&mut self) -> Result<(), String> {
     let pending = std::mem::take(&mut self.pending);
     for request in pending {
@@ -113,7 +113,7 @@ impl SaveConvertState {
   }
 
   /// 读取并识别用户选中的存档文件
-  fn load_input(path: &PathBuf) -> Result<(Vec<u8>, GameInfo), String> {
+  fn load_input(path: &Path) -> Result<(Vec<u8>, GameInfo), String> {
     let bytes = read_bytes(path, None).map_err(|e| e.to_string())?;
     let info = parse_convertible_save(&bytes).map_err(|e| e.to_string())?;
     Ok((bytes, info))
@@ -143,7 +143,7 @@ impl SaveConvertState {
     }
 
     self.log = render_log(
-      &self.source,
+      self.source,
       &output_dir,
       &file_name,
       self.default_name_ver,
@@ -156,7 +156,7 @@ impl SaveConvertState {
 
 /// 生成运行概况日志。
 fn render_log(
-  source: &Option<GameInfo>,
+  source: Option<GameInfo>,
   output_dir: &Path,
   file_name: &str,
   default_name_ver: Option<NameType>,

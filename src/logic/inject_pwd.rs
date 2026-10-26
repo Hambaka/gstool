@@ -137,10 +137,10 @@ impl InjectPwdState {
 
     // 4. 注入并生成新ROM
     let new_rom =
-      inject(rom_bytes, &analysis, combination, passwords).map_err(|e| e.to_string())?;
+      inject(rom_bytes, &analysis, combination, &passwords).map_err(|e| e.to_string())?;
 
     // 5. 输出文件
-    let file_name = suffixed_file_name(path, combination.get_name());
+    let file_name = suffixed_file_name(path, combination.name());
     let out_dir = resolve_output_dir(
       path,
       (!self.out_dir.is_empty()).then(|| std::path::Path::new(&self.out_dir)),
@@ -165,11 +165,11 @@ impl InjectPwdState {
     match choice?.kind {
       SubCommandEnum::First => {
         let slot = choice?.slot?;
-        let save = sources.from_save.slots[slot.index()].as_ref()?;
+        let save = sources.save.slots[slot.index()].as_ref()?;
         Some(from_raw_save(&save.data, target))
       }
       SubCommandEnum::Second => {
-        let src = sources.from_text.as_ref()?;
+        let src = sources.text.as_ref()?;
         Some(if src.grade == target {
           src.bytes.clone()
         } else {
@@ -177,7 +177,7 @@ impl InjectPwdState {
         })
       }
       SubCommandEnum::Third => {
-        let src = sources.from_dump.as_ref()?;
+        let src = sources.dump.as_ref()?;
         Some(if src.grade == target {
           src.bytes.clone()
         } else {
@@ -215,7 +215,7 @@ fn render_log(
           log,
           "{result_index}. 输入的源文件（本质）版本信息：“{}”，（已注入密码，密码类型：{}）",
           analysis.rom_name,
-          combo.get_name()
+          combo.name()
         );
       }
       None => {
@@ -232,7 +232,7 @@ fn render_log(
   let _ = writeln!(
     log,
     "{result_index}. 本次注入的密码类型为：“{}”",
-    combination.get_name()
+    combination.name()
   );
 
   log

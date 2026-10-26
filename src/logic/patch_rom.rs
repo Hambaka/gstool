@@ -83,7 +83,7 @@ impl PatchRomState {
   /// 逻辑侧，处理上一帧ui侧提交的本功能的待办请求
   /// 由`classify_rom_file`读取ROM文件并解析 → 记录输入文件路径和crc32值
   ///
-  /// 失败以`Err`将信息交由`App::logic()`中的`fail()进行。
+  /// 失败以`Err`将信息交由`App::logic()`中的`fail()`进行。
   pub fn logic(&mut self) -> Result<(), String> {
     let pending = std::mem::take(&mut self.pending);
     for request in pending {

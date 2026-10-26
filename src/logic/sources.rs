@@ -27,51 +27,51 @@ pub struct LoadedPassword {
 #[derive(Debug)]
 pub struct PasswordSources {
   /// 来自存档文件（下标 = 槽位号）
-  pub from_save: SaveSlots,
+  pub save: SaveSlots,
   /// 来自密码文本（文件 / 剪贴板）
-  pub from_text: Option<LoadedPassword>,
+  pub text: Option<LoadedPassword>,
   /// 来自内存转储
-  pub from_dump: Option<LoadedPassword>,
+  pub dump: Option<LoadedPassword>,
 }
 
 impl PasswordSources {
   /// 存档来源是否已载入（三个槽位任一有数据）
   pub fn has_save(&self) -> bool {
     // self.from_save.slots.iter().any(Option::is_some)
-    self.from_save.first_available_slot.is_some()
+    self.save.first_available_slot.is_some()
   }
 
   /// 第一个有数据的槽位（按下标顺序）；无存档来源时为 None
   pub fn first_available_slot(&self) -> Option<SaveSlotEnum> {
     self
-      .from_save
+      .save
       .first_available_slot
       .map(|slot_num| SaveSlotEnum::from(slot_num as usize))
   }
 
   /// 密码文本来源是否已载入
   pub fn has_text(&self) -> bool {
-    self.from_text.is_some()
+    self.text.is_some()
   }
 
   /// 内存转储来源是否已载入
   pub fn has_dump(&self) -> bool {
-    self.from_dump.is_some()
+    self.dump.is_some()
   }
 
   /// 密码文本来源的级别
   pub fn txt_grade(&self) -> Option<PasswordGrade> {
-    self.from_text.as_ref().map(|p| p.grade)
+    self.text.as_ref().map(|p| p.grade)
   }
 
   /// 内存转储来源的级别
   pub fn dmp_grade(&self) -> Option<PasswordGrade> {
-    self.from_dump.as_ref().map(|p| p.grade)
+    self.dump.as_ref().map(|p| p.grade)
   }
 
   /// 重置存档来源（三个槽位全清）
   pub fn reset_save(&mut self) {
-    self.from_save = SaveSlots {
+    self.save = SaveSlots {
       slots: [None, None, None],
       first_available_slot: None,
     };
@@ -79,24 +79,24 @@ impl PasswordSources {
 
   /// 重置密码文本来源
   pub fn reset_text(&mut self) {
-    self.from_text = None;
+    self.text = None;
   }
 
   /// 重置内存转储来源
   pub fn reset_dump(&mut self) {
-    self.from_dump = None;
+    self.dump = None;
   }
 }
 
 impl Default for PasswordSources {
   fn default() -> Self {
     Self {
-      from_save: SaveSlots {
+      save: SaveSlots {
         slots: [None, None, None],
         first_available_slot: None,
       },
-      from_text: None,
-      from_dump: None,
+      text: None,
+      dump: None,
     }
   }
 }

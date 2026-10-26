@@ -52,8 +52,8 @@ pub fn show_pwd_info_window(
     .default_width(450.0)
     .show(ui, |ui| {
       // 槽位选择
-      ui.columns_const(|[col_1, col_2, col_3]| {
-        for (col, slot) in [col_1, col_2, col_3].iter_mut().zip(SaveSlotEnum::ALL) {
+      ui.columns_const(|columns: &mut [egui::Ui; 3]| {
+        for (col, slot) in columns.iter_mut().zip(SaveSlotEnum::ALL) {
           if preview.data[slot.index()].is_some() {
             col.selectable_value(&mut preview.slot, slot, save_slot_atoms(slot, f_ctx, true));
           } else {
@@ -68,8 +68,8 @@ pub fn show_pwd_info_window(
       ui.separator();
 
       // 页签选择
-      ui.columns_const(|[col_1, col_2, col_3, col_4]| {
-        for (i, (col, img)) in [col_1, col_2, col_3, col_4]
+      ui.columns_const(|columns: &mut [egui::Ui; 4]| {
+        for (i, (col, img)) in columns
           .iter_mut()
           .zip([
             NUMBER_1_SQUARE_FILL,
@@ -110,14 +110,12 @@ pub fn show_pwd_info_window(
               );
             });
             ui.add_space(8.0);
-            ui.columns_const(|[c1, c2, c3, c4, c5]| {
-              for (col, name) in [c1, c2, c3, c4, c5].iter_mut().zip([
-                "",
-                PC_NAMES[0],
-                PC_NAMES[1],
-                PC_NAMES[2],
-                PC_NAMES[3],
-              ]) {
+            ui.columns_const(|columns: &mut [egui::Ui; 5]| {
+              for (col, name) in
+                columns
+                  .iter_mut()
+                  .zip(["", PC_NAMES[0], PC_NAMES[1], PC_NAMES[2], PC_NAMES[3]])
+              {
                 Label::new(name).selectable(false).ui(col);
               }
             });
@@ -185,13 +183,12 @@ pub fn show_pwd_info_window(
             match preview.item_mode {
               // 物品 → 全物品
               PreviewModeEnum::Main => {
-                ui.columns_const(|[c1, c2, c3, c4]| {
-                  for (col, name) in [c1, c2, c3, c4].iter_mut().zip([
-                    PC_NAMES[0],
-                    PC_NAMES[1],
-                    PC_NAMES[2],
-                    PC_NAMES[3],
-                  ]) {
+                ui.columns_const(|columns: &mut [egui::Ui; 4]| {
+                  for (col, name) in
+                    columns
+                      .iter_mut()
+                      .zip([PC_NAMES[0], PC_NAMES[1], PC_NAMES[2], PC_NAMES[3]])
+                  {
                     Label::new(RichText::new(name).strong())
                       .selectable(false)
                       .ui(col);
@@ -301,8 +298,8 @@ pub fn show_pwd_info_window(
                 });
             });
             ui.add_space(8.0);
-            ui.columns_const(|[c1, c2, c3, c4]| {
-              for (col, element) in [c1, c2, c3, c4].iter_mut().zip(Element::GAMEPLAY_ORDER) {
+            ui.columns_const(|columns: &mut [egui::Ui; 4]| {
+              for (col, element) in columns.iter_mut().zip(Element::GAMEPLAY_ORDER) {
                 Label::new(RichText::new(element.name()).strong())
                   .selectable(false)
                   .ui(col);
@@ -314,16 +311,16 @@ pub fn show_pwd_info_window(
               .num_columns(4)
               .min_col_width((ui.available_width() - ui.spacing().item_spacing.x * 3.0) / 4.0)
               .show(ui, |ui| {
-                for i in 0..7 {
-                  for j in 0..4 {
-                    if data.djinn(j, i) {
+                for j in 0..7 {
+                  for i in 0..4 {
+                    if data.djinn(i, j) {
                       ui.horizontal(|ui| {
                         ui.add(
                           Image::new(CHECK_MARK)
                             .tint(SUCCESS)
                             .max_height(f_ctx.svg_icon_size),
                         );
-                        Label::new(ALL_DJINN_NAMES[j][i].name(preview.djinn_lang))
+                        Label::new(ALL_DJINN_NAMES[i][j].name(preview.djinn_lang))
                           .selectable(false)
                           .ui(ui);
                       });
@@ -335,7 +332,7 @@ pub fn show_pwd_info_window(
                             .max_height(f_ctx.svg_icon_size),
                         );
                         Label::new(
-                          RichText::new(ALL_DJINN_NAMES[j][i].name(preview.djinn_lang))
+                          RichText::new(ALL_DJINN_NAMES[i][j].name(preview.djinn_lang))
                             .weak()
                             .strikethrough(),
                         )

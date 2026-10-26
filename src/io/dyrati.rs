@@ -57,16 +57,32 @@ fn render(view: &PasswordView) -> String {
   )
   .unwrap();
 
+  /*
+  纯迭代器互转行列有点麻烦
+  // 4
+  let rows = view.djinn.len();
+  // 7
+  let cols = view.djinn[0].len();
+
+  let col_a = (0..cols).flat_map(|j| (0..rows).map(move |i| &view.djinn[i][j]));
+  let col_b = (0..cols).flat_map(|j| (0..rows).map(move |i| &ALL_DJINN_NAMES[i][j]));
+
+  for (i, (has_djinn, djinn_preview)) in col_a.zip(col_b).enumerate() {
+    let ch = if (i + 1).is_multiple_of(rows) {
+    };
+  }
+  */
+
   // Djinn
-  for i in 0..7 {
-    for j in 0..4 {
-      let djinn_name = if view.djinn[j][i] {
-        ALL_DJINN_NAMES[j][i].name(Language::English)
+  for j in 0..7 {
+    for i in 0..4 {
+      let djinn_name = if view.djinn[i][j] {
+        ALL_DJINN_NAMES[i][j].name(Language::English)
       } else {
         ""
       };
 
-      let ch = if j == 3 { '\n' } else { '\t' };
+      let ch = if i == 3 { '\n' } else { '\t' };
 
       let _ = write!(result, "{djinn_name}{ch}");
     }
@@ -117,20 +133,20 @@ HP, EP, 攻击, 防御, 敏捷, 幸运
   // Stats cap in dyrati sheet.
   let mut dyrati_base_stats = view.base_stats;
   let mut dyrati_stats = view.stats;
-  for i in 0..6 {
-    for j in 0..4 {
-      if dyrati_base_stats[j][i] > MAX_IN_GAME_STATS[i] {
-        dyrati_base_stats[j][i] = MAX_IN_GAME_STATS[i];
-        dyrati_stats[j][i] =
-          (f64::from(MAX_IN_GAME_STATS[i]) * DEFAULT_CLASS_MULTIPLIERS[j][i]).floor() as u16;
+  for j in 0..6 {
+    for i in 0..4 {
+      if dyrati_base_stats[i][j] > MAX_IN_GAME_STATS[j] {
+        dyrati_base_stats[i][j] = MAX_IN_GAME_STATS[j];
+        dyrati_stats[i][j] =
+          (f64::from(MAX_IN_GAME_STATS[j]) * DEFAULT_CLASS_MULTIPLIERS[i][j]).floor() as u16;
       }
     }
   }
 
-  for i in 0..6 {
-    for j in 0..4 {
-      let stats = dyrati_base_stats[j][i];
-      let ch = if j == 3 { '\n' } else { '\t' };
+  for j in 0..6 {
+    for i in 0..4 {
+      let stats = dyrati_base_stats[i][j];
+      let ch = if i == 3 { '\n' } else { '\t' };
       let _ = write!(result, "{stats}{ch}");
     }
   }
@@ -156,10 +172,10 @@ HP, EP, 攻击, 防御, 敏捷, 幸运
   );
 
   // Stats, there may be some problems in this.
-  for i in 0..6 {
-    for j in 0..4 {
-      let stats = dyrati_stats[j][i];
-      let ch = if j == 3 { '\n' } else { '\t' };
+  for j in 0..6 {
+    for i in 0..4 {
+      let stats = dyrati_stats[i][j];
+      let ch = if i == 3 { '\n' } else { '\t' };
       let _ = write!(result, "{stats}{ch}");
     }
   }
@@ -177,9 +193,9 @@ HP, EP, 攻击, 防御, 敏捷, 幸运
   );
 
   // Items
-  for i in 0..15 {
-    for j in 0..4 {
-      let (item_id, item_count) = view.items[j][i];
+  for j in 0..15 {
+    for i in 0..4 {
+      let (item_id, item_count) = view.items[i][j];
 
       let item_name = if item_id != 0 {
         let item_index = (item_id - 1) as usize;
@@ -194,7 +210,7 @@ HP, EP, 攻击, 防御, 敏捷, 幸运
         ""
       };
 
-      let ch = if j == 3 { '\n' } else { '\t' };
+      let ch = if i == 3 { '\n' } else { '\t' };
 
       let _ = write!(result, "{item_name}{count_str}{ch}");
     }

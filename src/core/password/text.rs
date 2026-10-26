@@ -16,7 +16,10 @@ use crate::{
   util::whitespace,
 };
 
-include!(concat!(env!("OUT_DIR"), "/codegen_pwd.rs"));
+mod codegen_pwd {
+  #![allow(clippy::all, clippy::pedantic, clippy::nursery)]
+  include!(concat!(env!("OUT_DIR"), "/codegen_pwd.rs"));
+}
 
 /// Japanese Hiragana characters in Japanese version password.
 ///
@@ -166,11 +169,19 @@ pub fn txt_to_dmp(password: &str, password_version: PasswordVersion) -> Vec<u8> 
   match password_version {
     PasswordVersion::Japanese => password
       .chars()
-      .map(|x| *(VALID_PASSWORD_CHARS_JP_BYTE_MAP.get(&x).unwrap()))
+      .map(|x| {
+        *(codegen_pwd::VALID_PASSWORD_CHARS_JP_BYTE_MAP
+          .get(&x)
+          .unwrap())
+      })
       .collect(),
     PasswordVersion::English => password
       .chars()
-      .map(|x| *(VALID_PASSWORD_CHARS_EN_BYTE_MAP.get(&x).unwrap()))
+      .map(|x| {
+        *(codegen_pwd::VALID_PASSWORD_CHARS_EN_BYTE_MAP
+          .get(&x)
+          .unwrap())
+      })
       .collect(),
   }
 }
@@ -180,11 +191,11 @@ pub fn txt_to_another_version(password: &str, password_version: PasswordVersion)
   match password_version {
     PasswordVersion::English => password
       .chars()
-      .map(|x| VALID_PASSWORD_CHARS_EN_JP_MAP.get(&x).unwrap())
+      .map(|x| codegen_pwd::VALID_PASSWORD_CHARS_EN_JP_MAP.get(&x).unwrap())
       .collect(),
     PasswordVersion::Japanese => password
       .chars()
-      .map(|x| VALID_PASSWORD_CHARS_JP_EN_MAP.get(&x).unwrap())
+      .map(|x| codegen_pwd::VALID_PASSWORD_CHARS_JP_EN_MAP.get(&x).unwrap())
       .collect(),
   }
 }

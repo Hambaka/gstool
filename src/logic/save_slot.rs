@@ -32,7 +32,7 @@ impl SaveSlotEnum {
   }
 
   /// `N号存档`的显示名；`is_preview` 为真且是第一槽位时多带`/密码数据`文本。
-  pub fn name(&self, is_preview: bool) -> &'static str {
+  pub fn name(self, is_preview: bool) -> &'static str {
     if is_preview {
       match self {
         Self::First => "号存档/密码数据",

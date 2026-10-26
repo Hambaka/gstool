@@ -24,12 +24,12 @@ pub fn view_from_data(data: &PasswordData) -> PasswordView {
 
   let mut djinn = [[false; 7]; 4];
 
-  // Reversed bit order & Adjust djinn to gameplay order for easier viewing.
-  for i in 0..7 {
-    // 将密码数据记录的默认顺序的精灵数据，按照游戏排列顺序存储
-    for (slot, ele) in Element::GAMEPLAY_ORDER.iter().enumerate() {
+  // 将密码数据记录的默认顺序的精灵数据，按照游戏排列顺序存储
+  for (slot, ele) in Element::GAMEPLAY_ORDER.iter().enumerate() {
+    // Reversed bit order & Adjust djinn to gameplay order for easier viewing.
+    for (i, djinn) in djinn[slot].iter_mut().enumerate() {
       if djinn_bits[ele.index()].bit_at(6 - i) == 1 {
-        djinn[slot][i] = true;
+        *djinn = true;
       }
     }
   }
@@ -52,22 +52,19 @@ pub fn view_from_data(data: &PasswordData) -> PasswordView {
   let mut psy_items = [false; 8];
   // Items
   let mut items = [[(0, 0); 15]; 4];
-  for i in 0..15 {
-    for j in 0..4 {
-      let item = data.items[j][i];
-      let item_id = item & 0x1FF;
+  for (item_pwd_data, item_new) in data.items.iter().flatten().zip(items.iter_mut().flatten()) {
+    let item_id = item_pwd_data & 0x1FF;
 
-      if item_id != 0 {
-        let count = if STACKABLE_ITEMS.contains(&item_id) {
-          (item >> 11) + 1
-        } else {
-          1
-        };
-        items[j][i] = (item_id, (count & 0b1_1111) as u8);
+    if item_id != 0 {
+      let count = if STACKABLE_ITEMS.contains(&item_id) {
+        (item_pwd_data >> 11) + 1
+      } else {
+        1
+      };
+      *item_new = (item_id, (count & 0b1_1111) as u8);
 
-        if PSYNERGY_ITEMS.contains(&item_id) {
-          psy_items[(item_id - PSYNERGY_ITEMS[0]) as usize] = true;
-        }
+      if PSYNERGY_ITEMS.contains(&item_id) {
+        psy_items[(item_id - PSYNERGY_ITEMS[0]) as usize] = true;
       }
     }
   }

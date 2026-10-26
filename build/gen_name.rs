@@ -37,7 +37,7 @@ pub fn run() {
   // BASE_CHARACTERS_MAP
   writeln!(
     &mut file,
-    "static BASE_CHARACTERS_MAP: phf::Map<char, u8> = phf_map! {{"
+    "pub static BASE_CHARACTERS_MAP: phf::Map<char, u8> = phf_map! {{"
   )
   .unwrap();
   for (key, value) in base_characters {
@@ -52,7 +52,7 @@ pub fn run() {
   // SPECIAL_HANZI_MAP
   writeln!(
     &mut file,
-    "static SPECIAL_HANZI_MAP: phf::Map<char, u16> = phf_map! {{"
+    "pub static SPECIAL_HANZI_MAP: phf::Map<char, u16> = phf_map! {{"
   )
   .unwrap();
   for (key, value) in special_hanzi {
@@ -63,7 +63,7 @@ pub fn run() {
   // COMMON_HANZI_MAP
   writeln!(
     &mut file,
-    "static COMMON_HANZI_MAP: phf::Map<char, &'static str> = phf_map! {{"
+    "pub static COMMON_HANZI_MAP: phf::Map<char, &'static str> = phf_map! {{"
   )
   .unwrap();
   for (key, value) in common_hanzi {
@@ -88,7 +88,7 @@ pub fn run() {
   // DAKUTEN_KANA_MAP
   writeln!(
     &mut file,
-    "static DAKUTEN_KANA_MAP: phf::Map<char, &'static str> = phf_map! {{"
+    "pub static DAKUTEN_KANA_MAP: phf::Map<char, &'static str> = phf_map! {{"
   )
   .unwrap();
   for (key, value) in dakuten_kana {
@@ -105,7 +105,7 @@ pub fn run() {
   writeln!(&mut file, "use phf::phf_map;\n").unwrap();
   writeln!(
     &mut file,
-    "static KEYBOARD_IMG_MAP: phf::Map<u8, &'static [u8]> = phf_map! {{"
+    "pub static KEYBOARD_IMG_MAP: phf::Map<u8, &'static [u8]> = phf_map! {{"
   )
   .unwrap();
 

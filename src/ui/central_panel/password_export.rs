@@ -37,12 +37,8 @@ pub fn show(
   Label::new(DESC_C1).selectable(false).ui(ui);
   ui.separator();
   ui.columns_const(|columns: &mut [egui::Ui; SubCommandEnum::ALL.len()]| {
-    for i in 0..SubCommandEnum::ALL.len() {
-      columns[i].selectable_value(
-        &mut state.subcommand,
-        SubCommandEnum::ALL[i],
-        sub_command_atoms(SubCommandEnum::ALL[i], f_ctx),
-      );
+    for (col, cmd) in columns.iter_mut().zip(SubCommandEnum::ALL) {
+      col.selectable_value(&mut state.subcommand, cmd, sub_command_atoms(cmd, f_ctx));
     }
   });
 

@@ -84,11 +84,8 @@ fn gen_item_db(file: &mut BufWriter<File>) {
   for i in 0..460 {
     writeln!(
       file,
-      "{}",
-      format!(
-        "  PreviewObject {{ name: [\"{}\", \"{}\", \"{}\", \"{}\"] }},",
-        jp[i], en[i], chs1[i], chs2[i]
-      )
+      "  PreviewObject {{ name: [\"{}\", \"{}\", \"{}\", \"{}\"] }},",
+      jp[i], en[i], chs1[i], chs2[i]
     )
     .unwrap();
   }
@@ -96,8 +93,8 @@ fn gen_item_db(file: &mut BufWriter<File>) {
   writeln!(file, "];\n").unwrap();
 
   writeln!(file, "pub const DYRATI_ITEM_NAMES: [&str; 460] = [").unwrap();
-  for i in 0..460 {
-    writeln!(file, "  \"{}\",", en_dyrati[i]).unwrap();
+  for item_name in en_dyrati.iter().take(460) {
+    writeln!(file, "  \"{item_name}\",").unwrap();
   }
   writeln!(file, "];\n").unwrap();
 }
@@ -128,16 +125,13 @@ fn gen_jinn_db(file: &mut BufWriter<File>) {
   // 与 Element::GAMEPLAY_ORDER 保持一致
   let gameplay_order = [0, 2, 3, 1];
 
-  for i in 0..4 {
+  for order in &gameplay_order {
     writeln!(file, "  [").unwrap();
-    for j in gameplay_order[i] * 7..(gameplay_order[i] + 1) * 7 {
+    for j in order * 7..(order + 1) * 7 {
       writeln!(
         file,
-        "{}",
-        format!(
-          "    PreviewObject {{ name: [\"{}\", \"{}\", \"{}\", \"{}\"] }},",
-          jp[j], en[j], chs1[j], chs2[j]
-        )
+        "    PreviewObject {{ name: [\"{}\", \"{}\", \"{}\", \"{}\"] }},",
+        jp[j], en[j], chs1[j], chs2[j]
       )
       .unwrap();
     }
@@ -166,56 +160,56 @@ fn gen_icon_db(file: &mut BufWriter<File>) {
   writeln!(file, "  match item_id {{").unwrap();
 
   let mut counter = 0;
-  for i in 0..460 {
-    match en[i].as_str() {
+  for (i, item_name) in en.iter().enumerate().take(460) {
+    match item_name.as_str() {
       "?" | "Signal Whistle" => {
         // writeln!(file, "    {i} => 361,").unwrap();
         continue;
       }
       // Real one is 224
       "Mythril Bag" => {
-        if first_mythril_bag.is_none() {
+        if let Some(val) = first_mythril_bag {
+          writeln!(file, "    {i} => {val},").unwrap();
+        } else {
           first_mythril_bag = Some(counter);
           writeln!(file, "    {i} => {counter},").unwrap();
           counter += 1;
-        } else {
-          writeln!(file, "    {i} => {},", first_mythril_bag.unwrap()).unwrap();
         }
       }
       "Rusty Sword" => {
-        if first_rusty_sword.is_none() {
+        if let Some(val) = first_rusty_sword {
+          writeln!(file, "    {i} => {val},").unwrap();
+        } else {
           first_rusty_sword = Some(counter);
           writeln!(file, "    {i} => {counter},").unwrap();
           counter += 1;
-        } else {
-          writeln!(file, "    {i} => {},", first_rusty_sword.unwrap()).unwrap();
         }
       }
       "Rusty Axe" => {
-        if first_rusty_axe.is_none() {
+        if let Some(val) = first_rusty_axe {
+          writeln!(file, "    {i} => {val},").unwrap();
+        } else {
           first_rusty_axe = Some(counter);
           writeln!(file, "    {i} => {counter},").unwrap();
           counter += 1;
-        } else {
-          writeln!(file, "    {i} => {},", first_rusty_axe.unwrap()).unwrap();
         }
       }
       "Rusty Mace" => {
-        if first_rusty_mace.is_none() {
+        if let Some(val) = first_rusty_mace {
+          writeln!(file, "    {i} => {val},").unwrap();
+        } else {
           first_rusty_mace = Some(counter);
           writeln!(file, "    {i} => {counter},").unwrap();
           counter += 1;
-        } else {
-          writeln!(file, "    {i} => {},", first_rusty_mace.unwrap()).unwrap();
         }
       }
       "Rusty Staff" => {
-        if first_rusty_staff.is_none() {
+        if let Some(val) = first_rusty_staff {
+          writeln!(file, "    {i} => {val},").unwrap();
+        } else {
           first_rusty_staff = Some(counter);
           writeln!(file, "    {i} => {counter},").unwrap();
           counter += 1;
-        } else {
-          writeln!(file, "    {i} => {},", first_rusty_staff.unwrap()).unwrap();
         }
       }
       _ => {

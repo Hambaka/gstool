@@ -136,7 +136,7 @@ pub fn show(
                   .selected_text(save_slot_atoms(*slot_ref, f_ctx, false))
                   .show_ui(ui, |ui| {
                     for j in 0..3 {
-                      ui.add_enabled_ui(sources.from_save.slots[j].is_some(), |ui| {
+                      ui.add_enabled_ui(sources.save.slots[j].is_some(), |ui| {
                         ui.selectable_value(slot_ref, SaveSlotEnum::ALL[j], save_slot_atoms(SaveSlotEnum::ALL[j], f_ctx, false));
                       });
                     }

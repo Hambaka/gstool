@@ -44,7 +44,7 @@ pub enum Subject {
 /// 顺序：文本 → 内存转储 → 金手指 → 数据文本。
 pub fn write_outputs(
   bytes: &[u8],
-  options: &ExportOptions,
+  options: ExportOptions,
   data_sheet: Option<&str>,
   dir: &Path,
 ) -> Result<(), String> {
@@ -78,7 +78,7 @@ pub fn write_outputs(
 /// 生成三子页共用部分的“已生成……”说明
 ///
 /// 固定顺序：文本 → 内存转储 → 金手指 → 数据文本
-pub fn output_notes(options: &ExportOptions, subject: Subject) -> Vec<String> {
+pub fn output_notes(options: ExportOptions, subject: Subject) -> Vec<String> {
   let mut notes = Vec::new();
   match subject {
     Subject::SaveRecord { export_all } => {

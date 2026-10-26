@@ -1,6 +1,9 @@
 use std::{fmt, sync::OnceLock};
 
-include!(concat!(env!("OUT_DIR"), "/codegen_bps.rs"));
+mod codegen_bps {
+  #![allow(clippy::all, clippy::pedantic, clippy::nursery)]
+  include!(concat!(env!("OUT_DIR"), "/codegen_bps.rs"));
+}
 
 /// 输入ROM的分类
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,14 +43,14 @@ impl fmt::Display for PatchRomError {
 }
 
 /// 打了补丁后的ROM文件名（无扩展名）
-pub const PATCHED_FILE_STEM: &str = LATEST_CHS_FILE_STEM;
+pub const PATCHED_FILE_STEM: &str = codegen_bps::LATEST_CHS_FILE_STEM;
 
 /// 分类输入的ROM
 pub fn classify(rom: &[u8]) -> PatchSource {
   let crc32 = crc32fast::hash(rom);
-  if crc32 == LATEST_CHS_CHECKSUM {
+  if crc32 == codegen_bps::LATEST_CHS_CHECKSUM {
     PatchSource::AlreadyLatestChinese
-  } else if VALID_INPUT_ROM_CHECKSUM.contains(&crc32) {
+  } else if codegen_bps::VALID_INPUT_ROM_CHECKSUM.contains(&crc32) {
     PatchSource::Patchable { crc32 }
   } else {
     PatchSource::Unsupported
@@ -56,7 +59,7 @@ pub fn classify(rom: &[u8]) -> PatchSource {
 
 /// 用于日志展示的 ROM 名称
 pub fn rom_display_name(crc32: u32) -> Option<&'static str> {
-  VALID_INPUT_ROM_INFO_MAP.get(&crc32).copied()
+  codegen_bps::VALID_INPUT_ROM_INFO_MAP.get(&crc32).copied()
 }
 
 pub struct PatchedRom {
@@ -84,12 +87,13 @@ pub fn apply_chinese_patch(rom: Vec<u8>) -> Result<PatchedRom, PatchRomError> {
   // 如果输入的是其他的汉化版或者其他语言的民间翻译版本ROM，需要循环两次（其他民间翻译版 -> 日版原版 -> 最新汉化版）
   // 如果输入的是美/德/西/法/意原版ROM，需要循环两次（美/德/西/法/意原版 -> 日版原版 -> 最新汉化版）
   for _ in 0..2 {
-    let patch_crc32 = *BPS_CRC32_MAP
-      .get(&current_crc32)
-      .ok_or(PatchRomError::MissingPatch {
-        crc32: current_crc32,
-      })?;
-    let (start, size) = *BPS_FILE_INDEX_MAP
+    let patch_crc32 =
+      *codegen_bps::BPS_CRC32_MAP
+        .get(&current_crc32)
+        .ok_or(PatchRomError::MissingPatch {
+          crc32: current_crc32,
+        })?;
+    let (start, size) = *codegen_bps::BPS_FILE_INDEX_MAP
       .get(&patch_crc32)
       .ok_or(PatchRomError::MissingPatch { crc32: patch_crc32 })?;
 
@@ -99,7 +103,7 @@ pub fn apply_chinese_patch(rom: Vec<u8>) -> Result<PatchedRom, PatchRomError> {
     current = next_rom;
     current_crc32 = next_crc32;
 
-    if current_crc32 == LATEST_CHS_CHECKSUM {
+    if current_crc32 == codegen_bps::LATEST_CHS_CHECKSUM {
       return Ok(PatchedRom {
         bytes: current,
         source_crc32,

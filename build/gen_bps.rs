@@ -95,7 +95,7 @@ pub fn run(level: i32) {
   writeln!(&mut file, "use phf::phf_map;\n").unwrap();
   writeln!(
     &mut file,
-    "const LATEST_CHS_FILE_STEM:&str = \"{LATEST_CHS_FILE_STEM}\";"
+    "pub const LATEST_CHS_FILE_STEM:&str = \"{LATEST_CHS_FILE_STEM}\";"
   )
   .unwrap();
   writeln!(
@@ -110,15 +110,15 @@ pub fn run(level: i32) {
     "pub const VALID_INPUT_ROM_CHECKSUM:[u32;{file_count}] = [",
   )
   .unwrap();
-  for i in 0..file_count {
-    writeln!(&mut file, "  {:#010X},", all_source_crc32[i]).unwrap();
+  for crc32 in all_source_crc32.iter().take(file_count) {
+    writeln!(&mut file, "  {crc32:#010X},").unwrap();
   }
   writeln!(&mut file, "];\n").unwrap();
 
   // Use patch checksum to get patch file start index and file size
   writeln!(
     &mut file,
-    "static BPS_FILE_INDEX_MAP: phf::Map<u32, (usize, usize)> = phf_map! {{"
+    "pub static BPS_FILE_INDEX_MAP: phf::Map<u32, (usize, usize)> = phf_map! {{"
   )
   .unwrap();
   for i in 0..file_count {
@@ -134,7 +134,7 @@ pub fn run(level: i32) {
   // Use input rom's checksum to get patch checksum.
   writeln!(
     &mut file,
-    "static BPS_CRC32_MAP: phf::Map<u32, u32> = phf_map! {{"
+    "pub static BPS_CRC32_MAP: phf::Map<u32, u32> = phf_map! {{"
   )
   .unwrap();
   for i in 0..file_count {
@@ -151,7 +151,7 @@ pub fn run(level: i32) {
   // Checksum + Rom info
   writeln!(
     &mut file,
-    "static VALID_INPUT_ROM_INFO_MAP: phf::Map<u32, &'static str> = phf_map! {{"
+    "pub static VALID_INPUT_ROM_INFO_MAP: phf::Map<u32, &'static str> = phf_map! {{"
   )
   .unwrap();
   for i in 0..file_count {

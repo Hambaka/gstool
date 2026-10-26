@@ -60,7 +60,7 @@ pub fn show(
             state.request(FromTextRequest::LoadFile(file));
           }
 
-        if sources.from_text.is_none() {
+        if sources.text.is_none() {
           ui.add_enabled(false, reset_btn(f_ctx.svg_icon_size));
         } else if ui.add(reset_btn(f_ctx.svg_icon_size)).clicked() {
           state.reset(sources);
@@ -89,7 +89,7 @@ pub fn show(
         },
         |ui| {
           ui.selectable_value(&mut state.grade, None, "无");
-          if let Some(source) = &sources.from_text {
+          if let Some(source) = &sources.text {
             for ele in PasswordGrade::ALL {
               ui.add_enabled_ui(source.grade.priority() < ele.priority(), |ui| {
                 ui.selectable_value(&mut state.grade, Some(ele), ele.short_name());

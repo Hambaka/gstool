@@ -106,7 +106,7 @@ impl FromDumpState {
   /// 逻辑侧，处理上一帧ui侧提交的本子页的待办请求
   ///
   /// 读文件 → 解析 → 写入到密码来源`sources.from_dump` → 记录输入文件路径 → 复位选项。
-  /// 失败以`Err`将信息交由`App::logic()`中的`fail()进行。
+  /// 失败以`Err`将信息交由`App::logic()`中的`fail()`进行。
   pub fn logic(&mut self, sources: &mut PasswordSources) -> Result<(), String> {
     let pending = std::mem::take(&mut self.pending);
     for request in pending {
@@ -117,7 +117,7 @@ impl FromDumpState {
           let parsed_password_bytes = parse_password_bytes(bytes).map_err(|e| e.to_string())?;
 
           self.input_file_path = path.to_string_lossy().to_string();
-          sources.from_dump = Some(LoadedPassword {
+          sources.dump = Some(LoadedPassword {
             bytes: parsed_password_bytes.bytes,
             bits: parsed_password_bytes.bits,
             grade: parsed_password_bytes.grade,
@@ -161,7 +161,7 @@ struct DumpJob {
 /// 把要生成哪些输出文件先算好
 fn build_job(state: &FromDumpState, sources: &PasswordSources) -> Result<DumpJob, String> {
   let src = sources
-    .from_dump
+    .dump
     .as_ref()
     .ok_or_else(|| "尚未载入内存转储来源".to_string())?;
 
@@ -185,10 +185,10 @@ fn build_job(state: &FromDumpState, sources: &PasswordSources) -> Result<DumpJob
 
   // 数据文本
   let data_sheet = if state.export_data_text {
-    Some(if state.grade.is_none() {
-      sheet_from_password_data(&password_data)
+    Some(if let Some(val) = state.grade {
+      sheet_from_password_bytes(&password_bytes, val)
     } else {
-      sheet_from_password_bytes(&password_bytes, state.grade.unwrap())
+      sheet_from_password_data(&password_data)
     })
   } else {
     None
@@ -218,12 +218,7 @@ fn execute(job: &DumpJob) -> Result<(), String> {
 
   let options = export_options_dump(job);
 
-  write_outputs(
-    &job.password_bytes,
-    &options,
-    job.data_sheet.as_deref(),
-    dir,
-  )
+  write_outputs(&job.password_bytes, options, job.data_sheet.as_deref(), dir)
 }
 
 /// 生成运行概况日志。
@@ -274,7 +269,7 @@ fn render_log(job: &DumpJob) -> String {
   let options = export_options_dump(job);
 
   for note in output_notes(
-    &options,
+    options,
     Subject::SourceOrDowngrade {
       source_grade: source_password_grade_cn,
       target_grade: downgrade_str_option,

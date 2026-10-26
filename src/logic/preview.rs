@@ -95,7 +95,7 @@ pub enum PreviewPageEnum {
 impl PreviewPageEnum {
   pub const ALL: [Self; 4] = [Self::Character, Self::Item, Self::Djinn, Self::Misc];
 
-  pub fn name(&self) -> &'static str {
+  pub fn name(self) -> &'static str {
     match self {
       Self::Character => "角色",
       Self::Item => "物品",
@@ -156,7 +156,7 @@ impl PwdInfoState {
       SubCommandEnum::First => {
         self.data = [None, None, None];
 
-        for (index, slot) in sources.from_save.slots.iter().enumerate() {
+        for (index, slot) in sources.save.slots.iter().enumerate() {
           if let Some(raw_save) = slot {
             let pwd_info = view_from_raw_save(&raw_save.data);
             self.data[index] = Some(PreviewData::new(PasswordGrade::Gold, pwd_info));
@@ -178,10 +178,10 @@ impl PwdInfoState {
         self.window_open = true;
       }
       SubCommandEnum::Second => {
-        self.load_from_text_or_dump(sources.from_text.as_ref().map(|p| (&p.bits, p.grade)));
+        self.load_from_text_or_dump(sources.text.as_ref().map(|p| (&p.bits, p.grade)));
       }
       SubCommandEnum::Third => {
-        self.load_from_text_or_dump(sources.from_dump.as_ref().map(|p| (&p.bits, p.grade)));
+        self.load_from_text_or_dump(sources.dump.as_ref().map(|p| (&p.bits, p.grade)));
       }
     }
   }

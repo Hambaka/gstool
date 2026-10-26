@@ -107,7 +107,10 @@ pub fn show_log(ui: &mut Ui, state: &CustomNameState, cache: &mut KeyboardCache)
 }
 
 // 游戏中起名界面的键盘按键图（由构建脚本生成，见"build.rs"中的"gen_name"）
-include!(concat!(env!("OUT_DIR"), "/codegen_name_kbd.rs"));
+mod codegen_name_kbd {
+  #![allow(clippy::all, clippy::pedantic, clippy::nursery)]
+  include!(concat!(env!("OUT_DIR"), "/codegen_name_kbd.rs"));
+}
 
 /// 从缓存取键盘图，若没有则创建并缓存
 fn get_name_keyboard_img(
@@ -119,7 +122,7 @@ fn get_name_keyboard_img(
     return (handle.clone(), *size);
   }
 
-  let raw_data = *KEYBOARD_IMG_MAP.get(&char_index).unwrap();
+  let raw_data = *codegen_name_kbd::KEYBOARD_IMG_MAP.get(&char_index).unwrap();
   let mut reader = ImageReader::new(Cursor::new(raw_data));
   reader.set_format(ImageFormat::Png);
   let image = reader.decode().unwrap();

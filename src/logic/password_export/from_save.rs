@@ -106,7 +106,7 @@ impl FromSaveState {
   /// 逻辑侧，处理上一帧ui侧提交的本子页的待办请求
   ///
   /// 读文件 → 解析槽位 → 写入到密码来源`sources.from_save` → 记录输入文件路径 → 复位选项。
-  /// 失败以`Err`将信息交由`App::logic()`中的`fail()进行。
+  /// 失败以`Err`将信息交由`App::logic()`中的`fail()`进行。
   pub fn logic(&mut self, sources: &mut PasswordSources) -> Result<(), String> {
     let pending = std::mem::take(&mut self.pending);
     for request in pending {
@@ -118,7 +118,7 @@ impl FromSaveState {
             parse_save_slots(&bytes, self.export_all_saves).map_err(|e| e.to_string())?;
 
           self.input_file_path = path.to_string_lossy().to_string();
-          sources.from_save = save_slots;
+          sources.save = save_slots;
           self.reset_options();
         }
       }
@@ -172,7 +172,7 @@ fn build_job(state: &FromSaveState, sources: &PasswordSources) -> ExportJob {
   };
 
   let slots = sources
-    .from_save
+    .save
     .slots
     .iter()
     .enumerate()
@@ -215,7 +215,7 @@ fn execute(job: &ExportJob) -> Result<(), String> {
       .join(slot_dir_name(slot.slot_number, slot.is_clear_data));
     write_outputs(
       &slot.password_bytes,
-      &job.options,
+      job.options,
       slot.data_sheet.as_deref(),
       &sub_dir_str,
     )?;
@@ -247,7 +247,7 @@ fn render_log(job: &ExportJob) -> String {
   }
 
   for note in output_notes(
-    &job.options,
+    job.options,
     Subject::SaveRecord {
       export_all: job.export_all_saves,
     },

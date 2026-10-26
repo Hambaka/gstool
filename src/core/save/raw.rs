@@ -116,16 +116,15 @@ pub fn identify_game(raw_save_file: &[u8]) -> Option<GameInfo> {
 
     if game_version_option.is_none() {
       continue;
-    } else {
-      let game_version = game_version_option.unwrap();
-      if GS_BUILD_DATE[0].contains(&build_date) {
-        return Some(GameInfo::new(GameTitle::TheBrokenSeal, game_version, i));
-      }
-      // 存档文件是64KB，而初代每个槽位是4KB，2代每个槽位是12KB。
-      // 最初的检测时，每次遍历都是以4KB为单位/步长，这样初代和2代都通用。
-      // 之后的实际转换存档时每次遍历使用各自的步长大小了，所以对于2代的下标要进行特殊处理（即除以3）。
-      return Some(GameInfo::new(GameTitle::TheLostAge, game_version, i / 3));
     }
+    let game_version = game_version_option.unwrap();
+    if GS_BUILD_DATE[0].contains(&build_date) {
+      return Some(GameInfo::new(GameTitle::TheBrokenSeal, game_version, i));
+    }
+    // 存档文件是64KB，而初代每个槽位是4KB，2代每个槽位是12KB。
+    // 最初的检测时，每次遍历都是以4KB为单位/步长，这样初代和2代都通用。
+    // 之后的实际转换存档时每次遍历使用各自的步长大小了，所以对于2代的下标要进行特殊处理（即除以3）。
+    return Some(GameInfo::new(GameTitle::TheLostAge, game_version, i / 3));
   }
 
   None

@@ -114,7 +114,7 @@ impl FromTextState {
   /// 逻辑侧，处理上一帧ui侧提交的本子页的待办请求
   ///
   /// 从文件或剪贴板读取 → 解析 → 写入到密码来源`sources.from_text` → 记录输入文件路径 → 复位选项。
-  /// 失败以`Err`将信息交由`App::logic()`中的`fail()进行。
+  /// 失败以`Err`将信息交由`App::logic()`中的`fail()`进行。
   pub fn logic(&mut self, sources: &mut PasswordSources) -> Result<(), String> {
     let pending = std::mem::take(&mut self.pending);
     for request in pending {
@@ -125,7 +125,7 @@ impl FromTextState {
           let parsed_password = parse_password_text(&text).map_err(|e| e.to_string())?;
 
           self.input_file_path = path.to_string_lossy().to_string();
-          sources.from_text = Some(Self::into_loaded(&parsed_password));
+          sources.text = Some(Self::into_loaded(&parsed_password));
           self.reset_options();
         }
         FromTextRequest::LoadClipboard => {
@@ -134,7 +134,7 @@ impl FromTextState {
 
           // 剪贴板来源没有输入文件，路径清空
           self.input_file_path.clear();
-          sources.from_text = Some(Self::into_loaded(&parsed_password));
+          sources.text = Some(Self::into_loaded(&parsed_password));
           self.reset_options();
         }
       }
@@ -189,7 +189,7 @@ struct TextJob {
 fn build_job(state: &FromTextState, sources: &PasswordSources) -> Result<TextJob, String> {
   // 理论上不会触发
   let src = sources
-    .from_text
+    .text
     .as_ref()
     .ok_or_else(|| "尚未载入密码文本来源".to_string())?;
   let password_version = src
@@ -255,10 +255,10 @@ fn build_job(state: &FromTextState, sources: &PasswordSources) -> Result<TextJob
 
   // 数据文本
   let data_sheet = if state.export_data_text {
-    Some(if state.grade.is_none() {
-      sheet_from_password_data(&password_data)
+    Some(if let Some(val) = state.grade {
+      sheet_from_password_bytes(&password_bytes, val)
     } else {
-      sheet_from_password_bytes(&password_bytes, state.grade.unwrap())
+      sheet_from_password_data(&password_data)
     })
   } else {
     None
@@ -291,12 +291,7 @@ fn execute(job: &TextJob) -> Result<(), String> {
 
   let options = export_options_text(job);
 
-  write_outputs(
-    &job.password_bytes,
-    &options,
-    job.data_sheet.as_deref(),
-    dir,
-  )
+  write_outputs(&job.password_bytes, options, job.data_sheet.as_deref(), dir)
 }
 
 /// 生成运行概况日志。
@@ -361,7 +356,7 @@ fn render_log(job: &TextJob) -> String {
   let options = export_options_text(job);
 
   for note in output_notes(
-    &options,
+    options,
     Subject::SourceOrDowngrade {
       source_grade: source_password_grade_cn,
       target_grade: downgrade_str_option,

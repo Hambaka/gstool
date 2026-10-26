@@ -55,12 +55,12 @@ fn base_stats(input_stats: u16, class_multiplier: f64) -> u16 {
 
 pub fn in_game_stats(base_stats: [[u16; 6]; 4]) -> [[u16; 6]; 4] {
   let mut in_game_stats = [[0; 6]; 4];
-  for i in 0..6 {
-    for j in 0..4 {
-      let value = base_stats[j][i];
-      let class_multiplier = DEFAULT_CLASS_MULTIPLIERS[j][i];
-      let max_in_game_stats = MAX_IN_GAME_STATS[i];
-      let max_base_stats_pwd = MAX_BASE_STATS[i];
+  for j in 0..6 {
+    for i in 0..4 {
+      let value = base_stats[i][j];
+      let class_multiplier = DEFAULT_CLASS_MULTIPLIERS[i][j];
+      let max_in_game_stats = MAX_IN_GAME_STATS[j];
+      let max_base_stats_pwd = MAX_BASE_STATS[j];
 
       let input_stats_f64 = f64::from(if value > max_base_stats_pwd {
         if max_base_stats_pwd == MAX_BASE_STATS_SPECIAL_CASE {
@@ -74,7 +74,7 @@ pub fn in_game_stats(base_stats: [[u16; 6]; 4]) -> [[u16; 6]; 4] {
 
       let result = ((input_stats_f64 * class_multiplier).floor()) as u16;
 
-      in_game_stats[j][i] = if result > max_in_game_stats {
+      in_game_stats[i][j] = if result > max_in_game_stats {
         max_in_game_stats
       } else {
         result

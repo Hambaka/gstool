@@ -10,7 +10,10 @@ use crate::core::{
   },
 };
 
-include!(concat!(env!("OUT_DIR"), "/codegen_bin.rs"));
+mod codegen_bin {
+  #![allow(clippy::all, clippy::pedantic, clippy::nursery)]
+  include!(concat!(env!("OUT_DIR"), "/codegen_bin.rs"));
+}
 
 #[derive(Debug)]
 pub enum RomInjectError {
@@ -79,7 +82,7 @@ impl PasswordCombination {
     }
   }
 
-  pub fn get_name(&self) -> &'static str {
+  pub fn name(self) -> &'static str {
     match self {
       Self::GoldSilverBronze => "金银铜",
       Self::GoldSilver => "金银",
@@ -90,17 +93,6 @@ impl PasswordCombination {
       Self::Bronze => "铜",
     }
   }
-}
-
-#[derive(Debug, Clone, Copy)]
-struct InjectTemplate {
-  grade_placeholder_positions: [Option<usize>; 3],
-  misc_placeholder_positions: &'static [usize],
-  address_patch_positions: &'static [(usize, u32)],
-  pwd_buffer_start_pos: usize,
-  pwd_buffer_end_pos: usize,
-  exit_address_pos: usize,
-  password_slot_positions: [Option<usize>; 3],
 }
 
 /// ROM分析的结果
@@ -130,7 +122,7 @@ pub fn analyze(rom: &[u8]) -> Result<TlaRomAnalysis, RomInjectError> {
   // 优先与已知的ROM的CRC32进行匹配
   let crc32 = crc32fast::hash(rom);
   if let Some((rom_name, base_region, inject_offset, blank_byte)) =
-    KNOWN_INPUT_ROM_INFO_MAP.get(&crc32)
+    codegen_bin::KNOWN_INPUT_ROM_INFO_MAP.get(&crc32)
   {
     return Ok(TlaRomAnalysis {
       is_known_rom: true,
@@ -179,7 +171,7 @@ fn find_injection_offset(
   file_size: usize,
 ) -> Result<TlaRomAnalysis, RomInjectError> {
   // 若能匹配，则证明游戏ROM没有被注入自动输入密码的程序
-  let rom_name = BASE_ROM_NAME[region.index()];
+  let rom_name = codegen_bin::BASE_ROM_NAME[region.index()];
   let last_byte = rom[file_size - 1];
   let blank_byte;
 
@@ -217,8 +209,8 @@ fn find_injection_offset(
 
   // 如果文件不是16字节对齐，那么优先把未对齐的部分判断一下
   let mut found_pos_in_remain = false;
-  for i in file_size - remain..file_size {
-    if rom[i] != blank_byte {
+  for byte in rom.iter().take(file_size).skip(file_size - remain) {
+    if *byte != blank_byte {
       found_pos_in_remain = true;
       break;
     }
@@ -300,7 +292,7 @@ fn read_existing_injection(
   }
 
   let blank_byte = rom[inject_offset + 8];
-  let rom_name = BASE_ROM_NAME[region.index()];
+  let rom_name = codegen_bin::BASE_ROM_NAME[region.index()];
 
   Ok(TlaRomAnalysis {
     is_known_rom: false,
@@ -320,7 +312,7 @@ pub fn inject(
   mut rom: Vec<u8>,
   analysis: &TlaRomAnalysis,
   combination: PasswordCombination,
-  passwords: [Option<Vec<u8>>; 3],
+  passwords: &[Option<Vec<u8>>; 3],
 ) -> Result<Vec<u8>, RomInjectError> {
   // 将ROM调整到此前分析后得出的最终大小
   if rom.len() < analysis.final_rom_len {
@@ -328,9 +320,9 @@ pub fn inject(
   }
   // 模板信息
   // 根据密码组合使用不同的模板，依据其中记录的信息修改游戏ROM
-  let template = INJECT_TEMPLATES[combination.index()];
+  let template = codegen_bin::INJECT_TEMPLATES[combination.index()];
   // 要注入的程序，用此前编译好的二进制文件作为基底
-  let payload = INJECT_PAYLOADS[combination.index()]; // 原 BIN_BYTES[...]
+  let payload = codegen_bin::INJECT_PAYLOADS[combination.index()]; // 原 BIN_BYTES[...]
 
   let mut cursor = analysis.inject_offset;
 
@@ -342,7 +334,7 @@ pub fn inject(
 
   // 若原先注入过程序，先把旧程序体抹成空白（因为新的可能更短）
   if let Some(previous) = analysis.already_injected {
-    let old_len = INJECT_PAYLOADS[previous.index()].len();
+    let old_len = codegen_bin::INJECT_PAYLOADS[previous.index()].len();
     rom[cursor..cursor + old_len].fill(analysis.blank_byte);
   } else {
     // 首次注入需要把ROM指定偏移记录的入口地址指向新程序的地址

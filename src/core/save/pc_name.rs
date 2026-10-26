@@ -5,7 +5,10 @@
 //! 本模块负责玩家输入的文本->存档里角色名字段的字节。
 
 // 4 张由构建脚本生成的查找表（见 "gen_name" in "build.rs"）
-include!(concat!(env!("OUT_DIR"), "/codegen_name_chars.rs"));
+mod codegen_name_chars {
+  #![allow(clippy::all, clippy::pedantic, clippy::nursery)]
+  include!(concat!(env!("OUT_DIR"), "/codegen_name_chars.rs"));
+}
 
 /// 界面输入框允许的字符数上限
 pub const MAX_NAME_CHARS: usize = 5;
@@ -22,7 +25,7 @@ pub const CONTROL_CHARS: [char; 13] = [
 
 /// 起名界面里这个字符对应的键位图编号。返回 `None` 表示界面上打不出这个字符。
 pub fn base_character_code(ch: char) -> Option<u8> {
-  BASE_CHARACTERS_MAP.get(&ch).copied()
+  codegen_name_chars::BASE_CHARACTERS_MAP.get(&ch).copied()
 }
 
 /// 某个字符的编码方式（界面按它逐行生成日志）
@@ -107,8 +110,11 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
       notes.push(NameNote::Direct { input: c, code });
     }
     // 2. 在 DAKUTEN_KANA_MAP 里 -> 展开成 2 个基础字符 -> 2 字节，Composed
-    else if DAKUTEN_KANA_MAP.contains_key(&c) {
-      let components = DAKUTEN_KANA_MAP.get(&c).unwrap().to_string();
+    else if codegen_name_chars::DAKUTEN_KANA_MAP.contains_key(&c) {
+      let components = codegen_name_chars::DAKUTEN_KANA_MAP
+        .get(&c)
+        .unwrap()
+        .to_string();
       if cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
         notes.push(NameNote::Failed {
           input: c,
@@ -134,8 +140,11 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
       });
     }
     // 3. 在 COMMON_HANZI_MAP 里 -> 展开成 2 个基础字符 -> 2 字节，Composed
-    else if COMMON_HANZI_MAP.contains_key(&c) {
-      let components = COMMON_HANZI_MAP.get(&c).unwrap().to_string();
+    else if codegen_name_chars::COMMON_HANZI_MAP.contains_key(&c) {
+      let components = codegen_name_chars::COMMON_HANZI_MAP
+        .get(&c)
+        .unwrap()
+        .to_string();
       if cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
         // 理论上不会发生
         notes.push(NameNote::Failed {
@@ -162,8 +171,8 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
       });
     }
     // 4. 在 SPECIAL_HANZI_MAP 里 -> u16 大端 -> 2 字节，NotTypable
-    else if SPECIAL_HANZI_MAP.contains_key(&c) {
-      let code = *SPECIAL_HANZI_MAP.get(&c).unwrap();
+    else if codegen_name_chars::SPECIAL_HANZI_MAP.contains_key(&c) {
+      let code = *codegen_name_chars::SPECIAL_HANZI_MAP.get(&c).unwrap();
       if cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
         // 理论上不会发生
         notes.push(NameNote::Failed {

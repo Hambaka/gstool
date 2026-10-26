@@ -51,7 +51,7 @@ pub enum SubCommandEnum {
 impl SubCommandEnum {
   pub const ALL: [Self; 3] = [Self::First, Self::Second, Self::Third];
 
-  pub fn name(&self) -> &'static str {
+  pub fn name(self) -> &'static str {
     match self {
       Self::First => "游戏存档",
       Self::Second => "密码文本",
