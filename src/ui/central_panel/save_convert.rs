@@ -18,9 +18,9 @@ const DESC_C2: &str = r"使用该功能可转换《黄金太阳 开启的封印�
 2. 通过修改存档中的游戏构建日期来转换存档版本
 
 注：
-1. 如果存档中的构建日期与游戏 ROM 中的构建日期不匹配，游戏将强制玩家从神殿开始游戏。
-2. Mobile&elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，所以 ROM 中的构建日期同美版。
-3. 《黄金太阳 开启的封印》新汉化版基于日版制作，所以 ROM 中的构建日期同日版。";
+1. 如果存档中的构建日期与游戏 ROM 中的构建日期不匹配，游戏将强制玩家从神殿开始游戏
+2. Mobile&elffinal/SOMA 的《黄金太阳 失落的时代》汉化版基于美版制作，所以 ROM 中的构建日期同美版
+3. 《黄金太阳 开启的封印》新汉化版基于日版制作，所以 ROM 中的构建日期同日版";
 
 /// 画`存档转换`功能页（说明+视图）；
 ///
@@ -46,6 +46,7 @@ pub fn show(ui: &mut Ui, state: &mut SaveConvertState, f_ctx: FrameCtx) -> Vec<A
         "存档文件路径",
         &mut state.input_file_path,
         f_ctx.svg_icon_size,
+        true
       ) {
         PathAction::Picked(file) => state.request(SaveConvertRequest::Load(file)),
         // 因为是纯内存改动，直接ui侧动就行
@@ -119,9 +120,10 @@ pub fn show(ui: &mut Ui, state: &mut SaveConvertState, f_ctx: FrameCtx) -> Vec<A
         ui,
         "指定输出文件保存目录",
         "自定义输出的存档文件路径（推荐留空），若留空则将转换后的存档文件保存到输入文件的同目录下。",
-        "存档文件输出路径",
+        "存档文件输出目录",
         &mut state.out_dir,
         f_ctx.svg_icon_size,
+        true
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

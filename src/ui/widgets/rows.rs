@@ -47,11 +47,18 @@ pub fn file_row(
   path_hint: &str,
   path: &mut String,
   svg_icon_size: f32,
+  in_single_row: bool,
 ) -> PathAction {
-  row_label(ui, label, hint, true);
   let mut action = PathAction::None;
 
+  if in_single_row {
+    row_label(ui, label, hint, true);
+  }
+
   ui.horizontal(|ui| {
+    if !in_single_row {
+      row_label(ui, label, hint, true);
+    }
     if ui.add(select_file_btn(svg_icon_size)).clicked()
       && let Some(file) = FileDialog::new().pick_file()
     {
@@ -62,15 +69,29 @@ pub fn file_row(
     } else if ui.add(reset_btn(svg_icon_size)).clicked() {
       action = PathAction::Reset;
     }
+
+    if in_single_row {
+      ui.add(
+        TextEdit::singleline(path)
+          .interactive(false)
+          .hint_text(path_hint)
+          .desired_width(f32::INFINITY),
+      );
+    }
+  });
+
+  if in_single_row {
+    ui.end_row();
+  } else {
+    ui.end_row();
     ui.add(
       TextEdit::singleline(path)
         .interactive(false)
         .hint_text(path_hint)
         .desired_width(f32::INFINITY),
     );
-  });
-
-  ui.end_row();
+    ui.end_row();
+  }
   action
 }
 
@@ -84,11 +105,18 @@ pub fn dir_row(
   path_hint: &str,
   path: &mut String,
   svg_icon_size: f32,
+  in_single_row: bool,
 ) -> PathAction {
-  row_label(ui, label, hint, true);
   let mut action = PathAction::None;
 
+  if in_single_row {
+    row_label(ui, label, hint, true);
+  }
+
   ui.horizontal(|ui| {
+    if !in_single_row {
+      row_label(ui, label, hint, true);
+    }
     if ui.add(select_dir_btn(svg_icon_size)).clicked()
       && let Some(dir) = FileDialog::new().pick_folder()
     {
@@ -99,15 +127,28 @@ pub fn dir_row(
     } else if ui.add(reset_btn(svg_icon_size)).clicked() {
       action = PathAction::Reset;
     }
+    if in_single_row {
+      ui.add(
+        TextEdit::singleline(path)
+          .interactive(false)
+          .hint_text(path_hint)
+          .desired_width(f32::INFINITY),
+      );
+    }
+  });
+
+  if in_single_row {
+    ui.end_row();
+  } else {
+    ui.end_row();
     ui.add(
       TextEdit::singleline(path)
         .interactive(false)
         .hint_text(path_hint)
         .desired_width(f32::INFINITY),
     );
-  });
-
-  ui.end_row();
+    ui.end_row();
+  }
   action
 }
 

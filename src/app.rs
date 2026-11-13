@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use egui::{ColorImage, Image, Shadow, TextStyle, TextureHandle, TextureOptions};
 use egui_notify::{Anchor, Toasts};
@@ -6,9 +7,14 @@ use image::GenericImageView;
 
 use crate::{
   logic::{
-    command::CommandEnum, custom_name::CustomNameState, inject_pwd::InjectPwdState,
-    password_export::PasswordExportState, patch_rom::PatchRomState, preview::PwdInfoState,
-    save_convert::SaveConvertState, sources::PasswordSources,
+    command::CommandEnum,
+    custom_name::{CustomNameState, ToastKind},
+    inject_pwd::InjectPwdState,
+    password_export::PasswordExportState,
+    patch_rom::PatchRomState,
+    preview::PwdInfoState,
+    save_convert::SaveConvertState,
+    sources::PasswordSources,
   },
   ui::{
     error_modal::show_error_modal,
@@ -262,6 +268,23 @@ impl eframe::App for App {
     }
     if let Err(msg) = self.c3.logic() {
       self.fail(msg);
+    }
+    // c3在logic()生成的toast信息
+    for toast in self.c3.take_toasts() {
+      match toast.kind {
+        ToastKind::Success => {
+          self
+            .toasts
+            .success(toast.text)
+            .duration(Some(Duration::from_secs(5)));
+        }
+        ToastKind::Warning => {
+          self
+            .toasts
+            .warning(toast.text)
+            .duration(Some(Duration::from_secs(8)));
+        }
+      }
     }
     if let Err(msg) = self.c4.logic() {
       self.fail(msg);

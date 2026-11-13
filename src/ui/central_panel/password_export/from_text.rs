@@ -19,8 +19,8 @@ use crate::{
   },
 };
 
-const DESC_C1S2: &str = r"“密码级别”，“转换密码版本”，“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
-以上五项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
+const DESC_C1S2: &str = r"“密码级别”，“转换密码版本”，“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”
+以上五项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选";
 
 /// 画【② 密码文本】子页；返回需要 `App` 处理的跨功能请求（本页自己的待办已登记进 `state`）
 ///
@@ -151,6 +151,7 @@ pub fn show(
         "若留空，则输出目录与输入的密码文本文件所在目录相同",
         &mut state.out_dir,
         f_ctx.svg_icon_size,
+        true
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

@@ -14,7 +14,8 @@ use crate::{
     patch::{PatchSource, apply_chinese_patch, rom_display_name},
   },
   io::{
-    classify_rom_file, patched_rom_file_name, read_bytes, resolve_output_dir, write_named_bytes,
+    classify_rom_file, patched_rom_file_name, read_bytes, resolve_output_dir_single,
+    write_named_bytes,
   },
 };
 
@@ -121,7 +122,7 @@ impl PatchRomState {
     let rom = read_bytes(Path::new(&input.path), Some(MAX_ROM_SIZE)).map_err(|e| e.to_string())?;
     let patched = apply_chinese_patch(rom).map_err(|e| e.to_string())?;
 
-    let out_dir = resolve_output_dir(
+    let out_dir = resolve_output_dir_single(
       Path::new(&input.path),
       (!self.out_dir.is_empty()).then(|| Path::new(&self.out_dir)),
     );

@@ -20,9 +20,9 @@ eframe = { version = "0.37", default-features = false, features = [
 ] }
 egui_extras = { version = "0.37", default-features = false, features = ["image", "svg"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
-egui-notify = { git = "https://github.com/Hambaka/egui-notify.git", rev = "c4ebf32935a0d5f0bcb7c97680aa3a78528c996a" }
+egui-notify = "0.24"
 phf = { version = "0.14", features = ["macros"] }
-rfd = "0.17"
+rfd = "0.18"
 # zstd = "0.14"
 # ruzstd = "0.9"
 zrip-decode = "0.8"
@@ -33,7 +33,7 @@ arboard = { version = "3.7", default-features = false }
 
 [build-dependencies]
 serde_json = "1.0"
-structured-zstd = "0.2"
+structured-zstd = "0.3"
 # zstd = "0.14"
 
 # https://github.com/johnthagen/min-sized-rust

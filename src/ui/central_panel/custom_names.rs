@@ -1,65 +1,211 @@
 use std::io::Cursor;
 
 use egui::{
-  Button, ColorImage, Image, Label, RichText, TextureHandle, TextureOptions, Ui, Vec2, Widget,
-  load::SizedTexture,
+  Button, Checkbox, ColorImage, Image, Label, RichText, TextureHandle, TextureOptions, Ui, Vec2,
+  Widget, load::SizedTexture,
 };
 use image::{ImageFormat, ImageReader};
 
 use crate::{
   app::KeyboardCache,
   core::save::pc_name::{MAX_NAME_CHARS, base_character_code},
-  logic::custom_name::{CustomNameState, PC_NAMES},
+  logic::custom_name::{CustomNameRequest, CustomNameState, PC_NAMES},
   ui::{
     page::{AppRequest, FrameCtx},
-    widgets::colors::{DARK, INFO},
+    widgets::{
+      buttons::{default_name_btn, reset_name_btn, save_as_btn, store_name_btn},
+      colors::{DARK, INFO},
+      rows::{PathAction, dir_row, file_row},
+    },
   },
 };
 
-const DESC_C3: &str = r"该功能仅支持《黄金太阳 开启的封印》新汉化版，主要面向自定义中文名（但也支持中日英混合）。
-请在输入框中输入至少一个角色的名字，再点击“运行”即可在下方的输出区域展示如何输入自定义名。
+const DESC_C3: &str = r"使用该功能可辅助修改《黄金太阳 开启的封印》主角团的名字：
+左侧：输入自定义的角色名，点击“运行”可查看在起名界面输入这些名字的方式
+右侧：可读取存档并将左侧运行后的自定义名字写入其中
 
 注：
-1. 在“运行”后点击“复制”按钮，输出内容将会复制到剪贴板，之后便可粘贴到记事本进行查看。
-2. 若想命名初代主角团其他的三位成员，请在起名界面连按三下“Select”键，成功后可听到提示音。
-3. 若想命名最后的三位角色，请接着上条继续输入“↑ ↓ ↑ ↓ ← → ← → ↑ → ↓ ← ↑”和“Select”，成功后可听到提示音。";
+1. 非日版存档载入时会自动转换为新汉化版默认名 + 日版构建日期（只影响输出文件）
+2. 若想命名初代主角团其他的三位成员，请在起名界面连按三下“Select”键，成功后可听到提示音
+3. 若想命名最后的三位角色，请接着上条继续输入“↑ ↓ ↑ ↓ ← → ← → ↑ → ↓ ← ↑”和“Select”，成功后可听到提示音";
 
-/// 画“自定义角色名”功能页（说明+视图）；
+/// 画“自定义角色名”功能页（说明 + 左栏名字输入 + 右栏存档修改）；
 ///
 /// 因为这一页只有自己状态的请求而没有跨功能的请求，
 /// 所以返回值是空的Vec。
-pub fn show(
-  ui: &mut Ui,
-  state: &mut CustomNameState,
-  // 目前无用，暂时保留先
-  _f_ctx: FrameCtx,
-) -> Vec<AppRequest> {
+pub fn show(ui: &mut Ui, state: &mut CustomNameState, f_ctx: FrameCtx) -> Vec<AppRequest> {
   Label::new(DESC_C3).selectable(false).ui(ui);
 
   ui.add_space(16.0);
 
-  egui::Grid::new("ID_GRID_C3")
-    .num_columns(2)
-    .spacing([40.0, 4.0])
-    .striped(true)
-    .show(ui, |ui| {
-      for (i, ele) in PC_NAMES.iter().enumerate() {
-        Label::new(*ele)
-          .selectable(false)
-          .ui(ui)
-          .on_hover_text(format!("{ele}的自定义角色名。"));
-        let name_ref = &mut state.names[i];
-        ui.add(
-          egui::TextEdit::singleline(name_ref)
-            .char_limit(MAX_NAME_CHARS)
-            .hint_text("请填写名字")
-            .desired_width(f32::INFINITY),
-        );
-        ui.end_row();
-      }
-    });
+  ui.columns_const(|[left, right]| {
+    show_name_inputs(left, state, f_ctx);
+    show_save_panel(right, state, f_ctx);
+  });
+
   // 因为无跨功能请求，所以是空的Vec
   Vec::new()
+}
+
+/// 左半边：7 个角色名输入框
+fn show_name_inputs(ui: &mut Ui, state: &mut CustomNameState, f_ctx: FrameCtx) {
+  ui.group(|ui| {
+    egui::Grid::new("ID_GRID_C3_LT")
+      .num_columns(2)
+      .min_row_height(25.0)
+      .spacing([16.0, 4.0])
+      .show(ui, |ui| {
+        for (i, ele) in PC_NAMES.iter().enumerate() {
+          Label::new(*ele)
+            .selectable(false)
+            .ui(ui)
+            .on_hover_text(format!("{ele}的自定义角色名。"));
+          let name_ref = &mut state.names[i];
+          ui.add(
+            egui::TextEdit::singleline(name_ref)
+              .char_limit(MAX_NAME_CHARS)
+              .hint_text("请填写名字（留空则不修改）")
+              .desired_width(f32::INFINITY),
+          );
+          ui.end_row();
+        }
+      });
+
+    egui::Grid::new("ID_GRID_C3_LB")
+      .num_columns(1)
+      .min_row_height(25.0)
+      .spacing([16.0, 4.0])
+      .show(ui, |ui| {
+        ui.vertical_centered(|ui| {
+          if ui.add(default_name_btn(f_ctx.svg_icon_size)).clicked() {
+            state.set_default_name();
+          };
+        });
+        ui.end_row();
+
+        ui.vertical_centered(|ui| {
+          if ui.add(reset_name_btn(f_ctx.svg_icon_size)).clicked() {
+            state.reset_names();
+          };
+        });
+        ui.end_row();
+      });
+  });
+}
+
+/// 右半边：写入存档
+fn show_save_panel(ui: &mut Ui, state: &mut CustomNameState, f_ctx: FrameCtx) {
+  ui.group(|ui| {
+
+    egui::Grid::new("ID_GRID_C3_R")
+      .num_columns(1)
+      .min_row_height(25.0)
+      .spacing([16.0, 4.0])
+      .show(ui, |ui| {
+        // 第1、2行 -> 输入文件路径
+        match file_row(
+          ui,
+          "输入文件：",
+          "《黄金太阳 开启的封印》的存档文件",
+          "存档文件路径",
+          &mut state.input_file_path,
+          f_ctx.svg_icon_size,
+          false,
+        ) {
+          PathAction::Picked(file) => state.request(CustomNameRequest::LoadSave(file)),
+          PathAction::Reset => state.reset_save(),
+          PathAction::None => {}
+        }
+
+        Label::new("要修改的存档槽位：")
+          .selectable(false)
+          .ui(ui)
+          .on_hover_text("只修改勾选的槽位。");
+        ui.end_row();
+
+        ui.horizontal(|ui| {
+          for i in 0..3 {
+            let is_clear_data = state.save_slots.slots[i]
+              .as_ref()
+              .map(|slot| slot.is_clear_data);
+            let (enabled, label) = match is_clear_data {
+              Some(true) => (true, format!("{}号（已通关）", i + 1)),
+              Some(false) => (true, format!("{}号　　　　　", i + 1)),
+              None => (false, format!("{}号（无数据）", i + 1)),
+            };
+            ui.add_enabled(enabled, Checkbox::new(&mut state.selected_slots[i], label));
+          }
+        });
+        ui.end_row();
+
+        match dir_row(
+          ui,
+          "输出目录：",
+          "自定义输出的存档文件路径（推荐留空），若留空则将转换后的存档文件保存到输入文件的同目录下。",
+          "存档文件输出目录",
+          &mut state.out_dir,
+          f_ctx.svg_icon_size,
+          false,
+        ) {
+          PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
+          PathAction::Reset => state.out_dir.clear(),
+          PathAction::None => {}
+        }
+
+        Label::new(RichText::new(save_hint(state)).weak())
+          .selectable(false)
+          .ui(ui);
+        ui.end_row();
+      });
+
+    egui::Grid::new("ID_GRID_C3_RB")
+      .num_columns(1)
+      .min_row_height(25.0)
+      .spacing([16.0, 4.0])
+      .show(ui, |ui| {
+        ui.vertical_centered(|ui| {
+          let can_modify = state.can_store_names();
+          if ui
+            .add_enabled(can_modify, store_name_btn(f_ctx.svg_icon_size))
+            .clicked()
+          {
+            state.request(CustomNameRequest::StoreNames);
+          }
+        });
+        ui.end_row();
+
+        ui.vertical_centered(|ui| {
+          if ui
+            .add_enabled(state.has_stored_name, save_as_btn(f_ctx.svg_icon_size))
+            .clicked()
+          {
+            state.request(CustomNameRequest::WriteSave);
+          }
+        });
+        ui.end_row();
+      });
+
+  });
+}
+
+/// 右栏的禁用原因提示；全部满足时返回 `None`
+fn save_hint(state: &CustomNameState) -> &'static str {
+  if !state.has_run() {
+    "请先在左侧填写名字并点击“运行”。"
+  } else if state.names_changed_since_run() {
+    // 如果名字修改了，上次的编码结果已经过期，所以先提示重新运行一遍
+    "名字已修改，请重新运行。"
+  } else if !state.has_valid_run() {
+    "存在无法使用的字符，请查看下方输出。"
+  } else if !state.has_save() {
+    "请选择存档文件。"
+  } else if !state.any_slot_selected() {
+    "请勾选要修改的存档槽位。"
+  } else if !state.has_stored_name {
+    "先暂存名字，暂存后即可输出存档。"
+  } else {
+    "可随时输出存档。"
+  }
 }
 
 /// 显示输出日志

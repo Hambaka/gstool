@@ -192,6 +192,7 @@ impl NameType {
   }
 
   pub fn name(self) -> &'static str {
+    // 与PC_DEFAULT_NAMES强关联
     match self {
       Self::Japanese => "日文",
       Self::English => "英文",

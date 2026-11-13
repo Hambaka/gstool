@@ -1,7 +1,7 @@
 //! 移植自Dyrati的`Golden-Sun-Password-Transfer`中的lua脚本，该脚本适用于`vba-rr`和`Bizhawk`模拟器\
 //! <https://github.com/Dyrati/Golden-Sun-Password-Transfer/blob/40ef45e4a77b2cf17a0e325f9f0f41817ef21140/password.lua>\
 //! 即15行到32行之间的所有内容
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub struct BitVec {
@@ -28,12 +28,6 @@ impl Deref for BitVec {
 
   fn deref(&self) -> &Self::Target {
     &self.bits
-  }
-}
-
-impl DerefMut for BitVec {
-  fn deref_mut(&mut self) -> &mut Self::Target {
-    &mut self.bits
   }
 }
 
@@ -74,7 +68,7 @@ impl BitVec {
   /// 视一个整数值为左高位右低位的二进制数，将每一个二进制位的值依次替换掉内部bits中指定下标位置的值
   pub fn replace_bits(&mut self, value: u32, size: usize, pos: usize) {
     for i in 0..size {
-      self[pos + i] = ((value >> (size - i - 1)) & 1) as u8;
+      self.bits[pos + i] = ((value >> (size - i - 1)) & 1) as u8;
     }
   }
 

@@ -19,13 +19,13 @@ use crate::{
   },
 };
 
-const DESC_C5: &str = r"使用该功能可为《黄金太阳 失落的时代》注入能够自动输入密码的程序。
+const DESC_C5: &str = r"使用该功能可为《黄金太阳 失落的时代》注入能够自动输入密码的程序
 支持的版本：
 1. 官方版本ROM（日/美/德/西/法/意）
 2. 流传度最高的中文汉化版ROM（SOMA汉化组/Mobile+elffinal）
 
 注：
-1. 游戏版本的来源多种多样，无法一一进行测试。";
+1. 游戏版本的来源多种多样，无法一一进行测试";
 
 const PWD_SRC_LABEL: [&str; 3] = ["金密码来源", "银密码来源", "铜密码来源"];
 const PWD_SRC_DESC: [&str; 3] = [
@@ -62,6 +62,7 @@ pub fn show(
         "ROM文件路径",
         &mut state.input_file_path,
         f_ctx.svg_icon_size,
+        true
       ) {
         PathAction::Picked(file) => state.request(InjectPwdRequest::Load(file)),
         PathAction::Reset => state.reset(),
@@ -175,6 +176,7 @@ pub fn show(
         "最新版注入密码ROM输出路径",
         &mut state.out_dir,
         f_ctx.svg_icon_size,
+        true
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

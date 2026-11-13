@@ -74,9 +74,11 @@ pub struct SaveSlot {
   pub priority: u16,
   pub is_clear_data: bool,
   pub data: Vec<u8>,
+  /// 该槽位在存档文件中的段索引，以 `SAVE_SLOT_SIZE[0]` 为步长；
+  pub section_index: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SaveSlots {
   pub slots: [Option<SaveSlot>; 3],
   pub first_available_slot: Option<u8>,
@@ -104,6 +106,10 @@ pub fn find_first_slot_index(raw_save_file: &[u8]) -> Option<usize> {
 pub fn identify_game(raw_save_file: &[u8]) -> Option<GameInfo> {
   for i in 0..MAX_LOOP_COUNT[0] {
     if !has_camelot_header(raw_save_file, i) {
+      continue;
+    }
+
+    if raw_save_file[i * SAVE_SLOT_SIZE[0] + SLOT_NUMBER_OFFSET] > MAX_VALID_SLOT_INDEX {
       continue;
     }
 
@@ -186,6 +192,7 @@ pub fn collect_slots(
     let save_data = SaveSlot {
       priority: header.priority,
       is_clear_data: header.is_clear_data,
+      section_index: header.index,
       data: raw
         .get(
           header.index * SAVE_SLOT_SIZE[0] + SLOT_HEADER_SIZE

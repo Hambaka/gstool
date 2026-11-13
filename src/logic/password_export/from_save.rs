@@ -13,10 +13,11 @@ use crate::{
   core::{
     enums::{GameRegion, PasswordGrade, PasswordVersion},
     password::encode::from_raw_save,
-    save::raw::parse_save_slots,
+    save::{format::MAX_SAVE_FILE_SIZE, raw::parse_save_slots},
   },
   io::{
-    derived_output_dir, read_bytes, sheet_from_password_bytes, sheet_from_save_slot, slot_dir_name,
+    read_bytes, resolve_output_dir_multi, sheet_from_password_bytes, sheet_from_save_slot,
+    slot_dir_name,
   },
   logic::{
     password_export::shared::{ExportOptions, Subject, output_notes, write_outputs},
@@ -113,7 +114,7 @@ impl FromSaveState {
       match request {
         FromSaveRequest::Load(path) => {
           // 验证存档文件
-          let bytes = read_bytes(&path, None).map_err(|e| e.to_string())?;
+          let bytes = read_bytes(&path, Some(MAX_SAVE_FILE_SIZE)).map_err(|e| e.to_string())?;
           let save_slots =
             parse_save_slots(&bytes, self.export_all_saves).map_err(|e| e.to_string())?;
 
@@ -157,11 +158,10 @@ struct SlotJob {
 
 /// 把每个槽位要生成哪些输出文件先算好
 fn build_job(state: &FromSaveState, sources: &PasswordSources) -> ExportJob {
-  let output_dir = if state.out_dir.is_empty() {
-    derived_output_dir(Path::new(&state.input_file_path))
-  } else {
-    PathBuf::from(&state.out_dir)
-  };
+  let output_dir = resolve_output_dir_multi(
+    Path::new(&state.input_file_path),
+    (!state.out_dir.is_empty()).then(|| Path::new(&state.out_dir)),
+  );
 
   let options = ExportOptions {
     grade: state.grade,

@@ -7,8 +7,8 @@ use crate::{
     widgets::{
       colors::{DANGER, DARK, LIGHT, PRIMARY, SECONDARY, SUCCESS, WARNING},
       icons::{
-        BAN, CLIPBOARD, COPY, FILE, FOLDER, GLASS, NUMBER_1_CIRCLE_FILL, NUMBER_2_CIRCLE_FILL,
-        NUMBER_3_CIRCLE_FILL, RESET, RUN,
+        BAN, BOX_ARROW_DOWN, CLIPBOARD, COPY, FILE, FLOPPY, FOLDER, GLASS, NUMBER_1_CIRCLE_FILL,
+        NUMBER_2_CIRCLE_FILL, NUMBER_3_CIRCLE_FILL, PENCIL, RESET, RUN, TRASH,
       },
     },
   },
@@ -76,6 +76,40 @@ pub fn copy_btn(svg_icon_size: f32) -> Button<'static> {
     RichText::new("复制").color(LIGHT),
   ))
   .fill(SECONDARY)
+}
+
+pub fn default_name_btn(svg_icon_size: f32) -> Button<'static> {
+  Button::new((
+    Image::new(PENCIL).tint(LIGHT).max_height(svg_icon_size),
+    RichText::new("空白项填默认名").color(LIGHT),
+  ))
+  .fill(SECONDARY)
+}
+
+pub fn reset_name_btn(svg_icon_size: f32) -> Button<'static> {
+  Button::new((
+    Image::new(TRASH).tint(DARK).max_height(svg_icon_size),
+    RichText::new("清空所有输入框").color(DARK),
+  ))
+  .fill(WARNING)
+}
+
+pub fn store_name_btn(svg_icon_size: f32) -> Button<'static> {
+  Button::new((
+    Image::new(BOX_ARROW_DOWN)
+      .tint(LIGHT)
+      .max_height(svg_icon_size),
+    RichText::new("暂存名字").color(LIGHT),
+  ))
+  .fill(SECONDARY)
+}
+
+pub fn save_as_btn(svg_icon_size: f32) -> Button<'static> {
+  Button::new((
+    Image::new(FLOPPY).tint(LIGHT).max_height(svg_icon_size),
+    RichText::new("保存存档").color(LIGHT),
+  ))
+  .fill(SUCCESS)
 }
 
 /// 存档槽位可选项的渲染（编号图标 + 存档）。

@@ -15,8 +15,8 @@ use crate::{
   },
 };
 
-const DESC_C1S3: &str = r"“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”。
-以上四项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选。";
+const DESC_C1S3: &str = r"“密码级别”，“密码文本版本”，“生成密码金手指”，“导出密码数据至文本文件”
+以上四项虽然都是可以留空或者不勾选的可选选项，但是必须要有其中一项有选择值或者已勾选";
 
 /// 画【③ 内存转储】子页；返回需要 `App` 处理的跨功能请求（本页自己的待办已登记进 `state`）
 ///
@@ -47,6 +47,7 @@ pub fn show(
         "内存转储文件路径",
         &mut state.input_file_path,
         f_ctx.svg_icon_size,
+        true
       ) {
         PathAction::Picked(file) => {
           // 登记读取密码内存转储文件并解析的请求，由下一帧的`logic()`实际进行处理
@@ -136,6 +137,7 @@ pub fn show(
         "若留空，则输出目录与输入的内存转储文件所在目录相同",
         &mut state.out_dir,
         f_ctx.svg_icon_size,
+        true
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

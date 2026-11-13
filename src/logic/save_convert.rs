@@ -13,10 +13,11 @@ use crate::{
     enums::{GameRegion, GameTitle, NameType},
     save::{
       convert_save,
+      format::MAX_SAVE_FILE_SIZE,
       raw::{GameInfo, parse_convertible_save},
     },
   },
-  io::{read_bytes, resolve_output_dir, suffixed_file_name, write_named_bytes},
+  io::{read_bytes, resolve_output_dir_single, suffixed_file_name, write_named_bytes},
 };
 
 /// “存档转换”功能状态
@@ -114,7 +115,7 @@ impl SaveConvertState {
 
   /// 读取并识别用户选中的存档文件
   fn load_input(path: &Path) -> Result<(Vec<u8>, GameInfo), String> {
-    let bytes = read_bytes(path, None).map_err(|e| e.to_string())?;
+    let bytes = read_bytes(path, Some(MAX_SAVE_FILE_SIZE)).map_err(|e| e.to_string())?;
     let info = parse_convertible_save(&bytes).map_err(|e| e.to_string())?;
     Ok((bytes, info))
   }
@@ -134,7 +135,7 @@ impl SaveConvertState {
     // Start to create and write output save file.
     let input_path = Path::new(&self.input_file_path);
     let file_name = suffixed_file_name(input_path, "转换");
-    let output_dir = resolve_output_dir(
+    let output_dir = resolve_output_dir_single(
       input_path,
       (!self.out_dir.is_empty()).then(|| Path::new(&self.out_dir)),
     );

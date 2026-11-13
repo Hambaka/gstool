@@ -52,7 +52,7 @@ jobs:
     # Linux only
     - name: Install necessary dependencies for linux
       if: contains(matrix.TARGET, 'linux')
-      run: sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev pkg-config libgtk-3-dev
+      run: sudo apt-get install -y libclang-dev libgtk-3-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
 
     # Start building...
     # Windows only

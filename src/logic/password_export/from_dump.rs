@@ -21,7 +21,7 @@ use crate::{
     },
   },
   io::{
-    derived_output_dir, read_bytes, sheet_from_password_bytes, sheet_from_password_data,
+    read_bytes, resolve_output_dir_multi, sheet_from_password_bytes, sheet_from_password_data,
     write_memory_dump,
   },
   logic::{
@@ -172,11 +172,10 @@ fn build_job(state: &FromDumpState, sources: &PasswordSources) -> Result<DumpJob
     None => src.bytes.clone(),
   };
 
-  let output_dir = if state.out_dir.is_empty() {
-    derived_output_dir(Path::new(&state.input_file_path))
-  } else {
-    PathBuf::from(&state.out_dir)
-  };
+  let output_dir = resolve_output_dir_multi(
+    Path::new(&state.input_file_path),
+    (!state.out_dir.is_empty()).then(|| Path::new(&state.out_dir)),
+  );
 
   // 金手指文件：级别是降级目标（未降级则为来源级别）
   let cheat = state

@@ -8,14 +8,14 @@ use crate::{
   },
 };
 
-const DESC_C4: &str = r"使用该功能可为日版的《黄金太阳 开启的封印》应用最新版的汉化补丁。
+const DESC_C4: &str = r"使用该功能可为日版的《黄金太阳 开启的封印》应用最新版的汉化补丁
 除了使用日版，该功能也对其他的部分版本做了支持：
 1. 其他的所有官方版本ROM（美/德/西/法/意）
 2. 部分网络公开的且流传度较高的其他较老的中文汉化版ROM（CGP汉化组/CGP+elffinal/润色美化版）
 
 注：
-1. 其他汉化版的来源多种多样，无法做到全部支持。
-2. 不支持使用各类基于汉化版制作的改版ROM。";
+1. 其他汉化版的来源多种多样，无法做到全部支持
+2. 不支持使用各类基于汉化版制作的改版ROM";
 
 /// 画“应用汉化补丁”功能页（说明+视图）；
 ///
@@ -38,6 +38,7 @@ pub fn show(ui: &mut Ui, state: &mut PatchRomState, f_ctx: FrameCtx) -> Vec<AppR
         "ROM文件路径",
         &mut state.display_path,
         f_ctx.svg_icon_size,
+        true
       ) {
         PathAction::Picked(file) => state.request(PatchRomRequest::Load(file)),
         PathAction::Reset => state.reset(),
@@ -52,6 +53,7 @@ pub fn show(ui: &mut Ui, state: &mut PatchRomState, f_ctx: FrameCtx) -> Vec<AppR
         "最新版汉化ROM输出路径",
         &mut state.out_dir,
         f_ctx.svg_icon_size,
+        true
       ) {
         PathAction::Picked(dir) => state.out_dir = dir.to_string_lossy().into_owned(),
         PathAction::Reset => state.out_dir.clear(),

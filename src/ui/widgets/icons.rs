@@ -51,3 +51,7 @@ pub const CHECK_MARK: ImageSource = include_image!("../../../assets/icon_svg/che
 pub const X_MARK: ImageSource = include_image!("../../../assets/icon_svg/x-lg.svg");
 
 pub const CLIPBOARD: ImageSource = include_image!("../../../assets/icon_svg/clipboard2-fill.svg");
+pub const FLOPPY: ImageSource = include_image!("../../../assets/icon_svg/floppy2-fill.svg");
+pub const TRASH: ImageSource = include_image!("../../../assets/icon_svg/trash3-fill.svg");
+pub const BOX_ARROW_DOWN: ImageSource =
+  include_image!("../../../assets/icon_svg/box-arrow-down.svg");

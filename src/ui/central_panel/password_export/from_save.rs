@@ -17,8 +17,8 @@ use crate::{
   },
 };
 
-const DESC_C1S1: &str = r"“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”。
-程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项。";
+const DESC_C1S1: &str = r"“生成内存转储文件”，“生成密码金手指”，“导出密码数据至文本文件”
+程序默认密码级别为“金”，密码文本版本为“英文”，因此以上三项都是可以留空或者不勾选的可选选项";
 
 /// 画【① 游戏存档】子页；返回需要 `App` 处理的跨功能请求（本页自己的待办已登记进 `state`）
 ///
@@ -65,6 +65,7 @@ pub fn show(
         "存档文件路径",
         &mut state.input_file_path,
         f_ctx.svg_icon_size,
+        true,
       ) {
         // 登记读取存档文件并解析的请求，由下一帧的`logic()`实际进行处理
         PathAction::Picked(file) => state.request(FromSaveRequest::Load(file)),
@@ -158,6 +159,7 @@ pub fn show(
         "若留空，则输出目录与输入的存档文件所在目录相同",
         &mut state.out_dir,
         f_ctx.svg_icon_size,
+        true,
       ) {
         PathAction::Picked(dir) => {
           state.out_dir = dir.to_string_lossy().into_owned();

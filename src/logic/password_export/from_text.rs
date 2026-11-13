@@ -23,7 +23,7 @@ use crate::{
     },
   },
   io::{
-    clipboard_get_text, derived_output_dir, read_text, sheet_from_password_bytes,
+    clipboard_get_text, derived_output_dir, input_dir, read_text, sheet_from_password_bytes,
     sheet_from_password_data, write_converted_password_text,
   },
   logic::{
@@ -208,10 +208,7 @@ fn build_job(state: &FromTextState, sources: &PasswordSources) -> Result<TextJob
     if state.input_file_path.is_empty() {
       let current_exe_path =
         env::current_exe().map_err(|_| "无法获取程序所在目录！".to_string())?;
-      let parent = current_exe_path
-        .parent()
-        .ok_or_else(|| "无法获取程序所在目录！".to_string())?;
-      parent.join("剪贴板_输出")
+      input_dir(&current_exe_path).join("剪贴板_输出")
     } else {
       derived_output_dir(Path::new(&state.input_file_path))
     }

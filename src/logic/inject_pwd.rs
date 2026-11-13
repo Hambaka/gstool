@@ -3,7 +3,7 @@
 //! `logic()`只负责校验ROM文件，`run()` 读ROM进行实际的密码自动输入程序注入和输出注入后的文件。
 //! 与`password_export`联动，会处理`ResetPasswordSources`请求。
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::{
   core::{
@@ -14,10 +14,8 @@ use crate::{
     },
     rom::inject::{PasswordCombination, TlaRomAnalysis, inject},
   },
-  io::{analyze_rom_file, resolve_output_dir, suffixed_file_name, write_named_bytes},
-  logic::command::SubCommandEnum,
-  logic::save_slot::SaveSlotEnum,
-  logic::sources::PasswordSources,
+  io::{analyze_rom_file, resolve_output_dir_single, suffixed_file_name, write_named_bytes},
+  logic::{command::SubCommandEnum, save_slot::SaveSlotEnum, sources::PasswordSources},
 };
 
 /// 一个级别（金/银/铜）的密码数据来源选择
@@ -116,7 +114,7 @@ impl InjectPwdState {
   /// 运行本功能（由`AppRequest::Run`调用）
   pub fn run(&mut self, sources: &PasswordSources) -> Result<(), String> {
     // 1. 读输入 ROM + 分析
-    let path = std::path::Path::new(&self.input_file_path);
+    let path = Path::new(&self.input_file_path);
     let (rom_bytes, analysis) = analyze_rom_file(path).map_err(|e| e.clone())?;
 
     // 2. 获得注入类型
@@ -141,9 +139,9 @@ impl InjectPwdState {
 
     // 5. 输出文件
     let file_name = suffixed_file_name(path, combination.name());
-    let out_dir = resolve_output_dir(
+    let out_dir = resolve_output_dir_single(
       path,
-      (!self.out_dir.is_empty()).then(|| std::path::Path::new(&self.out_dir)),
+      (!self.out_dir.is_empty()).then(|| Path::new(&self.out_dir)),
     );
     write_named_bytes(&out_dir, &file_name, &new_rom).map_err(|e| e.to_string())?;
 
@@ -192,7 +190,7 @@ impl InjectPwdState {
 fn render_log(
   analysis: &TlaRomAnalysis,
   combination: PasswordCombination,
-  out_file: &std::path::Path,
+  out_file: &Path,
 ) -> String {
   use std::fmt::Write as _;
 

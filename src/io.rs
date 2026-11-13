@@ -8,7 +8,8 @@ mod write;
 pub use clipboard::clipboard_get_text;
 
 pub use path::{
-  derived_output_dir, patched_rom_file_name, resolve_output_dir, slot_dir_name, suffixed_file_name,
+  derived_output_dir, input_dir, patched_rom_file_name, resolve_output_dir_multi,
+  resolve_output_dir_single, slot_dir_name, suffixed_file_name,
 };
 
 pub use read::{analyze_rom_file, classify_rom_file, read_bytes, read_text};

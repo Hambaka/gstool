@@ -33,7 +33,7 @@ pub fn base_character_code(ch: char) -> Option<u8> {
 pub enum NameNote {
   /// 起名界面可以直接输入的字符
   /// `code`暂时无用，战未来.gif
-  Direct { input: char, code: u8 },
+  Direct { input: char },
   /// 由两个基础字符拼成（浊音假名 / 常用汉字），展开成两个字节
   Composed { input: char, components: String },
   /// 字库里有这个字，但起名界面打不出来（占 2 字节，码值大端）
@@ -57,9 +57,6 @@ pub enum NameError {
 pub struct EncodedName {
   /// 编码后的字节（定长，未使用部分为 0）
   bytes: [u8; MAX_NAME_BYTES],
-  /// 编码结束时的游标位置（= 有效字节数）
-  /// `byte_len`暂时无用，战未来.gif
-  byte_len: usize,
   /// 逐个字符的编码说明，**包含失败的字符**（界面要展示它们）
   pub notes: Vec<NameNote>,
 }
@@ -75,11 +72,6 @@ impl EncodedName {
   /// 完整的定长字节（十六进制 dump 与金手指都按 10 字节输出）
   pub fn all_bytes(&self) -> &[u8; MAX_NAME_BYTES] {
     &self.bytes
-  }
-  /// 有效字节数（= 编码结束时的游标位置）
-  /// `byte_len()`暂时无用，战未来
-  pub fn byte_len(&self) -> usize {
-    self.byte_len
   }
 }
 
@@ -107,7 +99,7 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
       let code = base_character_code(c).unwrap();
       bytes[cursor] = code;
       cursor += 1;
-      notes.push(NameNote::Direct { input: c, code });
+      notes.push(NameNote::Direct { input: c });
     }
     // 2. 在 DAKUTEN_KANA_MAP 里 -> 展开成 2 个基础字符 -> 2 字节，Composed
     else if codegen_name_chars::DAKUTEN_KANA_MAP.contains_key(&c) {
@@ -203,9 +195,5 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
     }
   }
 
-  EncodedName {
-    bytes,
-    byte_len: cursor,
-    notes,
-  }
+  EncodedName { bytes, notes }
 }
