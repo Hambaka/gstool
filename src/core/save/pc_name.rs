@@ -25,7 +25,9 @@ pub const CONTROL_CHARS: [char; 13] = [
 
 /// 起名界面里这个字符对应的键位图编号。返回 `None` 表示界面上打不出这个字符。
 pub fn base_character_code(ch: char) -> Option<u8> {
-  codegen_name_chars::BASE_CHARACTERS_MAP.get(&ch).copied()
+  codegen_name_chars::CHAR_1_BYTE_TYPABLE_MAP
+    .get(&ch)
+    .copied()
 }
 
 /// 某个字符的编码方式（界面按它逐行生成日志）
@@ -36,8 +38,10 @@ pub enum NameNote {
   Direct { input: char },
   /// 由两个基础字符拼成（浊音假名 / 常用汉字），展开成两个字节
   Composed { input: char, components: String },
+  /// 字库里有这个字，但起名界面打不出来（占 1 字节）
+  NotTypableByte { input: char, code: u8 },
   /// 字库里有这个字，但起名界面打不出来（占 2 字节，码值大端）
-  NotTypable { input: char, code: u16 },
+  NotTypableBytes { input: char, code: u16 },
   /// 这个字符没能进入编码结果
   Failed { input: char, reason: NameError },
 }
@@ -82,11 +86,12 @@ impl EncodedName {
 pub fn encode_pc_name(name: &str) -> EncodedName {
   let mut bytes = [0u8; MAX_NAME_BYTES];
   let mut notes: Vec<NameNote> = Vec::new();
-  let mut cursor = 0usize;
+  let mut cursor = 0;
 
   for c in name.chars() {
-    // 1. 在 BASE_CHARACTERS_MAP 里且不在 CONTROL_CHARS 里 -> 1 字节，Direct
+    // 1. 在 CHAR_1_BYTE_TYPABLE_MAP 里且不在 CONTROL_CHARS 里 -> 1 字节，Direct
     //    注意：两个条件是合在一起的，控制符字符会落到第 5 条
+    // TODO: 考虑直接优先执行第五条短路掉
     if base_character_code(c).is_some() && !CONTROL_CHARS.contains(&c) {
       if cursor + 1 > MAX_NAME_BYTES {
         // 理论上不会发生
@@ -101,39 +106,29 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
       cursor += 1;
       notes.push(NameNote::Direct { input: c });
     }
-    // 2. 在 DAKUTEN_KANA_MAP 里 -> 展开成 2 个基础字符 -> 2 字节，Composed
-    else if codegen_name_chars::DAKUTEN_KANA_MAP.contains_key(&c) {
-      let components = codegen_name_chars::DAKUTEN_KANA_MAP
-        .get(&c)
-        .unwrap()
-        .to_string();
-      if cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
+    // 2. CHAR_1_BYTE_UNTYPABLE_MAP
+    else if codegen_name_chars::CHAR_1_BYTE_UNTYPABLE_MAP.contains_key(&c) {
+      if cursor + 1 > MAX_NAME_BYTES {
+        // 理论上不会发生
         notes.push(NameNote::Failed {
           input: c,
           reason: NameError::TooLong,
         });
         break;
       }
-      for value in components.chars() {
-        if let Some(num) = base_character_code(value) {
-          bytes[cursor] = num;
-          cursor += 1;
-        } else {
-          // 理论上不会发生
-          notes.push(NameNote::Failed {
-            input: value,
-            reason: NameError::NotInFont,
-          });
-        }
-      }
-      notes.push(NameNote::Composed {
+      let code = codegen_name_chars::CHAR_1_BYTE_UNTYPABLE_MAP
+        .get(&c)
+        .unwrap();
+      bytes[cursor] = *code;
+      cursor += 1;
+      notes.push(NameNote::NotTypableByte {
         input: c,
-        components,
+        code: *code,
       });
     }
-    // 3. 在 COMMON_HANZI_MAP 里 -> 展开成 2 个基础字符 -> 2 字节，Composed
-    else if codegen_name_chars::COMMON_HANZI_MAP.contains_key(&c) {
-      let components = codegen_name_chars::COMMON_HANZI_MAP
+    // 3. 在 CHAR_2_BYTES_TYPABLE_MAP 里 -> 展开成 2 个基础字符 -> 2 字节，Composed
+    else if codegen_name_chars::CHAR_2_BYTES_TYPABLE_MAP.contains_key(&c) {
+      let components = codegen_name_chars::CHAR_2_BYTES_TYPABLE_MAP
         .get(&c)
         .unwrap()
         .to_string();
@@ -162,9 +157,11 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
         components,
       });
     }
-    // 4. 在 SPECIAL_HANZI_MAP 里 -> u16 大端 -> 2 字节，NotTypable
-    else if codegen_name_chars::SPECIAL_HANZI_MAP.contains_key(&c) {
-      let code = *codegen_name_chars::SPECIAL_HANZI_MAP.get(&c).unwrap();
+    // 4. 在 CHAR_2_BYTES_UNTYPABLE_MAP 里 -> u16 大端 -> 2 字节，NotTypable
+    else if codegen_name_chars::CHAR_2_BYTES_UNTYPABLE_MAP.contains_key(&c) {
+      let code = *codegen_name_chars::CHAR_2_BYTES_UNTYPABLE_MAP
+        .get(&c)
+        .unwrap();
       if cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
         // 理论上不会发生
         notes.push(NameNote::Failed {
@@ -177,7 +174,7 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
       bytes[cursor] = code_bytes[0];
       bytes[cursor + 1] = code_bytes[1];
       cursor += 2;
-      notes.push(NameNote::NotTypable { input: c, code });
+      notes.push(NameNote::NotTypableBytes { input: c, code });
     }
     // 5. 在 CONTROL_CHARS 里 -> Failed(ControlChar)
     else if CONTROL_CHARS.contains(&c) {

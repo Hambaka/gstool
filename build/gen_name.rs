@@ -8,21 +8,30 @@ use crate::MAIN_DIR;
 
 pub fn run() {
   // val -> u8
-  let base_characters = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    "../resources/json/char/base_characters.json"
+  let char_1_byte_typable = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
+    "../resources/json/char/1_byte_typable.json"
   ))
   .unwrap();
-  // val -> u16
-  let special_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    "../resources/json/char/special_hanzi.json"
+
+  // val -> u8
+  let char_1_byte_untypable = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
+    "../resources/json/char/1_byte_untypable.json"
   ))
   .unwrap();
-  let common_hanzi = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
-    "../resources/json/char/common_hanzi.json"
+
+  let mut char_2_bytes_typable = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
+    "../resources/json/char/2_bytes_typable.json"
   ))
   .unwrap();
   let dakuten_kana = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
     "../resources/json/char/dakuten_kana.json"
+  ))
+  .unwrap();
+  char_2_bytes_typable.extend(dakuten_kana);
+
+  // val -> u16
+  let char_2_bytes_untypable = serde_json::from_slice::<HashMap<String, String>>(include_bytes!(
+    "../resources/json/char/2_bytes_untypable.json"
   ))
   .unwrap();
 
@@ -34,13 +43,14 @@ pub fn run() {
 
   writeln!(&mut file, "use phf::phf_map;\n").unwrap();
 
-  // BASE_CHARACTERS_MAP
+  // 单字节字符（起名界面可输入；包含用于组合双字节字符的控制符）
+  // CHAR_1_BYTE_TYPABLE_MAP
   writeln!(
     &mut file,
-    "pub static BASE_CHARACTERS_MAP: phf::Map<char, u8> = phf_map! {{"
+    "pub static CHAR_1_BYTE_TYPABLE_MAP: phf::Map<char, u8> = phf_map! {{"
   )
   .unwrap();
-  for (key, value) in base_characters {
+  for (key, value) in char_1_byte_typable {
     if "'".eq(&key) {
       writeln!(&mut file, "  '\\{key}' => 0x{value},").unwrap();
     } else {
@@ -49,24 +59,26 @@ pub fn run() {
   }
   writeln!(&mut file, "}};\n").unwrap();
 
-  // SPECIAL_HANZI_MAP
+  // 单字节字符（起名界面无法输入）
+  // CHAR_1_BYTE_UNTYPABLE_MAP
   writeln!(
     &mut file,
-    "pub static SPECIAL_HANZI_MAP: phf::Map<char, u16> = phf_map! {{"
+    "pub static CHAR_1_BYTE_UNTYPABLE_MAP: phf::Map<char, u8> = phf_map! {{"
   )
   .unwrap();
-  for (key, value) in special_hanzi {
+  for (key, value) in char_1_byte_untypable {
     writeln!(&mut file, "  '{key}' => 0x{value},").unwrap();
   }
   writeln!(&mut file, "}};\n").unwrap();
 
-  // COMMON_HANZI_MAP
+  // 双字节字符（起名界面可输入）
+  // CHAR_2_BYTES_TYPABLE_MAP
   writeln!(
     &mut file,
-    "pub static COMMON_HANZI_MAP: phf::Map<char, &'static str> = phf_map! {{"
+    "pub static CHAR_2_BYTES_TYPABLE_MAP: phf::Map<char, &'static str> = phf_map! {{"
   )
   .unwrap();
-  for (key, value) in common_hanzi {
+  for (key, value) in char_2_bytes_typable {
     if value.contains('"') {
       if '"'.eq(&value.chars().next().unwrap()) {
         writeln!(&mut file, "  '{key}' => \"\\{value}\",").unwrap();
@@ -85,14 +97,15 @@ pub fn run() {
   }
   writeln!(&mut file, "}};\n").unwrap();
 
-  // DAKUTEN_KANA_MAP
+  // 双字节字符（起名界面无法输入）
+  // CHAR_2_BYTES_UNTYPABLE_MAP
   writeln!(
     &mut file,
-    "pub static DAKUTEN_KANA_MAP: phf::Map<char, &'static str> = phf_map! {{"
+    "pub static CHAR_2_BYTES_UNTYPABLE_MAP: phf::Map<char, u16> = phf_map! {{"
   )
   .unwrap();
-  for (key, value) in dakuten_kana {
-    writeln!(&mut file, "  '{key}' => \"{value}\",").unwrap();
+  for (key, value) in char_2_bytes_untypable {
+    writeln!(&mut file, "  '{key}' => 0x{value},").unwrap();
   }
   writeln!(&mut file, "}};\n").unwrap();
 

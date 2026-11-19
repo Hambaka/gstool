@@ -159,7 +159,10 @@ fn name_note_line(note: &NameNote) -> String {
   match note {
     NameNote::Direct { input, .. } => format!("{input}：{input}"),
     NameNote::Composed { input, components } => format!("{input}：{components}"),
-    NameNote::NotTypable { input, code } => {
+    NameNote::NotTypableByte { input, code } => {
+      format!("{input}：汉化版字库中包含该字符，但无法在起名界面中正常输入，码值为0x{code:02X}")
+    }
+    NameNote::NotTypableBytes { input, code } => {
       format!("{input}：汉化版字库中包含该字符，但无法在起名界面中正常输入，码值为0x{code:04X}")
     }
     NameNote::Failed { input, reason } => {
