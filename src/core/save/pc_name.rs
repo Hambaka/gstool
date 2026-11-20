@@ -1,8 +1,12 @@
 //! 《开启的封印》新汉化版的角色名字符编码。
 //!
-//! 汉化字库把汉字拆成两个基础字符的码值组合，所以一个汉字要占两个字节
-//! （少量常用汉字直接对应两个基础字符；少量特殊的字则用一个u16码值表示）。
-//! 本模块负责玩家输入的文本->存档里角色名字段的字节。
+//! 在汉化版字库中，字符分为单字节和双字节两种：
+//! 1. 单字节：英文字母、数字、半角标点符号、平假名、片假名等……
+//! （绝大多数都是可以起名界面直接输入）
+//! 2. 双字节：汉字、浊音/半浊音假名，个别全角数字和标点符号等……
+//! （绝大多数字符直接对应两个基础单字节字符；少量特殊的无法起名界面输入的汉字则用一个u16码值表示）。
+//!
+//! 本模块负责玩家输入的文本转换为存档里角色名字段的字节。
 
 // 4 张由构建脚本生成的查找表（见 "gen_name" in "build.rs"）
 mod codegen_name_chars {
@@ -79,118 +83,192 @@ impl EncodedName {
   }
 }
 
-/// 把玩家输入的角色名编码成游戏内字符字节。。
+/// 表示单个的主角团名字字符的编码步骤策略，由 `classify_char` 根据字符归属产出。
+#[derive(Debug, Clone)]
+enum EncodingStep {
+  /// 单字节字符，起名界面可直接输入：CHAR_1_BYTE_TYPABLE_MAP
+  Direct(u8),
+  /// 单字节字符，起名界面无法直接输入：CHAR_1_BYTE_UNTYPABLE_MAP
+  NotTypableByte(u8),
+  /// 双字节字符，起名界面可组合输入：CHAR_2_BYTES_TYPABLE_MAP
+  Composed(String),
+  /// 双字节字符，起名界面无法直接输入（直接返回码值）：CHAR_2_BYTES_UNTYPABLE_MAP
+  NotTypableBytes(u16),
+  /// 单独输入控制符无效
+  ControlChar,
+  /// 未找到（不在字库中）
+  NotFound,
+}
+
+/// 判断一个字符属于哪种编码类别。
+fn classify_char(c: char) -> EncodingStep {
+  // CHAR_2_BYTES_TYPABLE_MAP（双字节，来自两个基础字符）
+  if let Some(ch) = codegen_name_chars::CHAR_2_BYTES_TYPABLE_MAP.get(&c) {
+    return EncodingStep::Composed(ch.to_string());
+  }
+
+  // CHAR_2_BYTES_UNTYPABLE_MAP（双字节，匹配得到一个u16码值）
+  if let Some(ch) = codegen_name_chars::CHAR_2_BYTES_UNTYPABLE_MAP.get(&c) {
+    return EncodingStep::NotTypableBytes(*ch);
+  }
+
+  // CHAR_1_BYTE_UNTYPABLE_MAP（单字节，不可直接输入）
+  if let Some(code) = codegen_name_chars::CHAR_1_BYTE_UNTYPABLE_MAP.get(&c) {
+    return EncodingStep::NotTypableByte(*code);
+  }
+
+  // 单独的控制符 -> 失败
+  if CONTROL_CHARS.contains(&c) {
+    return EncodingStep::ControlChar;
+  }
+
+  // CHAR_1_BYTE_TYPABLE_MAP（单字节，可输入）
+  // 上一步判断已经提前排除控制符，所以不用再加`&& !CONTROL_CHARS.contains(&c)`了
+  if let Some(code) = base_character_code(c) {
+    return EncodingStep::Direct(code);
+  }
+
+  // 其他不在字库中的字符
+  EncodingStep::NotFound
+}
+
+/// 把玩家输入的角色名编码成游戏内字符字节。
 ///
 /// 返回结构体而不是 `Result`：界面需要**逐个字符**的说明（包括失败的字符），
-/// `“名字整体能不能用”由调用方看查看is_valid方法`。
+/// `"名字整体能不能用"`由调用方查看 `is_valid` 方法。
 pub fn encode_pc_name(name: &str) -> EncodedName {
   let mut bytes = [0u8; MAX_NAME_BYTES];
   let mut notes: Vec<NameNote> = Vec::new();
   let mut cursor = 0;
 
   for c in name.chars() {
-    // 1. 在 CHAR_1_BYTE_TYPABLE_MAP 里且不在 CONTROL_CHARS 里 -> 1 字节，Direct
-    //    注意：两个条件是合在一起的，控制符字符会落到第 5 条
-    // TODO: 考虑直接优先执行第五条短路掉
-    if base_character_code(c).is_some() && !CONTROL_CHARS.contains(&c) {
-      if cursor + 1 > MAX_NAME_BYTES {
-        // 理论上不会发生
+    let step = classify_char(c);
+    match &step {
+      EncodingStep::Direct(_) | EncodingStep::NotTypableByte(_) => {
+        encode_single_byte_char(&step, c, &mut bytes, &mut notes, &mut cursor);
+      }
+      EncodingStep::Composed(_) => {
+        encode_composed_char(&step, c, &mut bytes, &mut notes, &mut cursor);
+      }
+      EncodingStep::NotTypableBytes(_) => {
+        encode_not_typable_bytes(&step, c, &mut bytes, &mut notes, &mut cursor);
+      }
+      EncodingStep::ControlChar => {
         notes.push(NameNote::Failed {
           input: c,
-          reason: NameError::TooLong,
+          reason: NameError::ControlChar,
         });
-        break;
       }
-      let code = base_character_code(c).unwrap();
-      bytes[cursor] = code;
-      cursor += 1;
-      notes.push(NameNote::Direct { input: c });
-    }
-    // 2. CHAR_1_BYTE_UNTYPABLE_MAP
-    else if codegen_name_chars::CHAR_1_BYTE_UNTYPABLE_MAP.contains_key(&c) {
-      if cursor + 1 > MAX_NAME_BYTES {
-        // 理论上不会发生
+      EncodingStep::NotFound => {
         notes.push(NameNote::Failed {
           input: c,
-          reason: NameError::TooLong,
+          reason: NameError::NotInFont,
         });
-        break;
       }
-      let code = codegen_name_chars::CHAR_1_BYTE_UNTYPABLE_MAP
-        .get(&c)
-        .unwrap();
-      bytes[cursor] = *code;
-      cursor += 1;
-      notes.push(NameNote::NotTypableByte {
-        input: c,
-        code: *code,
-      });
-    }
-    // 3. 在 CHAR_2_BYTES_TYPABLE_MAP 里 -> 展开成 2 个基础字符 -> 2 字节，Composed
-    else if codegen_name_chars::CHAR_2_BYTES_TYPABLE_MAP.contains_key(&c) {
-      let components = codegen_name_chars::CHAR_2_BYTES_TYPABLE_MAP
-        .get(&c)
-        .unwrap()
-        .to_string();
-      if cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
-        // 理论上不会发生
-        notes.push(NameNote::Failed {
-          input: c,
-          reason: NameError::TooLong,
-        });
-        break;
-      }
-      for value in components.chars() {
-        if let Some(num) = base_character_code(value) {
-          bytes[cursor] = num;
-          cursor += 1;
-        } else {
-          // 理论上不会发生
-          notes.push(NameNote::Failed {
-            input: value,
-            reason: NameError::NotInFont,
-          });
-        }
-      }
-      notes.push(NameNote::Composed {
-        input: c,
-        components,
-      });
-    }
-    // 4. 在 CHAR_2_BYTES_UNTYPABLE_MAP 里 -> u16 大端 -> 2 字节，NotTypable
-    else if codegen_name_chars::CHAR_2_BYTES_UNTYPABLE_MAP.contains_key(&c) {
-      let code = *codegen_name_chars::CHAR_2_BYTES_UNTYPABLE_MAP
-        .get(&c)
-        .unwrap();
-      if cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
-        // 理论上不会发生
-        notes.push(NameNote::Failed {
-          input: c,
-          reason: NameError::TooLong,
-        });
-        break;
-      }
-      let code_bytes = code.to_be_bytes();
-      bytes[cursor] = code_bytes[0];
-      bytes[cursor + 1] = code_bytes[1];
-      cursor += 2;
-      notes.push(NameNote::NotTypableBytes { input: c, code });
-    }
-    // 5. 在 CONTROL_CHARS 里 -> Failed(ControlChar)
-    else if CONTROL_CHARS.contains(&c) {
-      notes.push(NameNote::Failed {
-        input: c,
-        reason: NameError::ControlChar,
-      });
-    }
-    // 6. 其它 -> Failed(NotInFont)
-    else {
-      notes.push(NameNote::Failed {
-        input: c,
-        reason: NameError::NotInFont,
-      });
     }
   }
 
   EncodedName { bytes, notes }
+}
+
+/// 编码单字节类型字符（Direct 或 NotTypableByte）
+fn encode_single_byte_char(
+  step: &EncodingStep,
+  ch: char,
+  bytes: &mut [u8; MAX_NAME_BYTES],
+  notes: &mut Vec<NameNote>,
+  cursor: &mut usize,
+) {
+  let (code, note) = match step {
+    EncodingStep::Direct(code) => (*code, NameNote::Direct { input: ch }),
+    EncodingStep::NotTypableByte(code) => (
+      *code,
+      NameNote::NotTypableByte {
+        input: ch,
+        code: *code,
+      },
+    ),
+    _ => unreachable!(),
+  };
+
+  if *cursor + 1 > MAX_NAME_BYTES {
+    notes.push(NameNote::Failed {
+      input: ch,
+      reason: NameError::TooLong,
+    });
+    return;
+  }
+
+  bytes[*cursor] = code;
+  *cursor += 1;
+  notes.push(note);
+}
+
+/// 编码组合双字节字符（来自两个基础字符）
+fn encode_composed_char(
+  step: &EncodingStep,
+  ch: char,
+  bytes: &mut [u8; MAX_NAME_BYTES],
+  notes: &mut Vec<NameNote>,
+  cursor: &mut usize,
+) {
+  let components = match step {
+    EncodingStep::Composed(s) => s.clone(),
+    _ => unreachable!(),
+  };
+
+  if *cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
+    notes.push(NameNote::Failed {
+      input: ch,
+      reason: NameError::TooLong,
+    });
+    return;
+  }
+
+  for value in components.chars() {
+    if let Some(num) = base_character_code(value) {
+      bytes[*cursor] = num;
+      *cursor += 1;
+    } else {
+      // 理论上不会发生（编码表已保证组合字符皆由可输入基础字符构成）
+      notes.push(NameNote::Failed {
+        input: value,
+        reason: NameError::NotInFont,
+      });
+      break; // 部分失败：已写入的字节保留，后续字符继续处理
+    }
+  }
+
+  notes.push(NameNote::Composed {
+    input: ch,
+    components,
+  });
+}
+
+/// 编码双字节的不可输入字符
+fn encode_not_typable_bytes(
+  step: &EncodingStep,
+  ch: char,
+  bytes: &mut [u8; MAX_NAME_BYTES],
+  notes: &mut Vec<NameNote>,
+  cursor: &mut usize,
+) {
+  let code = match step {
+    EncodingStep::NotTypableBytes(c) => *c,
+    _ => unreachable!(),
+  };
+
+  if *cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
+    notes.push(NameNote::Failed {
+      input: ch,
+      reason: NameError::TooLong,
+    });
+    return;
+  }
+
+  let code_bytes = code.to_be_bytes();
+  bytes[*cursor] = code_bytes[0];
+  bytes[*cursor + 1] = code_bytes[1];
+  *cursor += 2;
+  notes.push(NameNote::NotTypableBytes { input: ch, code });
 }
