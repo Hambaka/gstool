@@ -142,16 +142,18 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
   let mut cursor = 0;
 
   for c in name.chars() {
-    let step = classify_char(c);
-    match &step {
-      EncodingStep::Direct(_) | EncodingStep::NotTypableByte(_) => {
-        encode_single_byte_char(&step, c, &mut bytes, &mut notes, &mut cursor);
+    match classify_char(c) {
+      EncodingStep::Direct(code) => {
+        encode_single_byte_char(code, c, &mut bytes, &mut notes, &mut cursor)
       }
-      EncodingStep::Composed(_) => {
-        encode_composed_char(&step, c, &mut bytes, &mut notes, &mut cursor);
+      EncodingStep::NotTypableByte(code) => {
+        encode_single_byte_not_typable(code, c, &mut bytes, &mut notes, &mut cursor);
       }
-      EncodingStep::NotTypableBytes(_) => {
-        encode_not_typable_bytes(&step, c, &mut bytes, &mut notes, &mut cursor);
+      EncodingStep::Composed(components) => {
+        encode_composed_char(&components, c, &mut bytes, &mut notes, &mut cursor);
+      }
+      EncodingStep::NotTypableBytes(code) => {
+        encode_not_typable_bytes(code, c, &mut bytes, &mut notes, &mut cursor);
       }
       EncodingStep::ControlChar => {
         notes.push(NameNote::Failed {
@@ -171,26 +173,14 @@ pub fn encode_pc_name(name: &str) -> EncodedName {
   EncodedName { bytes, notes }
 }
 
-/// 编码单字节类型字符（Direct 或 NotTypableByte）
+/// 编码单字节的可直接输入字符
 fn encode_single_byte_char(
-  step: &EncodingStep,
+  code: u8,
   ch: char,
   bytes: &mut [u8; MAX_NAME_BYTES],
   notes: &mut Vec<NameNote>,
   cursor: &mut usize,
 ) {
-  let (code, note) = match step {
-    EncodingStep::Direct(code) => (*code, NameNote::Direct { input: ch }),
-    EncodingStep::NotTypableByte(code) => (
-      *code,
-      NameNote::NotTypableByte {
-        input: ch,
-        code: *code,
-      },
-    ),
-    _ => unreachable!(),
-  };
-
   if *cursor + 1 > MAX_NAME_BYTES {
     notes.push(NameNote::Failed {
       input: ch,
@@ -201,22 +191,38 @@ fn encode_single_byte_char(
 
   bytes[*cursor] = code;
   *cursor += 1;
-  notes.push(note);
+  notes.push(NameNote::Direct { input: ch });
 }
 
-/// 编码组合双字节字符（来自两个基础字符）
-fn encode_composed_char(
-  step: &EncodingStep,
+/// 编码单字节的不可输入字符
+fn encode_single_byte_not_typable(
+  code: u8,
   ch: char,
   bytes: &mut [u8; MAX_NAME_BYTES],
   notes: &mut Vec<NameNote>,
   cursor: &mut usize,
 ) {
-  let components = match step {
-    EncodingStep::Composed(s) => s.clone(),
-    _ => unreachable!(),
-  };
+  if *cursor + 1 > MAX_NAME_BYTES {
+    notes.push(NameNote::Failed {
+      input: ch,
+      reason: NameError::TooLong,
+    });
+    return;
+  }
 
+  bytes[*cursor] = code;
+  *cursor += 1;
+  notes.push(NameNote::NotTypableByte { input: ch, code });
+}
+
+/// 编码组合双字节字符（来自两个基础字符）
+fn encode_composed_char(
+  components: &str,
+  ch: char,
+  bytes: &mut [u8; MAX_NAME_BYTES],
+  notes: &mut Vec<NameNote>,
+  cursor: &mut usize,
+) {
   if *cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
     notes.push(NameNote::Failed {
       input: ch,
@@ -241,23 +247,18 @@ fn encode_composed_char(
 
   notes.push(NameNote::Composed {
     input: ch,
-    components,
+    components: components.to_string(),
   });
 }
 
-/// 编码双字节的不可输入字符
+/// 编码双字节的不可输入字符（u16 大端码值）
 fn encode_not_typable_bytes(
-  step: &EncodingStep,
+  code: u16,
   ch: char,
   bytes: &mut [u8; MAX_NAME_BYTES],
   notes: &mut Vec<NameNote>,
   cursor: &mut usize,
 ) {
-  let code = match step {
-    EncodingStep::NotTypableBytes(c) => *c,
-    _ => unreachable!(),
-  };
-
   if *cursor + BYTES_PER_CHAR_MAX > MAX_NAME_BYTES {
     notes.push(NameNote::Failed {
       input: ch,
