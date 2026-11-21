@@ -37,6 +37,8 @@ pub struct PatchRomState {
   pub display_path: String,
   /// 指定输出目录（空 = 与输入同级）
   pub out_dir: String,
+  /// 最近一次运行的时间戳（空 = 尚未运行）
+  time: String,
   /// 最近一次运行的日志（空 = 尚未运行）
   log: String,
   /// 本页待办request（私有：ui侧使用`request()`追加）
@@ -65,6 +67,11 @@ impl PatchRomState {
   /// 是否有输出日志（判断是否可复制日志内容到剪贴板）
   pub fn has_output(&self) -> bool {
     !self.log.is_empty()
+  }
+
+  /// 时间戳文本
+  pub fn time(&self) -> &str {
+    &self.time
   }
 
   /// 日志文本
@@ -130,6 +137,7 @@ impl PatchRomState {
     let out_file = out_dir.join(&file_name);
     write_named_bytes(&out_dir, &file_name, &patched.bytes).map_err(|e| e.to_string())?;
 
+    self.time = crate::util::time::now();
     self.log = render_log(input.crc32, patched.source_crc32, &out_file);
 
     Ok(())
@@ -139,7 +147,7 @@ impl PatchRomState {
 /// 生成运行概况日志。
 fn render_log(input_crc32: u32, source_crc32: u32, out_file: &Path) -> String {
   let mut log = String::new();
-  let _ = writeln!(log, "输出文件：\n{}\n\n", out_file.display());
+  let _ = writeln!(log, "输出文件：\n{}\n", out_file.display());
   log.push_str("运行概况：\n");
 
   let mut result_index = 0;

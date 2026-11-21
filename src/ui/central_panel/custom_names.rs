@@ -213,6 +213,13 @@ fn save_hint(state: &CustomNameState) -> &'static str {
 /// 因为要把字符变成会显示对应键位图的按钮，所以需要解析原本存储的日志文本，
 /// 格式与`io::render::name_encode_log`的格式关联，因此改动时必须同步检查。
 pub fn show_log(ui: &mut Ui, state: &CustomNameState, cache: &mut KeyboardCache) {
+  Label::new(
+    RichText::new("提示：鼠标悬浮在蓝色背景的字符上数秒，即可显示该字符在游戏内的输入位置")
+      .strong(),
+  )
+  .selectable(false)
+  .ui(ui);
+
   let log_text = state.log().to_string();
   for single_line in log_text.split('\n') {
     if single_line.contains("：")

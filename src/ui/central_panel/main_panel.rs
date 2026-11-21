@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use egui::{Label, Widget};
+
 use crate::{
   App,
   logic::command::CommandEnum,
@@ -107,6 +109,17 @@ impl App {
 
         // 显示输出日志（概要）
         if enable_copy_button {
+          let time_stamp = match self.command {
+            CommandEnum::First => self.c1.time(),
+            CommandEnum::Second => self.c2.time(),
+            CommandEnum::Third => self.c3.time(),
+            CommandEnum::Fourth => self.c4.time(),
+            CommandEnum::Fifth => self.c5.time(),
+          };
+          Label::new(format!("运行时间：{time_stamp}\n"))
+            .selectable(false)
+            .ui(ui);
+
           match self.command {
             CommandEnum::First => password_export::show_log(ui, &self.c1),
             CommandEnum::Second => save_convert::show_log(ui, &self.c2),

@@ -5,6 +5,10 @@ use std::path::Path;
 
 use crate::MAIN_DIR;
 
+// 公测版名称（待调整）
+// 黄金太阳 - 开启的封印 (简) (公测版_20241208) [余晖汉化组]
+// 正式版v1.0名称（待调整）
+// 黄金太阳 - 开启的封印 (简) (v1.0_20261208) [余晖汉化组]
 const LATEST_CHS_FILE_STEM: &str = "黄金太阳 - 开启的封印 (2024新汉化公测版)";
 const JPN_ROM_CRC32: u32 = 0xFB96D9DE;
 

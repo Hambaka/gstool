@@ -51,9 +51,11 @@ pub fn show(
 
 /// 显示输出日志（根据当前选择的子页进行显示）
 pub fn show_log(ui: &mut Ui, state: &PasswordExportState) {
-  match state.subcommand {
-    SubCommandEnum::First => Label::new(state.from_save.log()).selectable(false).ui(ui),
-    SubCommandEnum::Second => Label::new(state.from_text.log()).selectable(false).ui(ui),
-    SubCommandEnum::Third => Label::new(state.from_dump.log()).selectable(false).ui(ui),
+  let log = match state.subcommand {
+    SubCommandEnum::First => state.from_save.log(),
+    SubCommandEnum::Second => state.from_text.log(),
+    SubCommandEnum::Third => state.from_dump.log(),
   };
+
+  Label::new(log).selectable(false).ui(ui);
 }

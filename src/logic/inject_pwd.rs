@@ -37,6 +37,8 @@ pub struct InjectPwdState {
   pub source: [Option<SourceChoice>; 3],
   /// 指定输出目录（空 = 与输入同级）
   pub out_dir: String,
+  /// 最近一次运行的时间戳（空 = 尚未运行）
+  time: String,
   /// 最近一次运行的日志（空 = 尚未运行）
   log: String,
   /// 本页待办request（私有：ui侧使用`request()`追加）
@@ -64,6 +66,11 @@ impl InjectPwdState {
   /// 是否有输出日志（判断是否可复制日志内容到剪贴板）
   pub fn has_output(&self) -> bool {
     !self.log.is_empty()
+  }
+
+  /// 时间戳文本
+  pub fn time(&self) -> &str {
+    &self.time
   }
 
   /// 日志文本
@@ -145,7 +152,10 @@ impl InjectPwdState {
     );
     write_named_bytes(&out_dir, &file_name, &new_rom).map_err(|e| e.to_string())?;
 
-    // 6. 生成日志
+    // 6. 生成时间戳
+    self.time = crate::util::time::now();
+
+    // 7. 生成日志
     self.log = render_log(&analysis, combination, &out_dir.join(&file_name));
 
     Ok(())
@@ -195,7 +205,7 @@ fn render_log(
   use std::fmt::Write as _;
 
   let mut log = String::new();
-  let _ = writeln!(log, "输出文件：\n{}\n\n", out_file.display());
+  let _ = writeln!(log, "输出文件：\n{}\n", out_file.display());
   log.push_str("运行概况：\n");
 
   let mut result_index = 1;

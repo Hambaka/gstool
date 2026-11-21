@@ -43,6 +43,15 @@ impl PasswordExportState {
     }
   }
 
+  /// 时间戳文本（使用对应子页的时间戳）
+  pub fn time(&self) -> &str {
+    match self.subcommand {
+      SubCommandEnum::First => self.from_save.time(),
+      SubCommandEnum::Second => self.from_text.time(),
+      SubCommandEnum::Third => self.from_dump.time(),
+    }
+  }
+
   /// 日志文本（使用对应子页的日志）
   pub fn log(&self) -> &str {
     match self.subcommand {

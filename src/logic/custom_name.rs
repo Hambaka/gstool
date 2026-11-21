@@ -74,6 +74,8 @@ pub struct CustomNameState {
   pub out_dir: String,
   /// 已暂存过至少一次名字
   pub has_stored_name: bool,
+  /// 最近一次运行的时间戳（空 = 尚未运行）
+  time: String,
   /// 最近一次运行的日志（空 = 尚未运行）
   log: String,
   /// 本页待办request（私有：ui侧使用`request()`追加）
@@ -154,6 +156,11 @@ impl CustomNameState {
       && self.any_slot_selected()
   }
 
+  /// 时间戳文本
+  pub fn time(&self) -> &str {
+    &self.time
+  }
+
   /// 日志文本
   pub fn log(&self) -> &str {
     &self.log
@@ -225,6 +232,7 @@ impl CustomNameState {
       })
       .collect::<Vec<_>>();
 
+    self.time = crate::util::time::now();
     self.log = name_encode_log(&entries);
     self.encoded = encoded;
     self.ran_names = Some(self.names.clone());

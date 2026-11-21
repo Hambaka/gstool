@@ -49,6 +49,8 @@ pub struct FromTextState {
   pub export_data_text: bool,
   /// 自定义输出目录（空 = 与输入文件同级 / 剪贴板来源时为程序目录）
   pub out_dir: String,
+  /// 最近一次运行的时间戳（空 = 尚未运行）
+  time: String,
   /// 最近一次运行的日志（空 = 尚未运行）
   log: String,
   /// 本页待办request（私有：ui侧使用`request()`追加）
@@ -86,6 +88,11 @@ impl FromTextState {
   /// 是否有输出日志（判断是否可复制日志内容到剪贴板）
   pub fn has_output(&self) -> bool {
     !self.log.is_empty()
+  }
+
+  /// 时间戳文本
+  pub fn time(&self) -> &str {
+    &self.time
   }
 
   /// 日志文本
@@ -157,6 +164,7 @@ impl FromTextState {
   pub fn run(&mut self, sources: &mut PasswordSources) -> Result<(), String> {
     let job = build_job(self, sources)?;
     execute(&job)?;
+    self.time = crate::util::time::now();
     self.log = render_log(&job);
     Ok(())
   }
@@ -294,9 +302,9 @@ fn execute(job: &TextJob) -> Result<(), String> {
 /// 生成运行概况日志。
 fn render_log(job: &TextJob) -> String {
   let mut log = String::new();
-  let _ = write!(
+  let _ = writeln!(
     &mut log,
-    "输出目录：\n{}\n\n",
+    "输出目录：\n{}\n",
     job.output_dir.to_string_lossy()
   );
   log.push_str("运行概况：\n");
